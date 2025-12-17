@@ -19,3 +19,6 @@ dist/
 .env
 .envrc
 .history
+
+# Generated embed directory (created by go generate)
+internal/server/embed/

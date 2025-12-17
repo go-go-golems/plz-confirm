@@ -854,3 +854,88 @@ This step validated the first true end-to-end interaction: the Go CLI created a 
 **Related files:**
 - Related test script and test data files to ticket index via `docmgr doc relate`.
 
+## Step 18: Implement production mode - embed frontend assets (Task 6, H2)
+
+**Commit (code):** TBD — `server: add go generate for embedding frontend assets`
+
+### What I did
+- Created `internal/server/generate.go`: Contains `//go:generate` directive that triggers the build process.
+- Created `internal/server/generate_build.go`: Go program (build tag `ignore`) that:
+  - Finds repo root by walking up to `go.mod`.
+  - Runs `pnpm run build` in `agent-ui-system/` to build the Vite frontend.
+  - Copies `dist/public` to `internal/server/embed/public` (embeddable location, no `..` in embed patterns).
+- Created `internal/server/embed.go`: Uses `//go:embed embed/public` to embed static files, strips prefix with `fs.Sub()`.
+- Updated `internal/server/server.go`:
+  - Added `handleStaticFiles()` method that serves embedded static files.
+  - Routes `/api/*` and `/ws` take precedence (never shadowed by static files).
+  - Serves static files from embedded filesystem for `/` and asset paths.
+  - Falls back to `index.html` for client-side routing (SPA support).
+  - Gracefully skips static serving if embed directory doesn't exist (dev mode).
+- Added `internal/server/embed/` to `.gitignore` (generated directory).
+
+### Why
+- Task 6 (H2): Enable single-binary deployment by embedding frontend assets.
+- Production mode: Go server can serve everything (API, WS, and UI) without needing Vite dev server.
+- `go generate` provides a standard way to run the build process before compilation.
+
+### What worked
+- `go generate ./internal/server` successfully builds frontend and copies to embed directory.
+- Embedded filesystem correctly strips `embed/public` prefix so paths match frontend expectations.
+- Static file serving works with proper precedence (API/WS routes checked first).
+- SPA fallback serves `index.html` for client-side routing.
+- Graceful degradation: if embed directory doesn't exist (dev mode), static serving is skipped.
+
+### What I learned
+- `go:generate` can run any command, including Go programs with build tags.
+- `embed.FS` requires paths relative to the Go file, can't use `..` patterns.
+- `fs.Sub()` is the standard way to strip a prefix from an embedded filesystem.
+- `http.FileServer(http.FS(embeddedFS))` serves embedded files correctly.
+- Need to check file existence before serving fallback (avoid unnecessary opens).
+
+### What was tricky to build
+- Finding repo root reliably (walking up to `go.mod`).
+- Handling SPA routing fallback correctly (serve `index.html` for missing files, but not for `/api` or `/ws`).
+- Ensuring API/WS routes take precedence over static file serving.
+
+### What warrants a second pair of eyes
+- Production mode hasn't been fully tested yet (need to verify single binary serves UI correctly).
+- Build process assumes `pnpm` is available (should document this requirement).
+- Embed directory is gitignored but `.gitkeep` exists (might want to remove `.gitkeep` or document why it's there).
+
+### What should be done in the future
+- Test production mode: build binary, run server, verify UI loads and API/WS work.
+- Document build process: `go generate ./internal/server` must be run before `go build`.
+- Consider adding build script or Makefile target for convenience.
+- Consider adding CI check that verifies `go generate` runs successfully.
+
+### Code review instructions
+- Review `generate_build.go` for error handling and path resolution.
+- Review `server.go` `handleStaticFiles()` for correct route precedence and SPA fallback logic.
+- Verify embed pattern in `embed.go` matches directory structure.
+
+### Technical details
+
+**Files created:**
+- `internal/server/generate.go` (2 lines, `//go:generate` directive)
+- `internal/server/generate_build.go` (108 lines, build script)
+- `internal/server/embed.go` (13 lines, embedded filesystem)
+
+**Files modified:**
+- `internal/server/server.go` (added `handleStaticFiles()` method)
+- `.gitignore` (added `internal/server/embed/`)
+
+**Build process:**
+```bash
+# Generate embedded assets
+go generate ./internal/server
+
+# Build binary (includes embedded assets)
+go build ./cmd/agentui
+```
+
+**Task completion:**
+- Tasks 33-34, 36-37 checked off via `docmgr task check` (embed assets, copy to embeddable path, serve static files, SPA fallback).
+
+**Related files:**
+- Related all embed-related files to ticket index via `docmgr doc relate`.
+

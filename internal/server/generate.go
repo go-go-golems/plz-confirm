@@ -1,0 +1,4 @@
+//go:generate go run generate_build.go
+
+package server
+

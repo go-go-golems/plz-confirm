@@ -51,7 +51,7 @@
   - `POST /api/requests` → receive request id
   - `GET /api/requests/{id}/wait` → wait for completion
   - Ref workflow: `agent-ui-system/demo_cli.py`
-- [ ] **Commands (first pass)**:
+- [x] **Commands (first pass)**:
 - [x] `agentui confirm ...` → outputs approved/timestamp (Glazed rows)
 - [x] `agentui select ...` → outputs selected
 - [x] `agentui form --schema @file.json` → outputs `data` (likely as JSON column initially)
@@ -66,12 +66,12 @@
 
 ### 6) Production mode: embed frontend assets (H2)
 
-- [ ] **Embed built frontend assets into the Go binary** using `embed`.
+- [x] **Embed built frontend assets into the Go binary** using `embed`.
   - Ref current build output: `agent-ui-system/dist/public` (from `agent-ui-system/vite.config.ts`)
-  - [ ] Decide how assets get into an embeddable path (copy into Go module at build time; avoid `..` in embed patterns).
+- [x] Decide how assets get into an embeddable path (copy into Go module at build time; avoid `..` in embed patterns).
 - [ ] **Serve SPA**:
-  - [ ] Serve embedded static files for `/` and asset paths
-  - [ ] Fallback to `index.html` for client-side routing (but never shadow `/api/*` or `/ws`)
+- [x] Serve embedded static files for `/` and asset paths
+- [x] Fallback to `index.html` for client-side routing (but never shadow `/api/*` or `/ws`)
 
 ### 7) Parity validation + minimal tests
 

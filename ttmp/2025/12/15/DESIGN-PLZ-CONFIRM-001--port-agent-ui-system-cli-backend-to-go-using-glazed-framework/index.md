@@ -47,10 +47,17 @@ RelatedFiles:
       Note: Glazed table command implementation
     - Path: internal/cli/upload.go
       Note: Glazed upload command implementation
+    - Path: internal/server/embed.go
+      Note: Embedded filesystem for production static assets
+    - Path: internal/server/generate.go
+      Note: go:generate directive for building and embedding frontend
+    - Path: internal/server/generate_build.go
+      Note: Go program that builds Vite frontend and copies to embed directory
     - Path: internal/server/server.go
       Note: |-
         Go backend REST implementation (net/http, manual routing)
         Go REST handlers for /api/requests*
+        Updated to serve embedded static files with SPA fallback
     - Path: internal/server/ws.go
       Note: |-
         Go backend WebSocket broadcast implementation (C2 map+mutex, no-session)
@@ -71,6 +78,7 @@ ExternalSources: []
 Summary: ""
 LastUpdated: 2025-12-15T15:35:20.981402078-05:00
 ---
+
 
 
 

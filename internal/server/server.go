@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	stderrors "errors"
+	"io"
 	"log"
 	"net/http"
 	"strconv"
@@ -33,15 +34,67 @@ func New(s *store.Store) *Server {
 func (s *Server) Handler() http.Handler {
 	mux := http.NewServeMux()
 
+	// API and WebSocket routes (must come before static file serving)
 	mux.HandleFunc("/ws", s.handleWS)
-
 	mux.HandleFunc("/api/requests", s.handleRequestsCollection)
 	mux.HandleFunc("/api/requests/", s.handleRequestsItem)
 
-	// Note: production SPA/static embedding is handled later (H2).
+	// Serve embedded static files (production mode)
 	// In dev, Vite serves UI on :3000 and proxies /api and /ws to this server on :3001.
+	// In production, this server serves everything (API, WS, and static files).
+	s.handleStaticFiles(mux)
 
 	return withCORS(mux)
+}
+
+func (s *Server) handleStaticFiles(mux *http.ServeMux) {
+	// Check if embedded filesystem has content
+	if embeddedPublicFS == nil {
+		// No embedded files - skip static serving (dev mode)
+		return
+	}
+
+	// Check if embed directory exists and has content
+	if _, err := embeddedPublicFS.Open("index.html"); err != nil {
+		// No index.html - skip static serving (generate not run)
+		return
+	}
+
+	// Serve static files with SPA fallback
+	fileServer := http.FileServer(http.FS(embeddedPublicFS))
+	mux.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Never serve static files for API or WebSocket paths
+		if strings.HasPrefix(r.URL.Path, "/api") || strings.HasPrefix(r.URL.Path, "/ws") {
+			http.NotFound(w, r)
+			return
+		}
+
+		// Try to serve the requested file
+		path := strings.TrimPrefix(r.URL.Path, "/")
+		if path == "" {
+			path = "index.html"
+		}
+
+		file, err := embeddedPublicFS.Open(path)
+		if err != nil {
+			// File not found - serve index.html for SPA routing
+			indexFile, err := embeddedPublicFS.Open("index.html")
+			if err != nil {
+				http.NotFound(w, r)
+				return
+			}
+			defer indexFile.Close()
+
+			// Read and serve index.html
+			w.Header().Set("Content-Type", "text/html; charset=utf-8")
+			_, _ = io.Copy(w, indexFile)
+			return
+		}
+		file.Close()
+
+		// File exists - serve it normally
+		fileServer.ServeHTTP(w, r)
+	}))
 }
 
 func (s *Server) ListenAndServe(ctx context.Context, opts Options) error {
