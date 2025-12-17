@@ -706,14 +706,14 @@ The CLI uses long-polling as a fallback mechanism:
 
 Key files analyzed for this document:
 
-- `/vibes/2025-12-15/agent-ui-system/server/index.ts` - Backend server implementation
-- `/vibes/2025-12-15/agent-ui-system/client/src/types/schemas.ts` - Type definitions
-- `/vibes/2025-12-15/agent-ui-system/client/src/components/WidgetRenderer.tsx` - Widget routing
-- `/vibes/2025-12-15/agent-ui-system/client/src/components/widgets/*.tsx` - Widget implementations
-- `/vibes/2025-12-15/agent-ui-system/client/src/store/store.ts` - Redux store
-- `/vibes/2025-12-15/agent-ui-system/client/src/services/websocket.ts` - WebSocket client
-- `/vibes/2025-12-15/agent-ui-system/demo_cli.py` - CLI demonstration
-- `/vibes/2025-12-15/agent-ui-system/verify_e2e.py` - E2E test script
+- `agent-ui-system/server/index.ts` - Backend server implementation
+- `agent-ui-system/client/src/types/schemas.ts` - Type definitions
+- `agent-ui-system/client/src/components/WidgetRenderer.tsx` - Widget routing
+- `agent-ui-system/client/src/components/widgets/*.tsx` - Widget implementations
+- `agent-ui-system/client/src/store/store.ts` - Redux store
+- `agent-ui-system/client/src/services/websocket.ts` - WebSocket client
+- `agent-ui-system/demo_cli.py` - CLI demonstration
+- `agent-ui-system/verify_e2e.py` - E2E test script
 
 ## Next Steps
 

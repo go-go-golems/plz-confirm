@@ -80,9 +80,9 @@ Document the research process for porting agent-ui-system's CLI and backend from
 ### Technical details
 
 **Key files examined:**
-- `/vibes/2025-12-15/agent-ui-system/server/index.ts` - Backend server (209 lines)
-- `/vibes/2025-12-15/agent-ui-system/demo_cli.py` - CLI demo script (109 lines)
-- `/vibes/2025-12-15/agent-ui-system/client/src/types/schemas.ts` - TypeScript type definitions
+- `agent-ui-system/server/index.ts` - Backend server (209 lines)
+- `agent-ui-system/demo_cli.py` - CLI demo script (109 lines)
+- `agent-ui-system/client/src/types/schemas.ts` - TypeScript type definitions
 
 **Architecture overview:**
 - Backend: Express + WebSocket server on port 3001
@@ -488,8 +488,8 @@ This step kicked off the Go design work by tightening our understanding of *how 
 - Decide how strict the Go backend should be about validating request `input`/`output` against JSON Schema (accept-any vs validate-at-ingress).
 
 ### Code review instructions
-- Start with `vibes/2025-12-15/agent-ui-system/vite.config.ts` to confirm `/api` + `/ws` proxy and ports.
-- Check `vibes/2025-12-15/agent-ui-system/client/src/store/store.ts` and `client/src/services/websocket.ts` to see how `sessionId` is chosen and used.
+- Start with `agent-ui-system/vite.config.ts` to confirm `/api` + `/ws` proxy and ports.
+- Check `agent-ui-system/client/src/store/store.ts` and `agent-ui-system/client/src/services/websocket.ts` to see how `sessionId` is chosen and used.
 - Verify OAuth/login code is currently unused by searching for `getLoginUrl` and `ManusDialog` usage.
 
 ### Technical details

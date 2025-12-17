@@ -76,7 +76,7 @@ In production mode, the Go server can additionally serve built frontend assets (
 ### Schema/codegen direction (deferred)
 
 For now, we will **not** introduce shared JSON Schema + codegen. Instead:
-- The Go server/CLI will define Go structs equivalent to `vibes/2025-12-15/agent-ui-system/client/src/types/schemas.ts`.
+- The Go server/CLI will define Go structs equivalent to `agent-ui-system/client/src/types/schemas.ts`.
 - The React app remains unchanged and continues using its existing `schemas.ts`.
 
 We will revisit schema-first + codegen later (see end of this document for sketches and options).
@@ -366,8 +366,8 @@ This is a staged plan with decision gates (not a commitment to a specific option
 
 - Ticket analysis: `analysis/01-code-structure-analysis-agent-ui-system.md`
 - Existing implementation:
-  - `vibes/2025-12-15/agent-ui-system/server/index.ts`
-  - `vibes/2025-12-15/agent-ui-system/vite.config.ts`
-  - `vibes/2025-12-15/agent-ui-system/client/src/types/schemas.ts`
-  - `vibes/2025-12-15/agent-ui-system/demo_cli.py`
+  - `agent-ui-system/server/index.ts`
+  - `agent-ui-system/vite.config.ts`
+  - `agent-ui-system/client/src/types/schemas.ts`
+  - `agent-ui-system/demo_cli.py`
 - Glazed tutorial: `glazed/pkg/doc/tutorials/05-build-first-command.md`
