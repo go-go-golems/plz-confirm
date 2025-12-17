@@ -18,7 +18,6 @@ export interface NotificationOptions {
 
 class BrowserNotificationService {
   private permission: NotificationPermission = 'default';
-  private notificationIcon: string = '/images/logo-placeholder.png';
 
   /**
    * Check if browser notifications are supported
@@ -98,8 +97,8 @@ class BrowserNotificationService {
     try {
       const notification = new Notification(options.title, {
         body: options.body,
-        icon: options.icon || this.notificationIcon,
-        badge: options.badge || this.notificationIcon,
+        icon: options.icon,
+        badge: options.badge,
         tag: options.tag,
         requireInteraction: options.requireInteraction || false,
       });

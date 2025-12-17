@@ -22,3 +22,6 @@ dist/
 
 # Generated embed directory (created by go generate)
 internal/server/embed/
+
+# Image files
+*.png
