@@ -120,6 +120,10 @@ func (s *Server) ListenAndServe(ctx context.Context, opts Options) error {
 		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 		_ = srv.Shutdown(shutdownCtx)
+		// Ctrl+C / signal cancellation should be a clean shutdown (exit 0).
+		if stderrors.Is(ctx.Err(), context.Canceled) {
+			return nil
+		}
 		return ctx.Err()
 	case err := <-errCh:
 		return err
