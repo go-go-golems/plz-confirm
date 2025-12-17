@@ -779,3 +779,78 @@ This step validated the first true end-to-end interaction: the Go CLI created a 
 **Related files:**
 - Related all new command files to ticket index via `docmgr doc relate`.
 
+## Step 17: Create E2E test script for all widget commands
+
+**Commit (code):** `20d5c1a442bca797c35741257e87f040cd0a10da` — `scripts: fix upload command accept flag usage (repeat flag for each value)`
+**Commit (code):** `2755273fdd24c67f372fe32b180a5206267c2d43` — `scripts: add test data files for form and table widgets`
+**Commit (code):** `32ca2fdf6a6457f27c2df6e20a8e1d168c088b5d` — `scripts: add skip functionality and single test execution to test-all-commands.sh`
+
+### What I did
+- Created `scripts/test-all-commands.sh`: Comprehensive bash script that exercises all five widget commands sequentially.
+- Created `scripts/test-form-schema.json`: Test JSON Schema for form widget (username, email, accessLevel, notifications).
+- Created `scripts/test-table-data.json`: Test data array with 4 server rows (id, name, status, region, cpu).
+- Script features:
+  - Checks if backend server (3001) and Vite (3000) are running before starting.
+  - Runs all 5 tests sequentially (confirm, select, form, table, upload).
+  - Supports single test execution: `./test-all-commands.sh 5` runs only upload test.
+  - Interactive mode: prompts before each test, allows skipping with 's' key.
+  - Non-interactive mode: auto-starts after 2 seconds (for CI/automation).
+  - Color-coded output (green headers, blue info, yellow warnings, red errors).
+  - Uses `go run ./cmd/agentui` (no binary build required).
+- Fixed upload command `--accept` flag usage: changed from `--accept .log .txt` to `--accept .log --accept .txt` (string list parameters need flag repeated for each value).
+
+### Why
+- Need a reproducible way to test all widget commands end-to-end.
+- User requested a script to exercise commands while they handle browser interactions.
+- Makes it easy to test individual commands during development.
+
+### What worked
+- Script successfully runs all commands and waits for browser interaction.
+- Single test execution works (`./test-all-commands.sh 5` runs only upload).
+- Skip functionality allows flexible test runs in interactive mode.
+- Test data files provide realistic examples for form and table widgets.
+
+### What I learned
+- Glazed/Cobra string list parameters require repeating the flag for each value (not space-separated).
+- Bash script can detect interactive vs non-interactive mode using `[ -t 0 ]` check.
+- Finding repo root by walking up directory tree looking for `go.mod` is more reliable than hardcoded paths.
+
+### What was tricky to build
+- Initial path calculation for repo root (fixed by searching for `go.mod`).
+- Upload command accept flag syntax (needed to repeat flag per value).
+- Balancing interactive prompts with non-interactive automation support.
+
+### What warrants a second pair of eyes
+- Script hasn't been fully E2E tested yet (user will run it and interact with browser).
+- Error handling: script exits on first failure (might want to continue on error option).
+
+### What should be done in the future
+- Add option to continue on error (don't exit on first test failure).
+- Add summary output at end (how many tests passed/failed).
+- Consider adding timeout per test (currently uses command's `--wait-timeout`).
+
+### Code review instructions
+- Review `scripts/test-all-commands.sh` for bash best practices and error handling.
+- Check test data files (`test-form-schema.json`, `test-table-data.json`) for realistic examples.
+
+### Technical details
+
+**Files created:**
+- `scripts/test-all-commands.sh` (186 lines, executable)
+- `scripts/test-form-schema.json` (18 lines, JSON Schema)
+- `scripts/test-table-data.json` (7 lines, JSON array)
+
+**Script usage:**
+```bash
+# Run all tests
+./scripts/test-all-commands.sh
+
+# Run single test (e.g., upload)
+./scripts/test-all-commands.sh 5
+
+# In interactive mode, press 's' to skip any test
+```
+
+**Related files:**
+- Related test script and test data files to ticket index via `docmgr doc relate`.
+

@@ -59,12 +59,19 @@ RelatedFiles:
       Note: |-
         In-memory request store with event-driven wait (F2)
         In-memory request store with event-driven Wait
+    - Path: ttmp/2025/12/15/DESIGN-PLZ-CONFIRM-001--port-agent-ui-system-cli-backend-to-go-using-glazed-framework/scripts/test-all-commands.sh
+      Note: End-to-end test script exercising all widget commands
+    - Path: ttmp/2025/12/15/DESIGN-PLZ-CONFIRM-001--port-agent-ui-system-cli-backend-to-go-using-glazed-framework/scripts/test-form-schema.json
+      Note: Test JSON Schema for form widget
+    - Path: ttmp/2025/12/15/DESIGN-PLZ-CONFIRM-001--port-agent-ui-system-cli-backend-to-go-using-glazed-framework/scripts/test-table-data.json
+      Note: Test data (array of row objects) for table widget
     - Path: ttmp/2025/12/15/DESIGN-PLZ-CONFIRM-001--port-agent-ui-system-cli-backend-to-go-using-glazed-framework/scripts/tmux-up.sh
       Note: tmux harness entrypoint (control/server/vite)
 ExternalSources: []
 Summary: ""
 LastUpdated: 2025-12-15T15:35:20.981402078-05:00
 ---
+
 
 
 
