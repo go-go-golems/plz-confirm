@@ -55,5 +55,6 @@ bump-glazed:
 
 PLZ_CONFIRM_BINARY=$(shell which plz-confirm)
 install:
+	go generate ./...
 	go build -o ./dist/plz-confirm ./cmd/plz-confirm && \
 		cp ./dist/plz-confirm $(PLZ_CONFIRM_BINARY)

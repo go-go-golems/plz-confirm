@@ -74,10 +74,10 @@ plz-confirm supports five widget types, each designed for a specific interaction
 
 All widget commands support these flags:
 
-- `--base-url`: Base URL for the backend server (default: `http://localhost:3000` for dev proxy)
-- `--timeout`: Request expiration in seconds (default: 300)
-- `--wait-timeout`: How long to wait for a response in seconds (default: 60)
-- `--output`: Output format: `table`, `json`, `yaml`, `csv` (default: `yaml`)
+- `--base-url`: Base URL for the backend server (default: `http://localhost:3000`)
+- `--timeout`: Request expiration in seconds (server-side) (default: 300)
+- `--wait-timeout`: How long to wait for a response in seconds (default: 60, use 0 to wait forever)
+- `--output`: Output format: `table`, `json`, `yaml`, `csv` (default: `yaml`) - This is a global Glazed flag available on all commands
 
 ### Confirm Command
 
@@ -87,6 +87,13 @@ The `confirm` command displays a yes/no confirmation dialog with customizable bu
 - Deployment confirmations
 - Destructive operation warnings
 - User consent for data processing
+
+**Available flags:**
+- `--title` (required): Dialog title
+- `--message` (optional): Dialog message/description text
+- `--approve-text` (optional): Text for the approve button (default: "Approve")
+- `--reject-text` (optional): Text for the reject button (default: "Reject")
+- Plus common flags: `--base-url`, `--timeout`, `--wait-timeout`, `--output`
 
 **Example:**
 
@@ -124,6 +131,15 @@ The `select` command displays a list of options for single or multi-selection.
 - Region selection for deployments
 - Environment selection (dev/staging/prod)
 - Multi-select from a list of items
+
+**Available flags:**
+- `--title` (required): Dialog title
+- `--option` (required, repeatable): Option value - repeat this flag for each option
+- `--multi` (optional): Allow selecting multiple options (default: false)
+- `--searchable` (optional): Enable search/filter box in the UI (default: true)
+- Plus common flags: `--base-url`, `--timeout`, `--wait-timeout`, `--output`
+
+**Note**: The `select` command does not have a `--message` flag. Use `--title` to provide context.
 
 **Example:**
 
@@ -163,6 +179,11 @@ The `form` command displays a dynamic form based on a JSON Schema definition.
 - Configuration wizards
 - Data entry with validation
 
+**Available flags:**
+- `--title` (required): Dialog title
+- `--schema` (required): Path to JSON Schema file - use `@file.json` for a file or `-` for stdin
+- Plus common flags: `--base-url`, `--timeout`, `--wait-timeout`, `--output`
+
 **Example:**
 
 Create a schema file `user-schema.json`:
@@ -199,6 +220,13 @@ plz-confirm form \
   --schema @user-schema.json
 ```
 
+You can also pass the schema via stdin:
+
+```bash
+echo '{"properties": {"name": {"type": "string"}}}' | \
+  plz-confirm form --title "Enter Name" --schema -
+```
+
 **Output columns:**
 - `request_id`: Unique identifier for the request
 - `data_json`: JSON object containing form field values
@@ -225,6 +253,14 @@ The `table` command displays tabular data with row selection capabilities.
 - Database record selection
 - Multi-row operations
 
+**Available flags:**
+- `--title` (required): Dialog title
+- `--data` (required): Path to JSON file with array of row objects - use `@file.json` for a file or `-` for stdin
+- `--columns` (optional): Comma-separated column names to display (auto-derived from data if omitted)
+- `--multi-select` (optional): Allow selecting multiple rows (default: false)
+- `--searchable` (optional): Enable search/filter box in the UI (default: true)
+- Plus common flags: `--base-url`, `--timeout`, `--wait-timeout`, `--output`
+
 **Example:**
 
 Create a data file `servers.json`:
@@ -246,6 +282,13 @@ plz-confirm table \
   --columns name,status,region \
   --searchable \
   --multi-select
+```
+
+You can also pass data via stdin:
+
+```bash
+echo '[{"id": 1, "name": "server-1"}]' | \
+  plz-confirm table --title "Select Server" --data - --columns name
 ```
 
 **Output columns:**
@@ -273,6 +316,14 @@ The `upload` command displays a file upload dialog with type and size restrictio
 - Log file uploads
 - Configuration file imports
 - Bulk data uploads
+
+**Available flags:**
+- `--title` (required): Dialog title
+- `--accept` (optional, repeatable): File extensions or MIME types to accept (e.g., `.log`, `.txt`, `image/png`) - repeat this flag for multiple types
+- `--multiple` (optional): Allow uploading multiple files (default: false)
+- `--max-size` (optional): Maximum file size in bytes
+- `--callback-url` (optional): Callback URL (not currently implemented)
+- Plus common flags: `--base-url`, `--timeout`, `--wait-timeout`, `--output`
 
 **Example:**
 
@@ -511,6 +562,7 @@ fi
 - **Use JSON output for scripting**: The `--output json` flag makes it easy to parse results with `jq` or other JSON tools.
 - **Set appropriate timeouts**: Use `--wait-timeout` to control how long the CLI waits for user input. Default is 60 seconds.
 - **Combine widgets for complex workflows**: Chain multiple widget commands together for multi-step processes.
-- **Use file inputs**: The `@file.json` syntax (or `-` for stdin) makes it easy to pass complex data to `form` and `table` commands.
+- **Use file inputs**: The `@file.json` syntax (or `-` for stdin) makes it easy to pass complex data to `form` and `table` commands. For example: `--schema @file.json` or `--schema -` (for stdin), `--data @file.json` or `--data -` (for stdin).
+- **Repeat flags for multiple values**: Use `--option` multiple times for `select` (e.g., `--option value1 --option value2`) and `--accept` multiple times for `upload` (e.g., `--accept .log --accept .txt`).
 - **Handle timeouts gracefully**: If a user doesn't respond in time, the command will exit with an error. Handle this case in your agent scripts.
 
