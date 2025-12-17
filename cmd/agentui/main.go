@@ -50,6 +50,21 @@ func main() {
 	}
 	rootCmd.AddCommand(cobraConfirmCmd)
 
+	selectCmd, err := agentcli.NewSelectCommand(layersList...)
+	if err != nil {
+		fatal(err)
+	}
+	cobraSelectCmd, err := glazed_cli.BuildCobraCommand(selectCmd,
+		glazed_cli.WithParserConfig(glazed_cli.CobraParserConfig{
+			ShortHelpLayers: []string{layers.DefaultSlug},
+			MiddlewaresFunc: glazed_cli.CobraCommandDefaultMiddlewares,
+		}),
+	)
+	if err != nil {
+		fatal(err)
+	}
+	rootCmd.AddCommand(cobraSelectCmd)
+
 	rootCmd.AddCommand(newServeCmd(ctx))
 
 	// Enhanced help system
