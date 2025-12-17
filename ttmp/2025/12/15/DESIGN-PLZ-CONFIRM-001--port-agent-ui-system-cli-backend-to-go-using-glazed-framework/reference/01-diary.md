@@ -671,3 +671,28 @@ This step added a small “dev harness” around tmux so we can run **both** the
   - Go server on `:3001`
   - Vite on `:3000` (frontend proxies `/api` and `/ws` to `:3001`)
 
+## Step 14: Move Vite project into plz-confirm repo + fix Vite startup
+
+This step moved the `agent-ui-system` Vite project into the `plz-confirm/` git repo so it can be versioned and run alongside the Go backend. It also fixed the “Vite not running” issue by ensuring dependencies are installed and removing an analytics placeholder that produced malformed URL requests when env vars were missing.
+
+**Commit (code):**
+- 67889ef6fdb1ca0ef811c59f8de043457b4de9e5 — "frontend: vendor agent-ui-system into repo"
+- 88bb155110782944771aae586249394867256a80 — "dev: point tmux vite to plz-confirm/agent-ui-system"
+
+### What I did
+- Moved the frontend project directory into the git repo: `plz-confirm/agent-ui-system/`.
+- Updated tmux scripts to run Vite from the new location and to auto-install dependencies if `node_modules/` is missing.
+- Removed the analytics script tag from `agent-ui-system/client/index.html` that referenced `%VITE_ANALYTICS_ENDPOINT%` and `%VITE_ANALYTICS_WEBSITE_ID%` (caused malformed URL requests when unset).
+
+### Why
+- Vite was failing with `vite: not found` because `node_modules` wasn’t installed.
+- You requested that Vite live in the `plz-confirm/` repo “straight away”.
+- The analytics placeholders were noisy and led to malformed requests due to `%...%` in the URL.
+
+### What worked
+- Vite now starts and listens on `http://localhost:3000/`.
+- Go server continues to listen on `:3001`.
+
+### What warrants a second pair of eyes
+- Confirm we actually want to keep the `agent-ui-system` sources vendored under `plz-confirm/` long-term vs treating it as an external submodule/subtree; for now this is the most direct path to reproducible local dev.
+
