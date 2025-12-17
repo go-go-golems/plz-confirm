@@ -651,3 +651,23 @@ This step corrected an important repo-layout mistake: the git repository root is
 ### What worked
 - `go test ./...` from `plz-confirm/` now passes with the corrected module layout.
 
+## Step 13: tmux dev harness (control + server + vite windows)
+
+This step added a small “dev harness” around tmux so we can run **both** the Go backend server and the Vite frontend in a persistent session, with a third long-lived control window to restart/kill panes without losing context.
+
+**Commit (code):** <pending>
+
+### What I did
+- Added ticket-local scripts:
+  - `scripts/tmux-up.sh`: creates tmux session `DESIGN-PLZ-CONFIRM-001` with windows `control`, `server`, `vite`
+  - `scripts/tmux-restart-server.sh`: respawn server pane
+  - `scripts/tmux-restart-vite.sh`: respawn vite pane
+
+### Why
+- You asked for a tmux setup that survives restarting/killing Vite/server processes, so we can iterate without losing the session.
+
+### What to validate
+- `tmux-up.sh` starts:
+  - Go server on `:3001`
+  - Vite on `:3000` (frontend proxies `/api` and `/ws` to `:3001`)
+
