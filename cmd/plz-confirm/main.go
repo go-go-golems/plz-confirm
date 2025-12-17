@@ -14,9 +14,10 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
-	agentcli "github.com/go-go-golems/plz-confirm/internal/cli"
+	agentcli 	"github.com/go-go-golems/plz-confirm/internal/cli"
 	"github.com/go-go-golems/plz-confirm/internal/server"
 	"github.com/go-go-golems/plz-confirm/internal/store"
+	"github.com/go-go-golems/plz-confirm/pkg/doc"
 )
 
 func main() {
@@ -114,6 +115,9 @@ func main() {
 
 	// Enhanced help system
 	helpSystem := help.NewHelpSystem()
+	if err := doc.AddDocToHelpSystem(helpSystem); err != nil {
+		fatal(err)
+	}
 	help_cmd.SetupCobraRootCommand(helpSystem, rootCmd)
 
 	if err := rootCmd.ExecuteContext(ctx); err != nil {
