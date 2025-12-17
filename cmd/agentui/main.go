@@ -65,6 +65,51 @@ func main() {
 	}
 	rootCmd.AddCommand(cobraSelectCmd)
 
+	formCmd, err := agentcli.NewFormCommand(layersList...)
+	if err != nil {
+		fatal(err)
+	}
+	cobraFormCmd, err := glazed_cli.BuildCobraCommand(formCmd,
+		glazed_cli.WithParserConfig(glazed_cli.CobraParserConfig{
+			ShortHelpLayers: []string{layers.DefaultSlug},
+			MiddlewaresFunc: glazed_cli.CobraCommandDefaultMiddlewares,
+		}),
+	)
+	if err != nil {
+		fatal(err)
+	}
+	rootCmd.AddCommand(cobraFormCmd)
+
+	tableCmd, err := agentcli.NewTableCommand(layersList...)
+	if err != nil {
+		fatal(err)
+	}
+	cobraTableCmd, err := glazed_cli.BuildCobraCommand(tableCmd,
+		glazed_cli.WithParserConfig(glazed_cli.CobraParserConfig{
+			ShortHelpLayers: []string{layers.DefaultSlug},
+			MiddlewaresFunc: glazed_cli.CobraCommandDefaultMiddlewares,
+		}),
+	)
+	if err != nil {
+		fatal(err)
+	}
+	rootCmd.AddCommand(cobraTableCmd)
+
+	uploadCmd, err := agentcli.NewUploadCommand(layersList...)
+	if err != nil {
+		fatal(err)
+	}
+	cobraUploadCmd, err := glazed_cli.BuildCobraCommand(uploadCmd,
+		glazed_cli.WithParserConfig(glazed_cli.CobraParserConfig{
+			ShortHelpLayers: []string{layers.DefaultSlug},
+			MiddlewaresFunc: glazed_cli.CobraCommandDefaultMiddlewares,
+		}),
+	)
+	if err != nil {
+		fatal(err)
+	}
+	rootCmd.AddCommand(cobraUploadCmd)
+
 	rootCmd.AddCommand(newServeCmd(ctx))
 
 	// Enhanced help system
