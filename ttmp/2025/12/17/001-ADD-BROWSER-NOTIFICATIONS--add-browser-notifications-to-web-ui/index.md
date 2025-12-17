@@ -17,10 +17,13 @@ RelatedFiles:
       Note: Browser notification service implementation
     - Path: agent-ui-system/client/src/services/websocket.ts
       Note: WebSocket handler integrated with notifications
+    - Path: ttmp/2025/12/17/001-ADD-BROWSER-NOTIFICATIONS--add-browser-notifications-to-web-ui/reference/01-removing-binary-artifacts-from-git-history.md
+      Note: Guide on removing binary artifacts from git history
 ExternalSources: []
 Summary: ""
 LastUpdated: 2025-12-17T10:33:43.32262607-05:00
 ---
+
 
 
 # Add Browser Notifications to Web UI

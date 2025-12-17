@@ -20,3 +20,8 @@ Implemented browser notifications for new requests. Created notification service
 
 Tested browser notifications by starting servers via tmux and sending a test confirm request. Ready for user verification in frontend.
 
+
+## 2025-12-17
+
+Added comprehensive guide on removing binary artifacts from git history, including finding large files, rewriting history with git filter-branch, and preventing future binary commits
+
