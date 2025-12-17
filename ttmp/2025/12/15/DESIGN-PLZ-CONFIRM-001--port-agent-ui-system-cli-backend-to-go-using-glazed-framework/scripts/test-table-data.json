@@ -1,0 +1,7 @@
+[
+  {"id": 1, "name": "server-1", "status": "running", "region": "us-east-1", "cpu": 45},
+  {"id": 2, "name": "server-2", "status": "stopped", "region": "us-west-2", "cpu": 0},
+  {"id": 3, "name": "server-3", "status": "running", "region": "eu-central-1", "cpu": 78},
+  {"id": 4, "name": "server-4", "status": "maintenance", "region": "ap-northeast-1", "cpu": 12}
+]
+
