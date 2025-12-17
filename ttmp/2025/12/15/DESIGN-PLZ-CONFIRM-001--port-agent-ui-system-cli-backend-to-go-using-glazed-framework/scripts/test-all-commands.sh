@@ -50,13 +50,29 @@ if ! curl -s http://localhost:3000 > /dev/null 2>&1; then
     print_warning "Vite dev server not running on :3000 (may still work if backend is accessible)"
 fi
 
+# Parse arguments: if a number is provided, run only that test
+TEST_NUM=""
+if [ $# -gt 0 ]; then
+    if [[ "$1" =~ ^[1-5]$ ]]; then
+        TEST_NUM="$1"
+        print_info "Running only test $TEST_NUM"
+    else
+        print_error "Invalid test number: $1 (must be 1-5)"
+        exit 1
+    fi
+fi
+
 print_header "Agent UI System - Full Command Test Suite"
 print_info "Make sure the web UI is open at http://localhost:3000"
-print_info "This script will run all widget commands sequentially"
+if [ -z "$TEST_NUM" ]; then
+    print_info "This script will run all widget commands sequentially"
+else
+    print_info "Running single test: $TEST_NUM"
+fi
 echo ""
 if [ -t 0 ]; then
     # Interactive mode
-    read -p "Press Enter to start the test suite..."
+    read -p "Press Enter to start..."
 else
     # Non-interactive mode
     print_info "Running in non-interactive mode (auto-starting in 2 seconds)..."
@@ -66,11 +82,49 @@ fi
 # Change to repo root for running commands
 cd "$REPO_ROOT"
 
+# Helper function to run a test with skip option
+run_test() {
+    local test_num=$1
+    local test_name=$2
+    local action_info=$3
+    shift 3
+    local cmd_args=("$@")
+    
+    # Skip if we're running a specific test and this isn't it
+    if [ -n "$TEST_NUM" ] && [ "$TEST_NUM" != "$test_num" ]; then
+        return 0
+    fi
+    
+    print_header "Test $test_num: $test_name"
+    print_info "Action needed: $action_info"
+    echo ""
+    
+    if [ -t 0 ]; then
+        read -p "Press Enter to run this test (or 's' to skip): " response
+        if [ "$response" = "s" ] || [ "$response" = "S" ]; then
+            print_warning "Skipping test $test_num"
+            return 0
+        fi
+    fi
+    
+    go run ./cmd/agentui "${cmd_args[@]}"
+    
+    if [ $? -ne 0 ]; then
+        print_error "$test_name command failed"
+        exit 1
+    fi
+    
+    echo ""
+    if [ -t 0 ] && [ -z "$TEST_NUM" ]; then
+        read -p "Press Enter to continue to next test..."
+    else
+        sleep 1
+    fi
+}
+
 # 1. CONFIRM
-print_header "Test 1: Confirm Widget"
-print_info "Action needed: Click 'APPROVE' in the browser dialog"
-echo ""
-go run ./cmd/agentui confirm \
+run_test "1" "Confirm Widget" "Click 'APPROVE' in the browser dialog" \
+    confirm \
     --title "System Update Required" \
     --message "A critical security patch (v2.4.0) is available. Install now?" \
     --approve-text "Install & Restart" \
@@ -78,23 +132,9 @@ go run ./cmd/agentui confirm \
     --wait-timeout 120 \
     --output table
 
-if [ $? -ne 0 ]; then
-    print_error "Confirm command failed"
-    exit 1
-fi
-
-echo ""
-if [ -t 0 ]; then
-    read -p "Press Enter to continue to next test..."
-else
-    sleep 1
-fi
-
 # 2. SELECT
-print_header "Test 2: Select Widget"
-print_info "Action needed: Select 'us-west-2' and click Confirm"
-echo ""
-go run ./cmd/agentui select \
+run_test "2" "Select Widget" "Select 'us-west-2' and click Confirm" \
+    select \
     --title "Select Region" \
     --option us-east-1 \
     --option us-west-2 \
@@ -104,45 +144,17 @@ go run ./cmd/agentui select \
     --wait-timeout 120 \
     --output table
 
-if [ $? -ne 0 ]; then
-    print_error "Select command failed"
-    exit 1
-fi
-
-echo ""
-if [ -t 0 ]; then
-    read -p "Press Enter to continue to next test..."
-else
-    sleep 1
-fi
-
 # 3. FORM
-print_header "Test 3: Form Widget"
-print_info "Action needed: Fill in the form (username, email required) and click Submit"
-echo ""
-go run ./cmd/agentui form \
+run_test "3" "Form Widget" "Fill in the form (username, email required) and click Submit" \
+    form \
     --title "Administrator Details" \
     --schema "$SCRIPT_DIR/test-form-schema.json" \
     --wait-timeout 120 \
     --output table
 
-if [ $? -ne 0 ]; then
-    print_error "Form command failed"
-    exit 1
-fi
-
-echo ""
-if [ -t 0 ]; then
-    read -p "Press Enter to continue to next test..."
-else
-    sleep 1
-fi
-
 # 4. TABLE
-print_header "Test 4: Table Widget"
-print_info "Action needed: Select 'server-2' (single row) and click Confirm"
-echo ""
-go run ./cmd/agentui table \
+run_test "4" "Table Widget" "Select 'server-2' (single row) and click Confirm" \
+    table \
     --title "Select Server" \
     --data "$SCRIPT_DIR/test-table-data.json" \
     --columns name,status,region,cpu \
@@ -150,23 +162,9 @@ go run ./cmd/agentui table \
     --wait-timeout 120 \
     --output table
 
-if [ $? -ne 0 ]; then
-    print_error "Table command failed"
-    exit 1
-fi
-
-echo ""
-if [ -t 0 ]; then
-    read -p "Press Enter to continue to next test..."
-else
-    sleep 1
-fi
-
 # 5. UPLOAD
-print_header "Test 5: Upload Widget"
-print_info "Action needed: Upload a file (or click Cancel if no file available) and click Confirm"
-echo ""
-go run ./cmd/agentui upload \
+run_test "5" "Upload Widget" "Upload a file (or click Cancel if no file available) and click Confirm" \
+    upload \
     --title "Upload Log Files" \
     --accept .log \
     --accept .txt \
@@ -175,11 +173,6 @@ go run ./cmd/agentui upload \
     --max-size 5242880 \
     --wait-timeout 120 \
     --output table
-
-if [ $? -ne 0 ]; then
-    print_error "Upload command failed"
-    exit 1
-fi
 
 print_header "All Tests Completed!"
 print_info "All widget commands executed successfully."
