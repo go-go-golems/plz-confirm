@@ -171,7 +171,7 @@ All widget commands support these common flags:
 - `--base-url`: Base URL for the backend server (default: `http://localhost:3000`)
 - `--timeout`: Request expiration in seconds (default: 300)
 - `--wait-timeout`: How long to wait for a response in seconds (default: 60)
-- `--output`: Output format: `table`, `json`, `yaml`, `csv` (default: `table`)
+- `--output`: Output format: `table`, `json`, `yaml`, `csv` (default: `yaml`)
 
 ### Available Commands
 

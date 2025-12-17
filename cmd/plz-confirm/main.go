@@ -14,7 +14,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
-	agentcli 	"github.com/go-go-golems/plz-confirm/internal/cli"
+	agentcli "github.com/go-go-golems/plz-confirm/internal/cli"
 	"github.com/go-go-golems/plz-confirm/internal/server"
 	"github.com/go-go-golems/plz-confirm/internal/store"
 	"github.com/go-go-golems/plz-confirm/pkg/doc"
@@ -30,7 +30,13 @@ func main() {
 	}
 
 	// Glazed standard output layers (adds --output, --fields, etc.)
-	glazedLayer, err := settings.NewGlazedParameterLayers()
+	glazedLayer, err := settings.NewGlazedParameterLayers(
+		settings.WithOutputParameterLayerOptions(
+			layers.WithDefaults(map[string]interface{}{
+				"output": "yaml",
+			}),
+		),
+	)
 	if err != nil {
 		fatal(err)
 	}

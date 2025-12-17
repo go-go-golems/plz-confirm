@@ -77,7 +77,7 @@ All widget commands support these flags:
 - `--base-url`: Base URL for the backend server (default: `http://localhost:3000` for dev proxy)
 - `--timeout`: Request expiration in seconds (default: 300)
 - `--wait-timeout`: How long to wait for a response in seconds (default: 60)
-- `--output`: Output format: `table`, `json`, `yaml`, `csv` (default: `table`)
+- `--output`: Output format: `table`, `json`, `yaml`, `csv` (default: `yaml`)
 
 ### Confirm Command
 
@@ -468,7 +468,7 @@ done
 
 plz-confirm uses Glazed's output layers, so agents can format results for different use cases:
 
-**Table format (default):**
+**YAML format (default):**
 ```bash
 plz-confirm confirm --title "Continue?"
 ```
@@ -478,9 +478,9 @@ plz-confirm confirm --title "Continue?"
 plz-confirm confirm --title "Continue?" --output json
 ```
 
-**YAML format:**
+**Table format:**
 ```bash
-plz-confirm confirm --title "Continue?" --output yaml
+plz-confirm confirm --title "Continue?" --output table
 ```
 
 **CSV format:**
