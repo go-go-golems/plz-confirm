@@ -24,8 +24,8 @@ func main() {
 	defer cancel()
 
 	rootCmd := &cobra.Command{
-		Use:   "agentui",
-		Short: "agentui: CLI + backend for agent-ui-system (Go port)",
+		Use:   "plz-confirm",
+		Short: "plz-confirm: CLI + backend for agent-ui-system (Go port)",
 	}
 
 	// Glazed standard output layers (adds --output, --fields, etc.)
@@ -126,7 +126,7 @@ func newServeCmd(ctx context.Context) *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "serve",
-		Short: "Run the agentui backend server",
+		Short: "Run the plz-confirm backend server",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			st := store.New()
 			srv := server.New(st)
@@ -139,6 +139,6 @@ func newServeCmd(ctx context.Context) *cobra.Command {
 }
 
 func fatal(err error) {
-	_, _ = os.Stderr.WriteString(errors.Wrap(err, "agentui").Error() + "\n")
+	_, _ = os.Stderr.WriteString(errors.Wrap(err, "plz-confirm").Error() + "\n")
 	os.Exit(1)
 }

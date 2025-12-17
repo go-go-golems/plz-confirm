@@ -4,10 +4,10 @@
 
 ### 1) Lock scope + repo placement (server + CLI first)
 
-- [x] **Choose Go code location + module name** (recommend: new module `agentui/` at repo root, added to `go.work`), so we can build a standalone binary while using local `glazed` via workspace.
+- [x] **Choose Go code location + module name** (recommend: new module `plz-confirm/` at repo root, added to `go.work`), so we can build a standalone binary while using local `glazed` via workspace.
   - Ref: `go.work` at repo root (currently uses `./glazed`, `./go-go-labs`, `./bobatea`)
   - Constraints: H2 (embed frontend assets) influences where embedded files live (embed cannot use `..` in patterns).
-- [x] **Decide binary shape**: one binary `agentui` with subcommands `serve` + widget commands (recommended), vs separate binaries (`agentui-server`, `agentui`).
+- [x] **Decide binary shape**: one binary `plz-confirm` with subcommands `serve` + widget commands (recommended), vs separate binaries (`plz-confirm-server`, `plz-confirm`).
 
 ### 2) Implement Go types (duplicated; schema codegen later)
 
@@ -52,12 +52,12 @@
   - `GET /api/requests/{id}/wait` → wait for completion
   - Ref workflow: `agent-ui-system/demo_cli.py`
 - [x] **Commands (first pass)**:
-- [x] `agentui confirm ...` → outputs approved/timestamp (Glazed rows)
-- [x] `agentui select ...` → outputs selected
-- [x] `agentui form --schema @file.json` → outputs `data` (likely as JSON column initially)
-- [x] `agentui table --data @rows.json` → outputs selected (JSON column)
-- [x] `agentui upload ...` → outputs files (rows or JSON column)
-- [x] `agentui serve` → starts the Go server (same binary; can be BareCommand)
+- [x] `plz-confirm confirm ...` → outputs approved/timestamp (Glazed rows)
+- [x] `plz-confirm select ...` → outputs selected
+- [x] `plz-confirm form --schema @file.json` → outputs `data` (likely as JSON column initially)
+- [x] `plz-confirm table --data @rows.json` → outputs selected (JSON column)
+- [x] `plz-confirm upload ...` → outputs files (rows or JSON column)
+- [x] `plz-confirm serve` → starts the Go server (same binary; can be BareCommand)
 - [x] **Common flags** (Glazed layer or shared Cobra persistent flags):
 - [x] `--base-url` (default: `http://localhost:3000` for dev proxy; optionally `http://localhost:3001` for direct backend)
 - [x] `--timeout` (request expiry seconds, maps to server `timeout` on create)
@@ -78,7 +78,7 @@
 - [x] **Manual parity runbook**:
   - Start Go server on 3001
   - Run Vite dev server on 3000 (proxy to Go)
-  - Open UI and run `agentui confirm/select/form` flows
+  - Open UI and run `plz-confirm confirm/select/form` flows
   - Ref: `agent-ui-system/vite.config.ts`, `agent-ui-system/client/src/services/websocket.ts`
 - [ ] **Automated smoke test**:
   - Create request, then programmatically submit response via `POST /api/requests/{id}/response`, assert CLI receives output.

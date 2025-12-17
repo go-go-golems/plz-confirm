@@ -3,7 +3,7 @@ set -euo pipefail
 
 # tmux session with:
 # - control: interactive shell + helper reminders
-# - server:  Go backend server (plz-confirm/cmd/agentui serve)
+# - server:  Go backend server (plz-confirm/cmd/plz-confirm serve)
 # - vite:    Vite dev server for agent-ui-system frontend
 #
 # Usage:
@@ -16,7 +16,7 @@ ROOT="/home/manuel/workspaces/2025-12-15/package-llm-notification-tool"
 REPO="$ROOT/plz-confirm"
 VITE="$REPO/agent-ui-system"
 
-SERVER_CMD="cd \"$REPO\" && go run ./cmd/agentui serve --addr :3001"
+SERVER_CMD="cd \"$REPO\" && go run ./cmd/plz-confirm serve --addr :3001"
 # Keep the window open even if vite fails (e.g. missing node_modules).
 VITE_CMD="cd \"$VITE\" && (test -d node_modules || pnpm install) && pnpm dev --host --port 3000; echo \"vite exited\"; exec bash"
 

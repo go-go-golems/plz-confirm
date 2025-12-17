@@ -41,7 +41,7 @@ print_error() {
 # Check if server is running
 if ! curl -s http://localhost:3001/api/requests > /dev/null 2>&1; then
     print_error "Backend server not running on :3001"
-    print_info "Start it with: cd $REPO_ROOT && go run ./cmd/agentui serve"
+    print_info "Start it with: cd $REPO_ROOT && go run ./cmd/plz-confirm serve"
     exit 1
 fi
 
@@ -107,7 +107,7 @@ run_test() {
         fi
     fi
     
-    go run ./cmd/agentui "${cmd_args[@]}"
+    go run ./cmd/plz-confirm "${cmd_args[@]}"
     
     if [ $? -ne 0 ]; then
         print_error "$test_name command failed"

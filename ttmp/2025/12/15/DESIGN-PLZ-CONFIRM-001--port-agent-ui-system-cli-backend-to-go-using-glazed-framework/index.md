@@ -33,7 +33,7 @@ RelatedFiles:
       Note: |-
         Dev proxy rules (3000->3001) explain CLI base URL and must be preserved
         Dev proxy contract (3000->3001) used by current tmux harness
-    - Path: cmd/agentui/main.go
+    - Path: cmd/plz-confirm/main.go
       Note: |-
         Go CLI entrypoint (Cobra + Glazed) and serve command
         Go CLI entrypoint + serve subcommand

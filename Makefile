@@ -46,14 +46,14 @@ tag-patch:
 
 release:
 	git push origin --tags
-	GOPROXY=proxy.golang.org go list -m github.com/go-go-golems/XXX@$(shell svu current)
+	GOPROXY=proxy.golang.org go list -m github.com/go-go-golems/plz-confirm@$(shell svu current)
 
 bump-glazed:
 	go get github.com/go-go-golems/glazed@latest
 	go get github.com/go-go-golems/clay@latest
 	go mod tidy
 
-XXX_BINARY=$(shell which XXX)
+PLZ_CONFIRM_BINARY=$(shell which plz-confirm)
 install:
-	go build -o ./dist/XXX ./cmd/XXX && \
-		cp ./dist/XXX $(XXX_BINARY)
+	go build -o ./dist/plz-confirm ./cmd/plz-confirm && \
+		cp ./dist/plz-confirm $(PLZ_CONFIRM_BINARY)

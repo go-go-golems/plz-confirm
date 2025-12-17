@@ -111,7 +111,7 @@ func (s *Server) ListenAndServe(ctx context.Context, opts Options) error {
 
 	errCh := make(chan error, 1)
 	go func() {
-		log.Printf("agentui server listening on http://localhost%s", addr)
+		log.Printf("plz-confirm server listening on http://localhost%s", addr)
 		errCh <- srv.ListenAndServe()
 	}()
 
