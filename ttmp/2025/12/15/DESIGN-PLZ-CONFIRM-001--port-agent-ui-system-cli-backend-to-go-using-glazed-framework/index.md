@@ -1,7 +1,7 @@
 ---
 Title: Port agent-ui-system CLI + backend to Go using Glazed framework
 Ticket: DESIGN-PLZ-CONFIRM-001
-Status: active
+Status: completed
 Topics:
     - go
     - glazed
@@ -90,7 +90,15 @@ LastUpdated: 2025-12-15T15:35:20.981402078-05:00
 
 ## Overview
 
-<!-- Provide a brief overview of the ticket, its goals, and current status -->
+Successfully ported the CLI and backend components of `agent-ui-system` from Node.js/TypeScript to Go, using the Glazed framework. The React frontend was preserved unchanged. The Go implementation includes:
+
+- **Complete backend server**: REST API and WebSocket server using `net/http` and `gorilla/websocket`
+- **All widget commands**: confirm, select, form, table, upload implemented as Glazed commands
+- **Production deployment**: Frontend assets embedded in Go binary via `go generate`
+- **Comprehensive documentation**: Embedded help system with usage guide
+- **Test infrastructure**: E2E test scripts and tmux development harness
+
+The system enables AI agents to request user feedback through web-based dialogs, with agents using CLI commands and users interacting via browser.
 
 ## Key Links
 
@@ -99,7 +107,11 @@ LastUpdated: 2025-12-15T15:35:20.981402078-05:00
 
 ## Status
 
-Current status: **active**
+Current status: **completed**
+
+**Completion date:** 2025-12-17
+
+All core functionality has been successfully ported from Node.js/TypeScript to Go. The system is fully functional with all five widget types (confirm, select, form, table, upload), production-ready embedding, and comprehensive documentation.
 
 ## Topics
 

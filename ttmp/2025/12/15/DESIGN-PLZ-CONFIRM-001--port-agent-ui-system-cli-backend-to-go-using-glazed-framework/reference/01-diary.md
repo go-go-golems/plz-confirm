@@ -939,3 +939,71 @@ go build ./cmd/agentui
 **Related files:**
 - Related all embed-related files to ticket index via `docmgr doc relate`.
 
+## Step 19: Ticket Completion Summary
+
+**Commit (code):** `e145057ccbc9d33ecabd3af5d9e5ae222393c6e1` — `rename: agentui -> plz-confirm (binary, commands, configs)`
+**Commit (code):** `f9af58d19e00346679fcc11f18369f10fad046b4` — `docs: add comprehensive how-to-use guide with agent/user interaction model`
+
+### What I did
+- Renamed entire project from `agentui` to `plz-confirm`:
+  - Renamed `cmd/agentui/` → `cmd/plz-confirm/`
+  - Updated all command references, log messages, and error wrapping
+  - Updated `.goreleaser.yaml` and `Makefile` configuration
+  - Updated all scripts and documentation references
+- Created comprehensive embedded documentation:
+  - Created `pkg/doc/doc.go` with `AddDocToHelpSystem` function
+  - Created `pkg/doc/how-to-use.md` combining introduction, setup, widget commands, and examples
+  - Integrated help system into main command via `help_cmd.SetupCobraRootCommand`
+  - Documentation follows Glazed conventions and style guide
+- Updated documentation to clarify agent/user interaction model:
+  - Agents use CLI commands to request user feedback
+  - Users receive notifications in browser and respond via web UI
+  - Removed developer setup details (pnpm/vite) from user-facing docs
+
+### Why
+- Project rename: `plz-confirm` better reflects the tool's purpose (requesting user confirmation/input)
+- Documentation: Users and agent developers need clear guidance on how to use the tool
+- Agent/user model: Important to clarify who uses what interface (CLI vs browser)
+
+### What worked
+- Rename completed successfully: all references updated, binary builds and runs correctly
+- Documentation loads and displays via `plz-confirm help how-to-use`
+- Help system integration works seamlessly with Cobra commands
+- Clear separation between agent-side (CLI) and user-side (browser) interactions
+
+### What I learned
+- Glazed help system uses embedded filesystems and YAML frontmatter for documentation
+- Documentation should focus on end-user perspective, not developer setup details
+- Agent/user interaction model needs to be clearly explained upfront
+
+### Ticket completion status
+
+**All core tasks completed:**
+- ✅ Go types implementation (manual duplication)
+- ✅ In-memory store with event-driven wait
+- ✅ HTTP server + WebSocket fanout (no session)
+- ✅ All widget commands (confirm, select, form, table, upload)
+- ✅ Production mode with embedded frontend assets
+- ✅ Manual parity validation (E2E tested)
+- ✅ Comprehensive documentation
+
+**Deferred (as planned):**
+- ⏸️ Automated smoke tests (not needed per user)
+- ⏸️ JSON Schema + codegen (explicitly deferred to last, not done)
+
+**Project renamed:** `agentui` → `plz-confirm` throughout codebase and documentation.
+
+### Technical details
+
+**Final state:**
+- Binary: `plz-confirm` (renamed from `agentui`)
+- Commands: `confirm`, `select`, `form`, `table`, `upload`, `serve`
+- Documentation: Embedded help system accessible via `plz-confirm help`
+- Production: Single binary deployment with embedded frontend assets
+
+**Key commits:**
+- `e145057` — Project rename to plz-confirm
+- `f9af58d` — Comprehensive documentation
+
+**Ticket status:** Completed
+
