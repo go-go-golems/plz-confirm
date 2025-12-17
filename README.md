@@ -254,6 +254,24 @@ For detailed documentation, see:
 - **User Guide**: `plz-confirm help how-to-use` or see `pkg/doc/how-to-use.md`
 - **Command Reference**: `plz-confirm help <command>`
 
+### For LLM Agents
+
+The complete usage guide is available via:
+
+```bash
+plz-confirm help how-to-use
+```
+
+This command outputs a comprehensive guide covering all widget types, command-line options, examples, and usage patterns. **This is the documentation you should provide to LLM agents** to enable them to use plz-confirm effectively. The guide includes:
+
+- Complete command reference for all widget types
+- Detailed examples for each widget
+- Common flags and options
+- Output format specifications
+- Best practices and use cases
+
+You can also view the guide directly in the repository at `pkg/doc/how-to-use.md`.
+
 ## Development
 
 ### Project Structure
