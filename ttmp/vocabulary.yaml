@@ -1,0 +1,30 @@
+topics:
+    - slug: agent-ui-system
+      description: agent-ui-system project
+    - slug: backend
+      description: Backend
+    - slug: cli
+      description: Command-line interface
+    - slug: glazed
+      description: Glazed framework
+    - slug: go
+      description: Go language
+    - slug: porting
+      description: Porting/migration work
+docTypes:
+    - slug: index
+      description: Ticket index document
+    - slug: analysis
+      description: Code analysis and research
+    - slug: design-doc
+      description: Architecture and design document
+    - slug: reference
+      description: Reference / diary / copy-paste material
+    - slug: playbook
+      description: Operational or testing playbook
+intent:
+    - slug: long-term
+      description: Long-term work / ongoing
+status:
+    - slug: active
+      description: Actively being worked on
