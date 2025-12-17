@@ -1,0 +1,63 @@
+/usr/lib/python3.11/subprocess.py:1012: RuntimeWarning: line buffering (buffering=1) isn't supported in binary mode, the default buffer size will be used
+  self.stdout = io.open(c2pread, 'rb', bufsize)
+/usr/lib/python3.11/subprocess.py:1017: RuntimeWarning: line buffering (buffering=1) isn't supported in binary mode, the default buffer size will be used
+  self.stderr = io.open(errread, 'rb', bufsize)
+=== Starting E2E Verification ===
+[Test] User simulator started
+[CLI Output] 
+[CLI Output] [1;32m=== Agent UI System - CLI Demo ===[0m
+[CLI Output] Session ID: 550e8400-e29b-41d4-a716-446655440000
+[CLI Output] Make sure the web UI is open at http://localhost:3000
+[CLI Output] 
+[CLI Output] [1;32m=== Step 1: Confirmation ===[0m
+[CLI Output] 
+[CLI Output] [CLI] Sending confirm request...
+[CLI Output] [CLI] Request created: YveuI0VPKQ9KnPPMIg-0l
+[Test] Detected request YveuI0VPKQ9KnPPMIg-0l. Simulating user interaction in 2 seconds...
+[Test] Clicking 'Approve' for request YveuI0VPKQ9KnPPMIg-0l
+[Test] Response submitted for YveuI0VPKQ9KnPPMIg-0l
+[CLI Output] [CLI] Waiting for user interaction on the web UI...
+[CLI Output] [1;36m[CLI] Response received![0m
+[CLI Output] {
+[CLI Output] "approved": true,
+[CLI Output] "timestamp": "2025-12-13T16:13:24.946Z"
+[CLI Output] }
+[CLI Output] 
+[CLI Output] [CLI] User approved update. Proceeding...
+[CLI Output] 
+[CLI Output] [1;32m=== Step 2: Configuration ===[0m
+[CLI Output] 
+[CLI Output] [CLI] Sending select request...
+[CLI Output] [CLI] Request created: j9WsuIe65XeYkNS1Lq3fl
+[Test] Detected request j9WsuIe65XeYkNS1Lq3fl. Simulating user interaction in 2 seconds...
+[Test] Selecting 'us-west-2' for request j9WsuIe65XeYkNS1Lq3fl
+[Test] Response submitted for j9WsuIe65XeYkNS1Lq3fl
+[CLI Output] [CLI] Waiting for user interaction on the web UI...
+[CLI Output] [1;36m[CLI] Response received![0m
+[CLI Output] {
+[CLI Output] "selected": "us-west-2"
+[CLI Output] }
+[CLI Output] 
+[CLI Output] [CLI] Selected region: us-west-2
+[CLI Output] 
+[CLI Output] [1;32m=== Step 3: User Details ===[0m
+[CLI Output] 
+[CLI Output] [CLI] Sending form request...
+[CLI Output] [CLI] Request created: LSBRkqpaU98mqsaxGzlN3
+[Test] Detected request LSBRkqpaU98mqsaxGzlN3. Simulating user interaction in 2 seconds...
+[Test] Filling form for request LSBRkqpaU98mqsaxGzlN3
+[Test] Response submitted for LSBRkqpaU98mqsaxGzlN3
+[CLI Output] [CLI] Waiting for user interaction on the web UI...
+[CLI Output] [1;36m[CLI] Response received![0m
+[CLI Output] {
+[CLI Output] "data": {
+[CLI Output] "username": "manuel",
+[CLI Output] "email": "foobar@foobar.com",
+[CLI Output] "accessLevel": "3"
+[CLI Output] }
+[CLI Output] }
+[CLI Output] 
+[CLI Output] [CLI] Admin configured: {'username': 'manuel', 'email': 'foobar@foobar.com', 'accessLevel': '3'}
+[CLI Output] 
+[CLI Output] [1;32m=== Demo Completed Successfully ===[0m
+=== E2E Verification Completed ===
