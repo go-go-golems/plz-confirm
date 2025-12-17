@@ -655,7 +655,7 @@ This step corrected an important repo-layout mistake: the git repository root is
 
 This step added a small “dev harness” around tmux so we can run **both** the Go backend server and the Vite frontend in a persistent session, with a third long-lived control window to restart/kill panes without losing context.
 
-**Commit (code):** <pending>
+**Commit (code):** de261e367a967a8c81448440d41543ec0b4cba6a — "dev: add tmux scripts for vite + server"
 
 ### What I did
 - Added ticket-local scripts:
