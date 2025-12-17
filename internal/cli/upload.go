@@ -55,7 +55,7 @@ func NewUploadCommand(layersList ...layers.ParameterLayer) (*UploadCommand, erro
 				"wait-timeout",
 				parameters.ParameterTypeInteger,
 				parameters.WithDefault(60),
-				parameters.WithHelp("How long to wait for a response in seconds"),
+				parameters.WithHelp("How long to wait for a response in seconds (0 = wait forever)"),
 			),
 			parameters.NewParameterDefinition(
 				"title",
