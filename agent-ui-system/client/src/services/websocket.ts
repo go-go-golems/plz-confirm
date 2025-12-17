@@ -1,5 +1,6 @@
 import { store, setConnected, setError, setActiveRequest, completeRequest, addToHistory } from '@/store/store';
 import { UIRequest } from '@/types/schemas';
+import { browserNotificationService } from './notifications';
 
 let ws: WebSocket | null = null;
 let reconnectTimeout: NodeJS.Timeout | null = null;
@@ -34,7 +35,12 @@ export const connectWebSocket = () => {
       console.log('WS Message:', data);
 
       if (data.type === 'new_request') {
-        store.dispatch(setActiveRequest(data.request));
+        const request: UIRequest = data.request;
+        store.dispatch(setActiveRequest(request));
+        
+        // Show browser notification for new request
+        const requestTitle = request.input?.title || 'New Request';
+        browserNotificationService.showRequestNotification(requestTitle, request.type);
       } else if (data.type === 'request_completed') {
         // If another client completed it, or just to sync history
         const currentActive = store.getState().request.active;

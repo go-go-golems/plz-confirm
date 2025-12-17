@@ -9,9 +9,20 @@ import { Provider } from "react-redux";
 import { store } from "./store/store";
 import { connectWebSocket } from "./services/websocket";
 import { useEffect } from "react";
+import { browserNotificationService } from "./services/notifications";
 
 function Router() {
   useEffect(() => {
+    // Request notification permission when app loads
+    browserNotificationService.requestPermission().then((permission) => {
+      if (permission === 'granted') {
+        console.log('Browser notification permission granted');
+      } else if (permission === 'denied') {
+        console.warn('Browser notification permission denied');
+      }
+    });
+    
+    // Connect WebSocket
     connectWebSocket();
   }, []);
 
