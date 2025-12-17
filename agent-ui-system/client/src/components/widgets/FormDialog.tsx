@@ -15,6 +15,20 @@ interface Props {
   loading?: boolean;
 }
 
+function getSchemaString(v: any): string | undefined {
+  return typeof v === 'string' && v.trim().length > 0 ? v : undefined;
+}
+
+function getFirstExample(v: any): string | undefined {
+  if (!v) return undefined;
+  if (Array.isArray(v) && v.length > 0) {
+    const ex = v[0];
+    if (ex === null || ex === undefined) return undefined;
+    return String(ex);
+  }
+  return undefined;
+}
+
 export const FormDialog: React.FC<Props> = ({ input, onSubmit, loading }) => {
   const [formData, setFormData] = useState<Record<string, any>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -23,6 +37,9 @@ export const FormDialog: React.FC<Props> = ({ input, onSubmit, loading }) => {
   const schema = input.schema || { properties: {}, required: [] };
   const properties = schema.properties || {};
   const required = schema.required || [];
+
+  const schemaTitle = getSchemaString(schema?.title);
+  const schemaDescription = getSchemaString(schema?.description);
 
   const validateField = (name: string, value: any) => {
     const fieldSchema = properties[name];
@@ -104,21 +121,40 @@ export const FormDialog: React.FC<Props> = ({ input, onSubmit, loading }) => {
     const isRequired = required.includes(name);
     const error = errors[name];
 
+    const labelText = getSchemaString(fieldSchema?.title) || name;
+    const fieldDescription = getSchemaString(fieldSchema?.description);
+    const showKey = labelText !== name;
+    const placeholderHint =
+      getFirstExample(fieldSchema?.examples) ||
+      (fieldSchema?.default !== undefined && fieldSchema?.default !== null ? String(fieldSchema.default) : undefined);
+
     if (fieldSchema.type === 'boolean') {
       return (
-        <div className="flex items-center space-x-2 py-2">
-          <Checkbox 
-            id={name} 
-            checked={formData[name] || false}
-            onCheckedChange={(checked) => handleChange(name, checked)}
-            className="border-primary/50 data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground rounded-none"
-          />
-          <Label 
-            htmlFor={name}
-            className="text-sm font-mono cursor-pointer uppercase"
-          >
-            {name} {isRequired && <span className="text-destructive">*</span>}
-          </Label>
+        <div className="space-y-1 py-2">
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id={name}
+              checked={!!formData[name]}
+              onCheckedChange={(checked) => handleChange(name, checked)}
+              className="border-primary/50 data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground rounded-none"
+            />
+            <Label
+              htmlFor={name}
+              className="text-sm font-mono cursor-pointer uppercase"
+            >
+              {labelText} {isRequired && <span className="text-destructive">*</span>}
+            </Label>
+          </div>
+          {showKey && (
+            <div className="text-[10px] font-mono text-muted-foreground/60">
+              KEY: {name}
+            </div>
+          )}
+          {fieldDescription && (
+            <div className="text-xs font-mono text-muted-foreground whitespace-pre-wrap leading-relaxed">
+              {fieldDescription}
+            </div>
+          )}
         </div>
       );
     }
@@ -129,18 +165,28 @@ export const FormDialog: React.FC<Props> = ({ input, onSubmit, loading }) => {
           htmlFor={name}
           className="text-xs font-mono uppercase text-muted-foreground"
         >
-          {name} {isRequired && <span className="text-destructive">*</span>}
+          {labelText} {isRequired && <span className="text-destructive">*</span>}
         </Label>
+        {showKey && (
+          <div className="text-[10px] font-mono text-muted-foreground/60">
+            KEY: {name}
+          </div>
+        )}
+        {fieldDescription && (
+          <div className="text-xs font-mono text-muted-foreground whitespace-pre-wrap leading-relaxed">
+            {fieldDescription}
+          </div>
+        )}
         <Input
           id={name}
           type={fieldSchema.format === 'password' ? 'password' : fieldSchema.type === 'number' ? 'number' : 'text'}
-          value={formData[name] || ''}
+          value={formData[name] ?? ''}
           onChange={(e) => handleChange(name, e.target.value)}
           className={cn(
             "cyber-input h-10 font-mono text-sm",
             error && "border-destructive/50 focus:ring-destructive"
           )}
-          placeholder={`ENTER_${name.toUpperCase()}...`}
+          placeholder={placeholderHint ? placeholderHint : `ENTER_${name.toUpperCase()}...`}
         />
         {error && (
           <div className="flex items-center text-xs text-destructive font-mono mt-1">
@@ -158,6 +204,16 @@ export const FormDialog: React.FC<Props> = ({ input, onSubmit, loading }) => {
         <h2 className="text-2xl font-display font-bold tracking-tight text-primary uppercase">
           {input.title}
         </h2>
+        {schemaTitle && schemaTitle !== input.title && (
+          <div className="text-sm font-mono text-muted-foreground whitespace-pre-wrap leading-relaxed">
+            {schemaTitle}
+          </div>
+        )}
+        {schemaDescription && (
+          <div className="text-sm font-mono text-muted-foreground whitespace-pre-wrap leading-relaxed">
+            {schemaDescription}
+          </div>
+        )}
         <div className="h-px w-full bg-border" />
       </div>
 
