@@ -37,6 +37,16 @@ RelatedFiles:
       Note: |-
         Go CLI entrypoint (Cobra + Glazed) and serve command
         Go CLI entrypoint + serve subcommand
+        Registers select command into root cobra
+        Registers form/table/upload commands into root cobra
+    - Path: internal/cli/form.go
+      Note: Glazed form command implementation
+    - Path: internal/cli/select.go
+      Note: Glazed select command implementation
+    - Path: internal/cli/table.go
+      Note: Glazed table command implementation
+    - Path: internal/cli/upload.go
+      Note: Glazed upload command implementation
     - Path: internal/server/server.go
       Note: |-
         Go backend REST implementation (net/http, manual routing)
@@ -55,6 +65,8 @@ ExternalSources: []
 Summary: ""
 LastUpdated: 2025-12-15T15:35:20.981402078-05:00
 ---
+
+
 
 
 

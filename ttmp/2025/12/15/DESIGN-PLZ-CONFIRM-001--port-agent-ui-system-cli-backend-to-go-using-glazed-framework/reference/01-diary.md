@@ -716,3 +716,66 @@ This step validated the first true end-to-end interaction: the Go CLI created a 
 ### What warrants a second pair of eyes
 - Confirm timestamps and request IDs match expectations for downstream scripting (we currently use UUIDs, whereas the original Node demo used nanoid).
 
+## Step 16: Implement form, table, upload commands
+
+**Commit (code):** `3de024667675b58d5316bcfd178ecd9c46613b9c` — `agentui: add select command` (already committed select earlier)
+
+**Commit (code):** TBD — `agentui: add form/table/upload commands`
+
+### What I did
+- Implemented `internal/cli/form.go`: Reads JSON Schema from file (supports `@file.json` or `-` for stdin), creates form request, outputs `data_json` column.
+- Implemented `internal/cli/table.go`: Reads JSON array of row objects from file, creates table request with optional `--columns`, `--multi-select`, `--searchable`, outputs `selected_json` column.
+- Implemented `internal/cli/upload.go`: Creates upload request with `--accept`, `--multiple`, `--max-size`, outputs one row per uploaded file (`file_name`, `file_size`, `file_path`, `mime_type`).
+- Registered all three commands in `cmd/agentui/main.go` using the same Glazed/Cobra pattern as `confirm` and `select`.
+- Ran `go test ./...` — all tests pass (no test files yet, but compilation succeeds).
+- Verified `go run ./cmd/agentui --help` shows all commands: `confirm`, `select`, `form`, `table`, `upload`, `serve`.
+
+### Why
+- Complete the "Commands (first pass)" task block (tasks 22-26).
+- All five widget types now have CLI commands matching the frontend capabilities.
+
+### What worked
+- All commands follow the same pattern: read input (file/stdin where applicable), create request via client, wait for completion, output structured rows via Glazed.
+- File reading supports `@file.json` pattern (strips `@` prefix) and `-` for stdin, matching common CLI conventions.
+- Form outputs `data_json` as a JSON string column (can be parsed downstream).
+- Table outputs `selected_json` as a JSON string column (single object or array depending on `multi-select`).
+- Upload outputs one row per file (or empty row if no files), making it easy to iterate over results.
+
+### What I learned
+- Form widget expects a JSON Schema object (not a file path string) — we read and parse the file client-side.
+- Table widget expects `data` as an array of objects (rows) — we read and parse the JSON array client-side.
+- Upload widget doesn't require file reading upfront (user uploads via UI), so CLI just passes accept/multiple/maxSize constraints.
+
+### What was tricky to build
+- Ensuring file reading handles both `@file.json` pattern and `-` for stdin consistently across form/table commands.
+- Deciding output format: chose JSON string columns for form/table (can be parsed with `jq` or similar), and structured rows for upload (one per file).
+
+### What warrants a second pair of eyes
+- Form/table/upload commands haven't been E2E tested yet (only confirm/select were manually tested).
+- File reading error handling (what if file doesn't exist, invalid JSON, etc.) — currently returns errors wrapped with context.
+
+### What should be done in the future
+- E2E test form/table/upload commands through the UI.
+- Consider adding validation for form schema (ensure it's valid JSON Schema) and table data (ensure it's an array).
+- Consider adding `--output-format json` option to output parsed JSON instead of JSON strings for form/table.
+
+### Code review instructions
+- Review `internal/cli/form.go`, `internal/cli/table.go`, `internal/cli/upload.go` for consistency with `confirm.go` and `select.go`.
+- Check `cmd/agentui/main.go` registration pattern — all commands use the same Glazed/Cobra bridge.
+
+### Technical details
+
+**Files created:**
+- `internal/cli/form.go` (143 lines)
+- `internal/cli/table.go` (158 lines)
+- `internal/cli/upload.go` (143 lines)
+
+**Files modified:**
+- `cmd/agentui/main.go` (added form/table/upload command registration)
+
+**Task completion:**
+- Tasks 22-26 checked off via `docmgr task check` (confirm, select, form, table, upload).
+
+**Related files:**
+- Related all new command files to ticket index via `docmgr doc relate`.
+

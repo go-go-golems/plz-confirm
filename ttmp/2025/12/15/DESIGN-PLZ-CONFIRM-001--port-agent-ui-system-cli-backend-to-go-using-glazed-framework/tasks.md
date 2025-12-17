@@ -52,11 +52,11 @@
   - `GET /api/requests/{id}/wait` → wait for completion
   - Ref workflow: `agent-ui-system/demo_cli.py`
 - [ ] **Commands (first pass)**:
-  - [ ] `agentui confirm ...` → outputs approved/timestamp (Glazed rows)
-  - [ ] `agentui select ...` → outputs selected
-  - [ ] `agentui form --schema @file.json` → outputs `data` (likely as JSON column initially)
-  - [ ] `agentui table --data @rows.json` → outputs selected (JSON column)
-  - [ ] `agentui upload ...` → outputs files (rows or JSON column)
+- [x] `agentui confirm ...` → outputs approved/timestamp (Glazed rows)
+- [x] `agentui select ...` → outputs selected
+- [x] `agentui form --schema @file.json` → outputs `data` (likely as JSON column initially)
+- [x] `agentui table --data @rows.json` → outputs selected (JSON column)
+- [x] `agentui upload ...` → outputs files (rows or JSON column)
 - [x] `agentui serve` → starts the Go server (same binary; can be BareCommand)
 - [x] **Common flags** (Glazed layer or shared Cobra persistent flags):
 - [x] `--base-url` (default: `http://localhost:3000` for dev proxy; optionally `http://localhost:3001` for direct backend)
