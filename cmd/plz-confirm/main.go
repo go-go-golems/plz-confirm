@@ -138,7 +138,7 @@ func newServeCmd(ctx context.Context) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&addr, "addr", ":3001", "Listen address (default :3001)")
+	cmd.Flags().StringVar(&addr, "addr", ":3000", "Listen address (default :3000)")
 	return cmd
 }
 

@@ -40,8 +40,8 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("/api/requests/", s.handleRequestsItem)
 
 	// Serve embedded static files (production mode)
-	// In dev, Vite serves UI on :3000 and proxies /api and /ws to this server on :3001.
-	// In production, this server serves everything (API, WS, and static files).
+	// In dev, Vite serves UI on :3000 and proxies /api and /ws to backend (typically :3001).
+	// In production, this server serves everything (API, WS, and static files) on :3000 by default.
 	s.handleStaticFiles(mux)
 
 	return withCORS(mux)
@@ -100,7 +100,7 @@ func (s *Server) handleStaticFiles(mux *http.ServeMux) {
 func (s *Server) ListenAndServe(ctx context.Context, opts Options) error {
 	addr := opts.Addr
 	if addr == "" {
-		addr = ":3001"
+		addr = ":3000"
 	}
 
 	srv := &http.Server{

@@ -42,7 +42,7 @@ func NewConfirmCommand(layersList ...layers.ParameterLayer) (*ConfirmCommand, er
 				"base-url",
 				parameters.ParameterTypeString,
 				parameters.WithDefault("http://localhost:3000"),
-				parameters.WithHelp("Base URL (dev default uses Vite proxy at :3000; backend is at :3001)"),
+				parameters.WithHelp("Base URL (default: http://localhost:3000)"),
 			),
 			parameters.NewParameterDefinition(
 				"timeout",

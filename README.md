@@ -58,31 +58,34 @@ go build -o plz-confirm ./cmd/plz-confirm
 Start the plz-confirm server:
 
 ```bash
-# After building with 'make build', run the server
-./plz-confirm serve --addr :3001
+# After building with 'make build', run the server (defaults to :3000)
+./plz-confirm serve
+
+# Or specify a custom port
+./plz-confirm serve --addr :3000
 
 # Or build and run in one step (without embedding frontend)
-go run ./cmd/plz-confirm serve --addr :3001
+go run ./cmd/plz-confirm serve
 ```
 
 **Note**: If you run `go run` directly without building the frontend first, the server will start but won't serve the web UI (it will only serve the API). For production, always use `make build` first.
 
-The server will serve the embedded frontend on port 3001. Open `http://localhost:3001` in your browser.
+The server will serve the embedded frontend on port 3000 by default. Open `http://localhost:3000` in your browser.
 
 ### Development Mode
 
 For frontend development with hot-reload:
 
 ```bash
-# Terminal 1: Start the Go backend server
+# Terminal 1: Start the Go backend server on :3001 (Vite proxies to this)
 go run ./cmd/plz-confirm serve --addr :3001
 
-# Terminal 2: Start the Vite dev server (proxies API/WS to backend)
+# Terminal 2: Start the Vite dev server (proxies API/WS to backend on :3001)
 cd agent-ui-system
 pnpm dev --host --port 3000
 ```
 
-Open `http://localhost:3000` for the development UI (with hot-reload).
+Open `http://localhost:3000` for the development UI (with hot-reload). In dev mode, Vite runs on :3000 and proxies API/WebSocket requests to the backend on :3001.
 
 ## Usage Examples
 
@@ -233,10 +236,10 @@ The embedded frontend will be served automatically when running `plz-confirm ser
 ### Server Options
 
 ```bash
-plz-confirm serve --addr :3001
+plz-confirm serve --addr :3000
 ```
 
-- `--addr`: Address to listen on (default: `:3001`)
+- `--addr`: Address to listen on (default: `:3000`)
 
 ### Client Options
 
