@@ -696,3 +696,23 @@ This step moved the `agent-ui-system` Vite project into the `plz-confirm/` git r
 ### What warrants a second pair of eyes
 - Confirm we actually want to keep the `agent-ui-system` sources vendored under `plz-confirm/` long-term vs treating it as an external submodule/subtree; for now this is the most direct path to reproducible local dev.
 
+## Step 15: E2E confirm flow (CLI → UI → CLI)
+
+This step validated the first true end-to-end interaction: the Go CLI created a `confirm` request, the React UI received it via WebSocket and rendered the widget, and the CLI unblocked after the user approved the dialog.
+
+**Commit (code):** N/A — runtime validation
+
+### What I did
+- Ran:
+  - `go run ./cmd/agentui confirm --title "E2E_CONFIRM_TEST" --message "Click approve in the UI" --wait-timeout 120`
+- In the browser UI, approved the confirmation dialog.
+
+### What worked
+- CLI returned exit code 0 and printed a result row:
+  - `approved=true`
+  - `request_id=0e4f85bb-b05f-4f97-bf96-7912f1aeedb3`
+  - `timestamp=2025-12-17T14:28:14.762Z`
+
+### What warrants a second pair of eyes
+- Confirm timestamps and request IDs match expectations for downstream scripting (we currently use UUIDs, whereas the original Node demo used nanoid).
+

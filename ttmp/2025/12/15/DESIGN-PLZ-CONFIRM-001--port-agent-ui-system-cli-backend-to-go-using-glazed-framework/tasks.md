@@ -75,7 +75,7 @@
 
 ### 7) Parity validation + minimal tests
 
-- [ ] **Manual parity runbook**:
+- [x] **Manual parity runbook**:
   - Start Go server on 3001
   - Run Vite dev server on 3000 (proxy to Go)
   - Open UI and run `agentui confirm/select/form` flows
