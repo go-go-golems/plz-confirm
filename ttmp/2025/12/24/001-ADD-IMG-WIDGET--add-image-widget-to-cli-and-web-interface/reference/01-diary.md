@@ -650,4 +650,19 @@ This step wrapped up the work with two documentation improvements aimed at onboa
 ### What was tricky to build
 - It’s easy to test help docs against a stale installed `plz-confirm` binary. The reliable approach is using `go run ./cmd/plz-confirm ...` so the embedded docs are always current.
 
+## Step 19: PR polish (lint + resource cleanup) before closing the ticket
+
+Before closing the ticket, we did a final “PR polish” pass to ensure `make lint` is clean and to fix a small but important resource-leak concern in the image upload handler.
+
+### What I fixed
+- **Multipart temp files leak**: `r.ParseMultipartForm(...)` may spill large parts to temp files unless `r.MultipartForm.RemoveAll()` is called. We now defer cleanup after a successful parse in the upload handler.
+- **`make lint` noise**: `Makefile` previously ran `ls doc/vhs/*tape` at parse time and printed errors when the directory didn’t exist. Switched to `$(wildcard ...)` to avoid spurious output.
+- **errcheck**: wrapped `Close()` calls in `defer func(){ _ = f.Close() }()` (or `_ = file.Close()`) in a few places that `golangci-lint` flags.
+- **nonamedreturns**: removed a named return (`deleted int`) from `ImageStore.Cleanup`.
+- **gofmt**: cleaned up minor formatting issues the linter reported.
+
+### Result
+- `go test ./...` passes
+- `make lint` passes
+
 
