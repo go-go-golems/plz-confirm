@@ -84,6 +84,7 @@
 - [ ] Add backend tests for image store + endpoints (at least happy path + size/mime rejection)
 - [ ] Add a minimal e2e smoke test (script is OK): upload 2 images, create request, submit response via `/api/requests/{id}/response`, verify CLI output
 - [ ] Add a minimal UI validation checklist for Variant B (checkbox list below images)
+- [ ] Add an API-driven CLI smoke script (auto-submit responses) under ticket `scripts/` to validate plumbing without manual browser clicks
 
 ### 9) Optional follow-ups (explicitly optional)
 

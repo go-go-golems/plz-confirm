@@ -136,3 +136,14 @@ Docs: documented plz-confirm image in README + how-to-use and added ticket smoke
 - /home/manuel/workspaces/2025-12-24/add-img-widget-plz-confirm/plz-confirm/ttmp/2025/12/24/001-ADD-IMG-WIDGET--add-image-widget-to-cli-and-web-interface/reference/01-diary.md — Recorded Steps 13-14
 - /home/manuel/workspaces/2025-12-24/add-img-widget-plz-confirm/plz-confirm/ttmp/2025/12/24/001-ADD-IMG-WIDGET--add-image-widget-to-cli-and-web-interface/scripts/smoke-image-widget.sh — Manual smoke script (commit 375c846)
 
+
+## 2025-12-24
+
+Added ticket-local script to run all CLI verbs and auto-submit responses via /api/requests/{id}/response, making it easy to validate plumbing and keep a reproducible trail.
+
+### Related Files
+
+- /home/manuel/workspaces/2025-12-24/add-img-widget-plz-confirm/plz-confirm/ttmp/2025/12/24/001-ADD-IMG-WIDGET--add-image-widget-to-cli-and-web-interface/reference/01-diary.md — Recorded Step 15
+- /home/manuel/workspaces/2025-12-24/add-img-widget-plz-confirm/plz-confirm/ttmp/2025/12/24/001-ADD-IMG-WIDGET--add-image-widget-to-cli-and-web-interface/scripts/auto-e2e-cli-via-api.sh — API-driven CLI smoke test script
+- /home/manuel/workspaces/2025-12-24/add-img-widget-plz-confirm/plz-confirm/ttmp/2025/12/24/001-ADD-IMG-WIDGET--add-image-widget-to-cli-and-web-interface/tasks.md — Added task entry for API-driven smoke script
+

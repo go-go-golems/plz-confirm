@@ -576,4 +576,26 @@ This step added basic tests for the new image upload/serve endpoints. The goal i
 - The PNG “minimal bytes” assumption: we rely on `http.DetectContentType` recognizing the header.
 - Whether we should also test expiry behavior (we currently set `ttlSeconds` and use cleanup on a ticker).
 
+## Step 15: Add API-driven CLI smoke script (auto-submit responses)
+
+This step captured the “run all CLI verbs, but auto-answer them” workflow into a real script file under the ticket’s `scripts/` folder. The earlier approach of pasting long one-off shell commands into chat is hard to tweak and doesn’t leave a clean trail for future debugging; putting the logic into a versioned script makes iteration and review much easier.
+
+### What I did
+- Added `scripts/auto-e2e-cli-via-api.sh` to the ticket folder.
+- The script:
+  - assumes the Go server is running and writes to a parseable logfile (default: `/tmp/plz-confirm-server.log`)
+  - runs each CLI verb in the background (`go run ./cmd/plz-confirm <verb> ...`)
+  - scrapes the created request id from the server log (`Created request <id> (<type>)`)
+  - submits a response via `POST /api/requests/{id}/response`
+  - waits for the CLI to print output
+  - includes image-widget cases (Variant A, Variant B, confirm), plus a `/api/images` sanity upload
+
+### Why
+- Enables fast validation of request/response plumbing without needing browser clicks every time.
+- Leaves a versioned trail for future debugging (“what exactly did we run?”).
+
+### What warrants a second pair of eyes
+- Log parsing robustness: if server log format changes, the script will need to be updated.
+- Dependency assumptions: script expects `jq`, `curl`, `go`, and `base64`.
+
 
