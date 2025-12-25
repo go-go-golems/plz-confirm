@@ -69,7 +69,9 @@ When this happens, a confirmation dialog will appear in your browser. Click "Dep
 
 ## Widget Commands
 
-plz-confirm supports five widget types, each designed for a specific interaction pattern. All widget commands share common flags for server connection and timeouts, plus widget-specific parameters.
+plz-confirm supports **six** widget types, each designed for a specific interaction pattern. All widget commands share common flags for server connection and timeouts, plus widget-specific parameters.
+
+In development, it’s common to run the **Go backend** on `:3001` and the **Vite UI** on `:3000` with a proxy from `/api` and `/ws` → `:3001`. In that setup, agents typically use `--base-url http://localhost:3000` so the CLI talks to the same origin the browser uses.
 
 ### Common Flags
 
@@ -365,6 +367,18 @@ done
 ### Image Command
 
 The `image` command displays one or more images alongside a prompt, and lets the user answer either by selecting images/options or by confirming yes/no. This is the right widget when the model needs *visual context* (screenshots, photos, renderings) but still wants a structured answer back.
+
+**Local file paths (important):**
+
+When you pass `--image /path/to/file.png`, the CLI uploads the file to the server via:
+
+- `POST /api/images` (multipart upload)
+
+and then the widget request references the returned URL:
+
+- `GET /api/images/{id}` (served back to the browser)
+
+This is why the image widget works with local paths even though the browser cannot access your filesystem directly.
 
 **Use cases:**
 - Screenshot selection (“pick the correct UI”)
