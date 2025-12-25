@@ -127,10 +127,16 @@ func (c *ConfirmCommand) RunIntoGlazeProcessor(
 		}
 	}
 
+	comment := ""
+	if out.Comment != nil {
+		comment = *out.Comment
+	}
+
 	row := types.NewRow(
 		types.MRP("request_id", created.ID),
 		types.MRP("approved", out.Approved),
 		types.MRP("timestamp", out.Timestamp),
+		types.MRP("comment", comment),
 	)
 	return gp.AddRow(ctx, row)
 }

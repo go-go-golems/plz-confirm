@@ -136,6 +136,11 @@ func (c *UploadCommand) RunIntoGlazeProcessor(
 		}
 	}
 
+	comment := ""
+	if out.Comment != nil {
+		comment = *out.Comment
+	}
+
 	// Output files as rows (one per file)
 	for _, file := range out.Files {
 		row := types.NewRow(
@@ -144,6 +149,7 @@ func (c *UploadCommand) RunIntoGlazeProcessor(
 			types.MRP("file_size", file.Size),
 			types.MRP("file_path", file.Path),
 			types.MRP("mime_type", file.MimeType),
+			types.MRP("comment", comment),
 		)
 		if err := gp.AddRow(ctx, row); err != nil {
 			return err
@@ -158,6 +164,7 @@ func (c *UploadCommand) RunIntoGlazeProcessor(
 			types.MRP("file_size", int64(0)),
 			types.MRP("file_path", ""),
 			types.MRP("mime_type", ""),
+			types.MRP("comment", comment),
 		)
 		return gp.AddRow(ctx, row)
 	}
