@@ -487,4 +487,31 @@ This step introduced the shared wire-level schemas for the new widget type. In p
   - confirm mode: `boolean`
   - We currently allow both indices and labels in `ImageOutput.selected` to stay flexible, but we should lock this down once UI behavior is finalized.
 
+## Step 11: Implement `plz-confirm image` CLI command
+
+This step added the actual CLI entrypoint agents will call: `plz-confirm image`. The command handles local file paths by uploading them to the backend first (`POST /api/images`) and then creates a standard widget request (`POST /api/requests`) containing browser-fetchable image URLs.
+
+**Commit (code):** 462ab1ac7ee8f44b1baea9527ff6c67114977c1f — "CLI: add image widget command"
+
+### What I did
+- Added `internal/cli/image.go` implementing the Glazed command:
+  - Parses `--image` (repeatable) plus optional per-image metadata (`--image-label`, `--image-alt`, `--image-caption`).
+  - Uploads local paths via `Client.UploadImage` and replaces them with `/api/images/{id}` URLs.
+  - Creates the request as `type=image` and waits for completion, outputting `selected_json` + `timestamp`.
+- Registered the command in `cmd/plz-confirm/main.go`.
+- Fixed a `.gitignore` footgun: the pattern `plz-confirm` was unintentionally ignoring the directory `cmd/plz-confirm/`. Changed it to `/plz-confirm` so it only ignores the top-level binary.
+
+### Why
+- Without this CLI command, the feature isn’t usable by agents.
+- The `.gitignore` fix is required so the command registration code can actually be tracked and reviewed.
+
+### What warrants a second pair of eyes
+- The “local path vs URL vs data:” heuristic (we currently treat non-`http(s)://` and non-`data:` as a local path).
+- Whether we want stricter validation on `--mode` values (currently passed through as a string).
+
+### Code review instructions
+- Start with `internal/cli/image.go` (flag parsing + upload loop + request creation).
+- Then review `cmd/plz-confirm/main.go` registration.
+- Validate with: `go test ./... -count=1`
+
 

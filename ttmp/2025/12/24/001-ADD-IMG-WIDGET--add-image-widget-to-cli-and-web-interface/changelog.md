@@ -100,3 +100,15 @@ Added WidgetImage schemas in Go + TS (ImageItem/ImageInput/ImageOutput) to forma
 - /home/manuel/workspaces/2025-12-24/add-img-widget-plz-confirm/plz-confirm/internal/types/types.go — Added WidgetImage + image structs (commit 41e469e)
 - /home/manuel/workspaces/2025-12-24/add-img-widget-plz-confirm/plz-confirm/ttmp/2025/12/24/001-ADD-IMG-WIDGET--add-image-widget-to-cli-and-web-interface/reference/01-diary.md — Recorded Step 10
 
+
+## 2025-12-24
+
+Implemented  CLI command (uploads local paths via /api/images, then creates image widget request). Also fixed .gitignore to stop ignoring cmd/plz-confirm/ directory.
+
+### Related Files
+
+- /home/manuel/workspaces/2025-12-24/add-img-widget-plz-confirm/plz-confirm/.gitignore — Fix ignore pattern (/plz-confirm) so cmd/plz-confirm is tracked
+- /home/manuel/workspaces/2025-12-24/add-img-widget-plz-confirm/plz-confirm/cmd/plz-confirm/main.go — Registered image command (commit 462ab1a)
+- /home/manuel/workspaces/2025-12-24/add-img-widget-plz-confirm/plz-confirm/internal/cli/image.go — New image CLI command (commit 462ab1a)
+- /home/manuel/workspaces/2025-12-24/add-img-widget-plz-confirm/plz-confirm/ttmp/2025/12/24/001-ADD-IMG-WIDGET--add-image-widget-to-cli-and-web-interface/reference/01-diary.md — Recorded Step 11
+
