@@ -158,3 +158,14 @@ Tested dev stack in tmux (server :3001 + Vite :3000) and ran API-driven smoke sc
 - /home/manuel/workspaces/2025-12-24/add-img-widget-plz-confirm/plz-confirm/ttmp/2025/12/24/001-ADD-IMG-WIDGET--add-image-widget-to-cli-and-web-interface/reference/01-diary.md — Recorded Steps 16-17
 - /home/manuel/workspaces/2025-12-24/add-img-widget-plz-confirm/plz-confirm/ttmp/2025/12/24/001-ADD-IMG-WIDGET--add-image-widget-to-cli-and-web-interface/scripts/auto-e2e-cli-via-api.sh — Smoke test script used
 
+
+## 2025-12-24
+
+Docs: updated pkg/doc/how-to-use.md for the image widget (six widget types + local file upload via /api/images) and added a new developer guide help page pkg/doc/adding-widgets.md (slug: adding-widgets) explaining how to add complex widgets end-to-end. (commit 150fc49)
+
+### Related Files
+
+- /home/manuel/workspaces/2025-12-24/add-img-widget-plz-confirm/plz-confirm/pkg/doc/adding-widgets.md — New developer guide for adding complex widgets
+- /home/manuel/workspaces/2025-12-24/add-img-widget-plz-confirm/plz-confirm/pkg/doc/how-to-use.md — Updated user docs with image widget details
+- /home/manuel/workspaces/2025-12-24/add-img-widget-plz-confirm/plz-confirm/ttmp/2025/12/24/001-ADD-IMG-WIDGET--add-image-widget-to-cli-and-web-interface/reference/01-diary.md — Recorded Step 18
+

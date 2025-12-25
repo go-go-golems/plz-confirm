@@ -630,4 +630,24 @@ This is a small HTTP compatibility fix: allowing `HEAD` makes it easier to valid
 ### What worked
 - After restarting the running server, `curl -I http://localhost:3001/api/images/{id}` returns `200 OK` with the expected headers.
 
+## Step 18: Update help docs (how-to-use) + add a developer guide for new widgets
+
+This step wrapped up the work with two documentation improvements aimed at onboarding. First, it corrected the main user-facing “how to use plz-confirm” page so it accurately reflects the new image widget and its local-file upload behavior. Second, it added a didactic developer guide that explains the full workflow for adding a complex widget end-to-end (types → server → CLI → UI → docs → tests).
+
+**Commit (docs):** 150fc49480800fb0fccf445e3427126cb55c0169 — "Docs: add widget developer guide and update how-to-use"
+
+### What I did
+- Updated `pkg/doc/how-to-use.md`:
+  - Corrected “five widget types” → “six widget types”
+  - Added important context on dev topology (`:3001` Go backend + `:3000` Vite UI proxy)
+  - Added an explicit explanation of local file upload for `plz-confirm image` via `/api/images`
+- Added a new embedded help page: `pkg/doc/adding-widgets.md` (slug: `adding-widgets`)
+  - Includes background, diagrams, pseudocode, and concrete file/symbol pointers
+  - Uses the image widget as a worked example
+- Verified the doc shows up in the help system using:
+  - `go run ./cmd/plz-confirm help adding-widgets`
+
+### What was tricky to build
+- It’s easy to test help docs against a stale installed `plz-confirm` binary. The reliable approach is using `go run ./cmd/plz-confirm ...` so the embedded docs are always current.
+
 
