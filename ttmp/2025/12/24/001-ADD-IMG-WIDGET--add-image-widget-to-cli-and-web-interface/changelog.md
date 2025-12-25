@@ -112,3 +112,14 @@ Implemented  CLI command (uploads local paths via /api/images, then creates imag
 - /home/manuel/workspaces/2025-12-24/add-img-widget-plz-confirm/plz-confirm/internal/cli/image.go — New image CLI command (commit 462ab1a)
 - /home/manuel/workspaces/2025-12-24/add-img-widget-plz-confirm/plz-confirm/ttmp/2025/12/24/001-ADD-IMG-WIDGET--add-image-widget-to-cli-and-web-interface/reference/01-diary.md — Recorded Step 11
 
+
+## 2025-12-24
+
+Implemented ImageDialog widget in React and wired WidgetRenderer to render type=image. Supports select Variant A (image-pick), select Variant B (images-as-context + checkbox options), and confirm mode. Typecheck passes via pnpm check.
+
+### Related Files
+
+- /home/manuel/workspaces/2025-12-24/add-img-widget-plz-confirm/plz-confirm/agent-ui-system/client/src/components/WidgetRenderer.tsx — Added image routing (commit bae8d81)
+- /home/manuel/workspaces/2025-12-24/add-img-widget-plz-confirm/plz-confirm/agent-ui-system/client/src/components/widgets/ImageDialog.tsx — New image widget UI (commit bae8d81)
+- /home/manuel/workspaces/2025-12-24/add-img-widget-plz-confirm/plz-confirm/ttmp/2025/12/24/001-ADD-IMG-WIDGET--add-image-widget-to-cli-and-web-interface/reference/01-diary.md — Recorded Step 12
+

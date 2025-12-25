@@ -514,4 +514,29 @@ This step added the actual CLI entrypoint agents will call: `plz-confirm image`.
 - Then review `cmd/plz-confirm/main.go` registration.
 - Validate with: `go test ./... -count=1`
 
+## Step 12: Implement ImageDialog in the web UI (variants A + B + confirm)
+
+This step implemented the React side of the feature: rendering the image widget and emitting a structured output payload. The UI supports three interaction styles in one component: (1) select images directly (Variant A), (2) show images as context and answer a checkbox question below (Variant B), and (3) confirm mode with approve/reject buttons.
+
+**Commit (code):** bae8d811bb4bcca56987ef9fe0679258f22a83f9 — "UI: add ImageDialog widget"
+
+### What I did
+- Added `agent-ui-system/client/src/components/widgets/ImageDialog.tsx`.
+  - Renders images in a responsive grid (1 large, 2 side-by-side, 3+ grid).
+  - Select mode:
+    - Variant A: click-to-select image tiles (single or multi via `input.multi`)
+    - Variant B: if `input.options[]` is present, render a checkbox list below the images and select text options
+  - Confirm mode: approve/reject buttons, returns boolean.
+  - Per-image error state (broken URL shows ERROR_LOADING but doesn’t block submission).
+- Updated `WidgetRenderer.tsx` to route `active.type === 'image'` to `ImageDialog`.
+- Ran `pnpm -C agent-ui-system check` (installed deps via `pnpm install --frozen-lockfile` first since this repo didn’t have node_modules).
+
+### Why
+- This is the user-visible part of the feature; without it the server/CLI work can’t be exercised.
+- Keeping both Variant A and Variant B in one component ensures we can support both “pick an image” and “answer a question about images” flows.
+
+### What warrants a second pair of eyes
+- Output shape consistency: Variant A returns indices, Variant B returns strings (option labels). We should confirm this is what we want long-term.
+- UI affordances: ensure the “click tile” selection UX feels consistent with `SelectDialog` styling and keyboard navigation expectations.
+
 
