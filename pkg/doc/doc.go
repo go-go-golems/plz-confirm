@@ -11,4 +11,3 @@ var docFS embed.FS
 func AddDocToHelpSystem(helpSystem *help.HelpSystem) error {
 	return helpSystem.LoadSectionsFromFS(docFS, ".")
 }
-

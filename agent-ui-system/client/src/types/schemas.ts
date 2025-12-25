@@ -1,6 +1,6 @@
 export interface UIRequest {
   id: string;
-  type: 'confirm' | 'select' | 'form' | 'upload' | 'table';
+  type: 'confirm' | 'select' | 'form' | 'upload' | 'table' | 'image';
   sessionId: string;
   input: any;
   output?: any;
@@ -70,6 +70,27 @@ export interface TableInput {
 
 export interface TableOutput {
   selected: any | any[];
+}
+
+export interface ImageItem {
+  src: string; // URL (including /api/images/{id}) or data URI
+  alt?: string;
+  label?: string;
+  caption?: string;
+}
+
+export interface ImageInput {
+  title: string;
+  message?: string;
+  images: ImageItem[];
+  mode: 'select' | 'confirm';
+  options?: string[]; // for the “images as context + multi-select question” variant
+  multi?: boolean;
+}
+
+export interface ImageOutput {
+  selected: number | number[] | boolean | string | string[];
+  timestamp: string;
 }
 
 export interface Notification {

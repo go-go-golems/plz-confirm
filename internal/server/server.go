@@ -1,12 +1,14 @@
 package server
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	stderrors "errors"
 	"io"
 	"log"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -16,8 +18,9 @@ import (
 )
 
 type Server struct {
-	store *store.Store
-	ws    *wsBroadcaster
+	store  *store.Store
+	ws     *wsBroadcaster
+	images *ImageStore
 }
 
 type Options struct {
@@ -25,9 +28,14 @@ type Options struct {
 }
 
 func New(s *store.Store) *Server {
+	imgStore, err := NewImageStore(ImageStoreOptions{})
+	if err != nil {
+		log.Printf("[IMG] failed to initialize image store, uploads disabled: %v", err)
+	}
 	return &Server{
-		store: s,
-		ws:    newWSBroadcaster(),
+		store:  s,
+		ws:     newWSBroadcaster(),
+		images: imgStore,
 	}
 }
 
@@ -36,6 +44,8 @@ func (s *Server) Handler() http.Handler {
 
 	// API and WebSocket routes (must come before static file serving)
 	mux.HandleFunc("/ws", s.handleWS)
+	mux.HandleFunc("/api/images", s.handleImagesCollection)
+	mux.HandleFunc("/api/images/", s.handleImagesItem)
 	mux.HandleFunc("/api/requests", s.handleRequestsCollection)
 	mux.HandleFunc("/api/requests/", s.handleRequestsItem)
 
@@ -83,14 +93,16 @@ func (s *Server) handleStaticFiles(mux *http.ServeMux) {
 				http.NotFound(w, r)
 				return
 			}
-			defer indexFile.Close()
+			defer func() {
+				_ = indexFile.Close()
+			}()
 
 			// Read and serve index.html
 			w.Header().Set("Content-Type", "text/html; charset=utf-8")
 			_, _ = io.Copy(w, indexFile)
 			return
 		}
-		file.Close()
+		_ = file.Close()
 
 		// File exists - serve it normally
 		fileServer.ServeHTTP(w, r)
@@ -101,6 +113,24 @@ func (s *Server) ListenAndServe(ctx context.Context, opts Options) error {
 	addr := opts.Addr
 	if addr == "" {
 		addr = ":3000"
+	}
+
+	if s.images != nil {
+		go func() {
+			t := time.NewTicker(30 * time.Second)
+			defer t.Stop()
+			for {
+				select {
+				case <-ctx.Done():
+					return
+				case <-t.C:
+					deleted := s.images.Cleanup(context.Background(), time.Now().UTC())
+					if deleted > 0 {
+						log.Printf("[IMG] cleaned up %d expired images", deleted)
+					}
+				}
+			}
+		}()
 	}
 
 	srv := &http.Server{
@@ -300,6 +330,142 @@ func (s *Server) handleWait(w http.ResponseWriter, r *http.Request, id string) {
 	}
 
 	writeJSON(w, http.StatusOK, req)
+}
+
+// --- Images handlers ---
+
+type uploadImageResponse struct {
+	ID       string `json:"id"`
+	URL      string `json:"url"`
+	MimeType string `json:"mimeType"`
+	Size     int64  `json:"size"`
+}
+
+func (s *Server) handleImagesCollection(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	if s.images == nil {
+		http.Error(w, "image uploads not available", http.StatusServiceUnavailable)
+		return
+	}
+
+	// Prevent overly large payloads.
+	r.Body = http.MaxBytesReader(w, r.Body, s.images.MaxUploadBytes()+(1<<20))
+
+	ttlSeconds := int64(3600) // default 1h
+	// Parse multipart form; maxMemory only affects in-memory buffering.
+	if err := r.ParseMultipartForm(32 << 20); err != nil {
+		http.Error(w, "invalid multipart form", http.StatusBadRequest)
+		return
+	}
+	// IMPORTANT: ParseMultipartForm may spill large parts to disk; ensure we clean up temp files.
+	if r.MultipartForm != nil {
+		defer func() {
+			_ = r.MultipartForm.RemoveAll()
+		}()
+	}
+	if rawTTL := r.FormValue("ttlSeconds"); rawTTL != "" {
+		if t, err := strconv.ParseInt(rawTTL, 10, 64); err == nil && t > 0 {
+			ttlSeconds = t
+		}
+	}
+
+	file, _, err := r.FormFile("file")
+	if err != nil {
+		http.Error(w, "missing file field", http.StatusBadRequest)
+		return
+	}
+	defer file.Close()
+
+	// Sniff first bytes to determine content type and validate it's an image.
+	head, err := io.ReadAll(io.LimitReader(file, 512))
+	if err != nil {
+		http.Error(w, "failed to read upload", http.StatusBadRequest)
+		return
+	}
+	if len(head) == 0 {
+		http.Error(w, "empty file", http.StatusBadRequest)
+		return
+	}
+	mimeType := http.DetectContentType(head)
+	if !strings.HasPrefix(mimeType, "image/") {
+		http.Error(w, "invalid content-type (expected image/*)", http.StatusBadRequest)
+		return
+	}
+
+	expiresAt := time.Now().UTC().Add(time.Duration(ttlSeconds) * time.Second)
+
+	// Re-attach the bytes we consumed for sniffing.
+	img, err := s.images.Put(r.Context(), io.MultiReader(bytes.NewReader(head), file), mimeType, expiresAt)
+	if err != nil {
+		http.Error(w, "failed to store image", http.StatusInternalServerError)
+		return
+	}
+
+	writeJSON(w, http.StatusCreated, uploadImageResponse{
+		ID:       img.ID,
+		URL:      "/api/images/" + img.ID,
+		MimeType: img.MimeType,
+		Size:     img.Size,
+	})
+}
+
+func (s *Server) handleImagesItem(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet && r.Method != http.MethodHead {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	if s.images == nil {
+		http.Error(w, "image serving not available", http.StatusServiceUnavailable)
+		return
+	}
+
+	path := strings.TrimPrefix(r.URL.Path, "/api/images/")
+	if path == "" {
+		http.Error(w, "not found", http.StatusNotFound)
+		return
+	}
+	parts := strings.Split(path, "/")
+	id := parts[0]
+	if id == "" || len(parts) != 1 {
+		http.Error(w, "not found", http.StatusNotFound)
+		return
+	}
+
+	img, ok := s.images.Get(r.Context(), id)
+	if !ok {
+		http.Error(w, "not found", http.StatusNotFound)
+		return
+	}
+	if !img.ExpiresAt.IsZero() && time.Now().UTC().After(img.ExpiresAt) {
+		s.images.Delete(context.Background(), id)
+		http.Error(w, "not found", http.StatusNotFound)
+		return
+	}
+
+	f, err := os.Open(img.Path)
+	if err != nil {
+		s.images.Delete(context.Background(), id)
+		http.Error(w, "not found", http.StatusNotFound)
+		return
+	}
+	defer func() {
+		_ = f.Close()
+	}()
+
+	st, err := f.Stat()
+	if err != nil {
+		s.images.Delete(context.Background(), id)
+		http.Error(w, "not found", http.StatusNotFound)
+		return
+	}
+
+	// Keep caching conservative: these are ephemeral and may be deleted soon.
+	w.Header().Set("Content-Type", img.MimeType)
+	w.Header().Set("Cache-Control", "private, max-age=60")
+	http.ServeContent(w, r, id, st.ModTime(), f)
 }
 
 // --- helpers ---

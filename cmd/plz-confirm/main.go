@@ -117,6 +117,21 @@ func main() {
 	}
 	rootCmd.AddCommand(cobraUploadCmd)
 
+	imageCmd, err := agentcli.NewImageCommand(layersList...)
+	if err != nil {
+		fatal(err)
+	}
+	cobraImageCmd, err := glazed_cli.BuildCobraCommand(imageCmd,
+		glazed_cli.WithParserConfig(glazed_cli.CobraParserConfig{
+			ShortHelpLayers: []string{layers.DefaultSlug},
+			MiddlewaresFunc: glazed_cli.CobraCommandDefaultMiddlewares,
+		}),
+	)
+	if err != nil {
+		fatal(err)
+	}
+	rootCmd.AddCommand(cobraImageCmd)
+
 	rootCmd.AddCommand(newServeCmd(ctx))
 
 	// Enhanced help system

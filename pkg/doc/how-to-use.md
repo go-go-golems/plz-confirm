@@ -13,6 +13,7 @@ Commands:
 - form
 - table
 - upload
+- image
 - serve
 IsTopLevel: true
 IsTemplate: false
@@ -68,7 +69,9 @@ When this happens, a confirmation dialog will appear in your browser. Click "Dep
 
 ## Widget Commands
 
-plz-confirm supports five widget types, each designed for a specific interaction pattern. All widget commands share common flags for server connection and timeouts, plus widget-specific parameters.
+plz-confirm supports **six** widget types, each designed for a specific interaction pattern. All widget commands share common flags for server connection and timeouts, plus widget-specific parameters.
+
+In development, it’s common to run the **Go backend** on `:3001` and the **Vite UI** on `:3000` with a proxy from `/api` and `/ws` → `:3001`. In that setup, agents typically use `--base-url http://localhost:3000` so the CLI talks to the same origin the browser uses.
 
 ### Common Flags
 
@@ -359,6 +362,92 @@ echo "$UPLOAD_RESULT" | jq -c '.[]' | while read -r file; do
   FILE_NAME=$(echo "$file" | jq -r '.file_name')
   echo "Processing: $FILE_NAME"
 done
+```
+
+### Image Command
+
+The `image` command displays one or more images alongside a prompt, and lets the user answer either by selecting images/options or by confirming yes/no. This is the right widget when the model needs *visual context* (screenshots, photos, renderings) but still wants a structured answer back.
+
+**Local file paths (important):**
+
+When you pass `--image /path/to/file.png`, the CLI uploads the file to the server via:
+
+- `POST /api/images` (multipart upload)
+
+and then the widget request references the returned URL:
+
+- `GET /api/images/{id}` (served back to the browser)
+
+This is why the image widget works with local paths even though the browser cannot access your filesystem directly.
+
+**Use cases:**
+- Screenshot selection (“pick the correct UI”)
+- “Select all that apply” questions with images as context
+- Similarity checks (“are these images the same / similar?”)
+
+**Available flags:**
+- `--title` (required): Dialog title
+- `--message` (optional): Prompt / question text
+- `--mode` (optional): `select` (default) or `confirm`
+- `--image` (required, repeatable): Image source (local file path, URL, or `data:image/...` URI)
+- `--image-label` (optional, repeatable): Per-image label (must match `--image` count if provided)
+- `--image-alt` (optional, repeatable): Per-image alt text (must match `--image` count if provided)
+- `--image-caption` (optional, repeatable): Per-image caption (must match `--image` count if provided)
+- `--multi` (optional): Enable multi-select (select mode)
+- `--option` (optional, repeatable): Text options for the “images as context + checkbox question” variant
+- Plus common flags: `--base-url`, `--timeout`, `--wait-timeout`, `--output`
+
+**Example: select (Variant A: pick an image)**
+
+```bash
+plz-confirm image \
+  --title "Select the best screenshot" \
+  --message "Pick the image that matches the final UI." \
+  --image ./img1.png --image-label "Candidate A" \
+  --image ./img2.png --image-label "Candidate B"
+```
+
+**Example: select (Variant B: images as context + multi-select question)**
+
+```bash
+plz-confirm image \
+  --title "Review these screenshots" \
+  --message "Which issues are present?" \
+  --image ./before.png \
+  --image ./after.png \
+  --multi \
+  --option "Text is too small" \
+  --option "Button alignment is off" \
+  --option "Wrong color theme" \
+  --option "Missing icon"
+```
+
+**Example: confirm (similarity check)**
+
+```bash
+plz-confirm image \
+  --title "Are these images similar?" \
+  --message "Compare the two images and answer yes/no." \
+  --mode confirm \
+  --image https://example.com/imgA.jpg \
+  --image https://example.com/imgB.jpg
+```
+
+**Output columns:**
+- `request_id`: Unique identifier for the request
+- `selected_json`: JSON-encoded selection (number/number[]/string/string[]/boolean depending on mode)
+- `timestamp`: ISO 8601 timestamp of the response
+
+**Using in scripts:**
+
+```bash
+RESULT=$(plz-confirm image \
+  --title "Pick one" \
+  --image ./a.png \
+  --image ./b.png \
+  --output json)
+
+echo "$RESULT" | jq -r '.selected_json'
 ```
 
 ## Practical Examples
