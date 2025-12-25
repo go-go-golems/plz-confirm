@@ -22,6 +22,7 @@ const (
 	WidgetForm    WidgetType = "form"
 	WidgetUpload  WidgetType = "upload"
 	WidgetTable   WidgetType = "table"
+	WidgetImage   WidgetType = "image"
 )
 
 // UIRequest is the canonical request object exchanged between CLI/server/frontend.
@@ -102,4 +103,37 @@ type TableInput struct {
 
 type TableOutput struct {
 	Selected any `json:"selected"` // any | []any
+}
+
+// ImageItem represents a single image and optional UI metadata.
+// The `Src` is either an URL (including /api/images/{id}) or a data URI.
+type ImageItem struct {
+	Src     string  `json:"src"`
+	Alt     *string `json:"alt,omitempty"`
+	Label   *string `json:"label,omitempty"`
+	Caption *string `json:"caption,omitempty"`
+}
+
+type ImageInput struct {
+	Title   string      `json:"title"`
+	Message *string     `json:"message,omitempty"`
+	Images  []ImageItem `json:"images"`
+
+	// Mode is "select" or "confirm".
+	Mode string `json:"mode"`
+
+	// Options are used for the "images-as-context + multi-select question" variant.
+	Options []string `json:"options,omitempty"`
+
+	// Multi controls select-mode multi selection.
+	Multi *bool `json:"multi,omitempty"`
+}
+
+type ImageOutput struct {
+	// Selected is:
+	// - int or []int for image-pick select mode
+	// - bool for confirm mode
+	// - string or []string for checkbox-question variant (if we choose to return labels)
+	Selected  any    `json:"selected"`
+	Timestamp string `json:"timestamp"`
 }
