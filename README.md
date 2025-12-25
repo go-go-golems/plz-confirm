@@ -16,7 +16,7 @@ This architecture allows agents to leverage rich web UIs for complex interaction
 
 ## Features
 
-- **Five Widget Types**: Confirmation dialogs, selection menus, forms, file uploads, and data tables
+- **Six Widget Types**: Confirmation dialogs, selection menus, image prompts, forms, file uploads, and data tables
 - **Real-time Communication**: WebSocket-based bidirectional communication between CLI and web UI
 - **Browser Notifications**: Native browser notifications alert users when new requests arrive
 - **Multiple Output Formats**: JSON, YAML, CSV, and table output formats
@@ -151,6 +151,19 @@ plz-confirm upload \
   --max-size 5242880
 ```
 
+### Image Prompt
+
+Show a prompt with one or more images and ask the user to select/confirm:
+
+```bash
+plz-confirm image \
+  --title "Are these images similar?" \
+  --message "Compare the two images and answer yes/no." \
+  --mode confirm \
+  --image https://example.com/img1.jpg \
+  --image https://example.com/img2.jpg
+```
+
 ### Data Table
 
 Display tabular data and allow selection:
@@ -179,6 +192,7 @@ All widget commands support these common flags:
 - `plz-confirm select` - Single or multi-select menus
 - `plz-confirm form` - JSON Schema-based forms
 - `plz-confirm upload` - File upload dialogs
+- `plz-confirm image` - Image prompt + select/confirm dialogs
 - `plz-confirm table` - Data table with selection
 - `plz-confirm serve` - Start the backend server
 
