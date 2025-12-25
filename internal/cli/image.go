@@ -42,6 +42,63 @@ type ImageSettings struct {
 	Options []string `glazed.parameter:"option"`
 }
 
+func isLikelyBase64(s string) bool {
+	if len(s) < 8 {
+		return false
+	}
+	for _, r := range s {
+		switch {
+		case r >= 'a' && r <= 'z':
+		case r >= 'A' && r <= 'Z':
+		case r >= '0' && r <= '9':
+		case r == '+' || r == '/' || r == '=':
+		default:
+			return false
+		}
+	}
+	return true
+}
+
+// normalizeDataURIImages repairs a common CLI parsing gotcha:
+//
+// Glazed maps ParameterTypeStringList to Cobra/pflag's "stringSlice" flags, which parse
+// comma-separated values. Unfortunately, data URIs are of the form:
+//
+//	data:image/png;base64,<payload>
+//
+// and will be split at the comma into two list entries. That breaks per-image metadata
+// count validation (`--image-label`, `--image-alt`, `--image-caption`) and results in
+// confusing errors for users.
+//
+// We detect and re-join the split pair when it looks like a base64 data URI.
+func normalizeDataURIImages(images []string) []string {
+	out := make([]string, 0, len(images))
+	for i := 0; i < len(images); i++ {
+		cur := images[i]
+
+		// If the user passed a data URI, pflag may have split it into:
+		//   ["data:image/png;base64", "<payload>"]
+		//
+		// Only re-join when:
+		// - current starts with "data:"
+		// - current does NOT already contain a comma
+		// - it includes ";base64" (we only try to fix the image/base64 case)
+		// - next token looks like base64 payload
+		if strings.HasPrefix(cur, "data:") &&
+			!strings.Contains(cur, ",") &&
+			strings.Contains(cur, ";base64") &&
+			i+1 < len(images) &&
+			isLikelyBase64(images[i+1]) {
+			out = append(out, cur+","+images[i+1])
+			i++
+			continue
+		}
+
+		out = append(out, cur)
+	}
+	return out
+}
+
 func NewImageCommand(layersList ...layers.ParameterLayer) (*ImageCommand, error) {
 	desc := cmds.NewCommandDescription(
 		"image",
@@ -130,6 +187,9 @@ func (c *ImageCommand) RunIntoGlazeProcessor(
 	if err := parsedLayers.InitializeStruct(layers.DefaultSlug, settings); err != nil {
 		return err
 	}
+
+	// Repair comma-splitting for base64 data URIs in --image.
+	settings.Images = normalizeDataURIImages(settings.Images)
 
 	if len(settings.ImageLabels) > 0 && len(settings.ImageLabels) != len(settings.Images) {
 		return errors.Errorf("--image-label count (%d) must match --image count (%d)", len(settings.ImageLabels), len(settings.Images))
