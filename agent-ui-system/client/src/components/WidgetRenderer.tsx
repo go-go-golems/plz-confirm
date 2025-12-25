@@ -7,6 +7,7 @@ import { SelectDialog } from './widgets/SelectDialog';
 import { TableDialog } from './widgets/TableDialog';
 import { FormDialog } from './widgets/FormDialog';
 import { UploadDialog } from './widgets/UploadDialog';
+import { ImageDialog } from './widgets/ImageDialog';
 import { Loader2 } from 'lucide-react';
 
 export const WidgetRenderer: React.FC = () => {
@@ -55,6 +56,8 @@ export const WidgetRenderer: React.FC = () => {
         return <FormDialog {...commonProps} input={active.input} />;
       case 'upload':
         return <UploadDialog {...commonProps} input={active.input} />;
+      case 'image':
+        return <ImageDialog {...commonProps} input={active.input} />;
       default:
         return (
           <div className="p-8 border border-destructive/50 bg-destructive/10 text-destructive">
