@@ -441,3 +441,26 @@ I also fixed a build-time sharp edge: the Go `embed` directive previously caused
 - Then review `internal/server/images.go` for storage and cleanup logic.
 - Validate with: `go test ./... -count=1`
 
+## Step 9: Add CLI-side UploadImage helper (streaming multipart)
+
+This step added the client-side building block the `plz-confirm image` command will rely on: a helper in the Go HTTP client that can upload a local image file to the backend and receive back a stable URL (`/api/images/{id}`). The main design constraint here is avoiding buffering large files in memory, since high-res screenshots can be many megabytes.
+
+**Commit (code):** 56d958f381ca39afe0b6fe720e99b4b7eaf59496 — "Client: add UploadImage helper"
+
+### What I did
+- Added `Client.UploadImage(ctx, filePath, ttlSeconds)` in `internal/client/client.go`.
+- Implemented it using an `io.Pipe` + `multipart.Writer` goroutine so the request body streams instead of buffering the entire file into a `bytes.Buffer`.
+- The helper posts to `POST /api/images` and decodes `{id,url,mimeType,size}`.
+
+### Why
+- The upcoming `plz-confirm image` CLI command needs to accept local file paths and convert them into browser-fetchable URLs.
+- Streaming multipart keeps memory use predictable and avoids surprises for large files.
+
+### What warrants a second pair of eyes
+- Error propagation from the goroutine writing the multipart body (we use `CloseWithError`; reviewers should confirm we don’t leak goroutines on early HTTP failures).
+- Whether we want to enforce client-side “file exists / size” checks before attempting the upload (currently we just try to open and stream).
+
+### Code review instructions
+- Start in `internal/client/client.go`, search for `UploadImage`.
+- Validate with: `go test ./... -count=1`
+

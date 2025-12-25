@@ -79,3 +79,13 @@ Updated tasks: added explicit frontend Variant B (images as context + multi-sele
 
 - /home/manuel/workspaces/2025-12-24/add-img-widget-plz-confirm/plz-confirm/ttmp/2025/12/24/001-ADD-IMG-WIDGET--add-image-widget-to-cli-and-web-interface/tasks.md — Added Variant B tasks for images+checkbox question UI
 
+
+## 2025-12-24
+
+Implemented streaming multipart UploadImage helper in Go client for POST /api/images; will be used by upcoming plz-confirm image CLI.
+
+### Related Files
+
+- /home/manuel/workspaces/2025-12-24/add-img-widget-plz-confirm/plz-confirm/internal/client/client.go — Added Client.UploadImage helper (commit 56d958f)
+- /home/manuel/workspaces/2025-12-24/add-img-widget-plz-confirm/plz-confirm/ttmp/2025/12/24/001-ADD-IMG-WIDGET--add-image-widget-to-cli-and-web-interface/reference/01-diary.md — Recorded Step 9
+
