@@ -7,8 +7,12 @@ import (
 	stderrors "errors"
 	"fmt"
 	"io"
+	"mime/multipart"
 	"net/http"
 	"net/url"
+	"os"
+	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -128,6 +132,81 @@ func (c *Client) WaitRequest(ctx context.Context, id string, waitTimeoutS int) (
 		}
 		return types.UIRequest{}, err
 	}
+}
+
+type UploadImageResponse struct {
+	ID       string `json:"id"`
+	URL      string `json:"url"`
+	MimeType string `json:"mimeType"`
+	Size     int64  `json:"size"`
+}
+
+func (c *Client) UploadImage(ctx context.Context, filePath string, ttlSeconds int) (UploadImageResponse, error) {
+	u, err := url.Parse(c.BaseURL + "/api/images")
+	if err != nil {
+		return UploadImageResponse{}, errors.Wrap(err, "parse base url")
+	}
+
+	// Stream multipart body so we don't buffer large files in memory.
+	pr, pw := io.Pipe()
+	mw := multipart.NewWriter(pw)
+
+	go func() {
+		defer func() {
+			_ = pw.Close()
+		}()
+		defer func() {
+			_ = mw.Close()
+		}()
+
+		f, err := os.Open(filePath)
+		if err != nil {
+			_ = pw.CloseWithError(errors.Wrap(err, "open image file"))
+			return
+		}
+		defer f.Close()
+
+		if ttlSeconds > 0 {
+			if err := mw.WriteField("ttlSeconds", strconv.Itoa(ttlSeconds)); err != nil {
+				_ = pw.CloseWithError(errors.Wrap(err, "write ttlSeconds field"))
+				return
+			}
+		}
+
+		part, err := mw.CreateFormFile("file", filepath.Base(filePath))
+		if err != nil {
+			_ = pw.CloseWithError(errors.Wrap(err, "create multipart file field"))
+			return
+		}
+
+		if _, err := io.Copy(part, f); err != nil {
+			_ = pw.CloseWithError(errors.Wrap(err, "copy file into multipart"))
+			return
+		}
+	}()
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, u.String(), pr)
+	if err != nil {
+		return UploadImageResponse{}, errors.Wrap(err, "create http request")
+	}
+	req.Header.Set("Content-Type", mw.FormDataContentType())
+
+	resp, err := c.HTTPClient.Do(req)
+	if err != nil {
+		return UploadImageResponse{}, errors.Wrap(err, "post /api/images")
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		b, _ := io.ReadAll(io.LimitReader(resp.Body, 16<<10))
+		return UploadImageResponse{}, errors.Errorf("upload image failed: status=%d body=%s", resp.StatusCode, string(b))
+	}
+
+	var out UploadImageResponse
+	if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
+		return UploadImageResponse{}, errors.Wrap(err, "decode upload image response")
+	}
+	return out, nil
 }
 
 func (c *Client) waitOnce(ctx context.Context, id string, pollTimeoutS int) (types.UIRequest, error) {
