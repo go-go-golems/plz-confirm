@@ -89,3 +89,14 @@ Implemented streaming multipart UploadImage helper in Go client for POST /api/im
 - /home/manuel/workspaces/2025-12-24/add-img-widget-plz-confirm/plz-confirm/internal/client/client.go — Added Client.UploadImage helper (commit 56d958f)
 - /home/manuel/workspaces/2025-12-24/add-img-widget-plz-confirm/plz-confirm/ttmp/2025/12/24/001-ADD-IMG-WIDGET--add-image-widget-to-cli-and-web-interface/reference/01-diary.md — Recorded Step 9
 
+
+## 2025-12-24
+
+Added WidgetImage schemas in Go + TS (ImageItem/ImageInput/ImageOutput) to formalize wire format for upcoming CLI and UI implementation.
+
+### Related Files
+
+- /home/manuel/workspaces/2025-12-24/add-img-widget-plz-confirm/plz-confirm/agent-ui-system/client/src/types/schemas.ts — Added image interfaces + UIRequest type union (commit 41e469e)
+- /home/manuel/workspaces/2025-12-24/add-img-widget-plz-confirm/plz-confirm/internal/types/types.go — Added WidgetImage + image structs (commit 41e469e)
+- /home/manuel/workspaces/2025-12-24/add-img-widget-plz-confirm/plz-confirm/ttmp/2025/12/24/001-ADD-IMG-WIDGET--add-image-widget-to-cli-and-web-interface/reference/01-diary.md — Recorded Step 10
+

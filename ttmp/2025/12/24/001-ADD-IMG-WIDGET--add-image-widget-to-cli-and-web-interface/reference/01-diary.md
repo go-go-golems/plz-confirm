@@ -464,3 +464,27 @@ This step added the client-side building block the `plz-confirm image` command w
 - Start in `internal/client/client.go`, search for `UploadImage`.
 - Validate with: `go test ./... -count=1`
 
+## Step 10: Add image widget schemas (Go + TypeScript)
+
+This step introduced the shared wire-level schemas for the new widget type. In plz-confirm, the server treats `input`/`output` as `any`, but the CLI and frontend still benefit from typed structs/interfaces so we keep request payloads predictable and avoid “shape drift”.
+
+**Commit (code):** 41e469e2e314f2388b32fc9eac61ef41fd9cf086 — "Types: add image widget schemas"
+
+### What I did
+- Added `WidgetImage` and `ImageItem` / `ImageInput` / `ImageOutput` to `internal/types/types.go`.
+- Updated `agent-ui-system/client/src/types/schemas.ts`:
+  - extended `UIRequest.type` union with `'image'`
+  - added `ImageItem`, `ImageInput`, and `ImageOutput` interfaces.
+
+### Why
+- The CLI needs a stable schema to marshal `input` for `POST /api/requests`.
+- The frontend needs types so `WidgetRenderer` and `ImageDialog` can be implemented without guessing.
+
+### What warrants a second pair of eyes
+- Output shape decisions:
+  - image-pick select mode: do we want `selected` to be indices (`number|number[]`) only?
+  - “images as context + checkbox question” variant: do we return labels (`string[]`) or indices into `options[]`?
+  - confirm mode: `boolean`
+  - We currently allow both indices and labels in `ImageOutput.selected` to stay flexible, but we should lock this down once UI behavior is finalized.
+
+
