@@ -64,7 +64,53 @@ The widget supports two interaction modes:
 
 ## Status
 
-Current status: **active**
+Current status: **complete**
+
+## Testing (dev stack in tmux)
+
+The most reliable local dev topology we used while building/testing this widget is:
+
+- **Go backend** on `:3001`
+- **Vite UI** on `:3000` proxying `/api` and `/ws` → `:3001`
+- CLI commands use `--base-url http://localhost:3000`
+
+### Start server + Vite in tmux (with logs)
+
+```bash
+cd /home/manuel/workspaces/2025-12-24/add-img-widget-plz-confirm/plz-confirm && \
+tmux kill-session -t plzimg 2>/dev/null || true && \
+rm -f /tmp/plz-confirm-server.log /tmp/plz-confirm-vite.log && \
+tmux new-session -d -s plzimg -n server "cd /home/manuel/workspaces/2025-12-24/add-img-widget-plz-confirm/plz-confirm && go run ./cmd/plz-confirm serve --addr :3001 2>&1 | tee /tmp/plz-confirm-server.log" && \
+tmux new-window -t plzimg -n vite "cd /home/manuel/workspaces/2025-12-24/add-img-widget-plz-confirm/plz-confirm && pnpm -C agent-ui-system dev --host 2>&1 | tee /tmp/plz-confirm-vite.log" && \
+tmux attach -t plzimg
+```
+
+### Run widget commands (manual browser validation)
+
+Open `http://localhost:3000` in your browser, then run (examples):
+
+```bash
+cd /home/manuel/workspaces/2025-12-24/add-img-widget-plz-confirm/plz-confirm && \
+go run ./cmd/plz-confirm image \
+  --base-url http://localhost:3000 \
+  --title "Manual check: image widget" \
+  --message "Pick an image and submit." \
+  --image /absolute/path/to/a.png --image-label "A" \
+  --image /absolute/path/to/b.png --image-label "B" \
+  --output yaml
+```
+
+### Inspect logs
+
+- Server: `tail -n 200 /tmp/plz-confirm-server.log`
+- Vite: `tail -n 200 /tmp/plz-confirm-vite.log`
+
+### Scripted smoke tests (no browser clicks)
+
+This ticket also includes scripts that validate plumbing by auto-submitting responses via the API:
+
+- `scripts/auto-e2e-cli-via-api.sh`
+- `scripts/manual-test-image-widget-all-options.sh`
 
 ## Topics
 
