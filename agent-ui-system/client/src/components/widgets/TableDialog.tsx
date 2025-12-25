@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/table';
 import { Loader2, Search, ArrowUpDown, CheckSquare, Square } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { OptionalComment, normalizeOptionalComment } from './OptionalComment';
 
 interface Props {
   requestId: string;
@@ -26,6 +27,7 @@ export const TableDialog: React.FC<Props> = ({ input, onSubmit, loading }) => {
   const [search, setSearch] = useState('');
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [comment, setComment] = useState('');
 
   // Derive columns from data if not provided
   const columns = useMemo(() => {
@@ -110,8 +112,10 @@ export const TableDialog: React.FC<Props> = ({ input, onSubmit, loading }) => {
       selectedIds.has(row.id || JSON.stringify(row))
     );
 
+    const c = normalizeOptionalComment(comment);
     await onSubmit({
-      selected: input.multiSelect ? selectedObjects : selectedObjects[0]
+      selected: input.multiSelect ? selectedObjects : selectedObjects[0],
+      ...(c ? { comment: c } : {})
     });
     setSubmitting(false);
   };
@@ -217,19 +221,23 @@ export const TableDialog: React.FC<Props> = ({ input, onSubmit, loading }) => {
         </div>
       </div>
 
-      <div className="flex justify-end pt-4 border-t border-border">
-        <div className="flex items-center gap-4 w-full">
-          <div className="text-xs font-mono text-muted-foreground flex-1">
-            {selectedIds.size} SELECTED / {processedData.length} TOTAL
+      <div className="pt-4 border-t border-border space-y-3">
+        <OptionalComment value={comment} onChange={setComment} disabled={loading || submitting} />
+
+        <div className="flex justify-end">
+          <div className="flex items-center gap-4 w-full">
+            <div className="text-xs font-mono text-muted-foreground flex-1">
+              {selectedIds.size} SELECTED / {processedData.length} TOTAL
+            </div>
+            <Button 
+              className="cyber-button min-w-[140px]"
+              onClick={handleSubmit}
+              disabled={loading || submitting || selectedIds.size === 0}
+            >
+              {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              SUBMIT_SELECTION
+            </Button>
           </div>
-          <Button 
-            className="cyber-button min-w-[140px]"
-            onClick={handleSubmit}
-            disabled={loading || submitting || selectedIds.size === 0}
-          >
-            {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-            SUBMIT_SELECTION
-          </Button>
         </div>
       </div>
     </div>

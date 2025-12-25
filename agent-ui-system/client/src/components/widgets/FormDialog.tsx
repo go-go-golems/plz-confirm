@@ -7,6 +7,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Loader2, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { OptionalComment, normalizeOptionalComment } from './OptionalComment';
 
 interface Props {
   requestId: string;
@@ -33,6 +34,7 @@ export const FormDialog: React.FC<Props> = ({ input, onSubmit, loading }) => {
   const [formData, setFormData] = useState<Record<string, any>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
+  const [comment, setComment] = useState('');
 
   const schema = input.schema || { properties: {}, required: [] };
   const properties = schema.properties || {};
@@ -113,7 +115,8 @@ export const FormDialog: React.FC<Props> = ({ input, onSubmit, loading }) => {
     if (!isValid) return;
 
     setSubmitting(true);
-    await onSubmit({ data: formData });
+    const c = normalizeOptionalComment(comment);
+    await onSubmit({ data: formData, ...(c ? { comment: c } : {}) });
     setSubmitting(false);
   };
 
@@ -227,16 +230,20 @@ export const FormDialog: React.FC<Props> = ({ input, onSubmit, loading }) => {
         </form>
       </ScrollArea>
 
-      <div className="flex justify-end pt-4 border-t border-border">
-        <Button 
-          type="submit"
-          form="schema-form"
-          className="cyber-button min-w-[140px]"
-          disabled={loading || submitting}
-        >
-          {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-          SUBMIT_FORM
-        </Button>
+      <div className="pt-4 border-t border-border space-y-3">
+        <OptionalComment value={comment} onChange={setComment} disabled={loading || submitting} />
+
+        <div className="flex justify-end">
+          <Button
+            type="submit"
+            form="schema-form"
+            className="cyber-button min-w-[140px]"
+            disabled={loading || submitting}
+          >
+            {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+            SUBMIT_FORM
+          </Button>
+        </div>
       </div>
     </div>
   );

@@ -6,6 +6,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
 import { cn } from '@/lib/utils';
 import { Loader2, Check, X, ImageOff } from 'lucide-react';
+import { OptionalComment, normalizeOptionalComment } from './OptionalComment';
 
 interface Props {
   requestId: string;
@@ -24,6 +25,7 @@ export const ImageDialog: React.FC<Props> = ({ input, onSubmit, loading }) => {
   const [selectedIdx, setSelectedIdx] = useState<number[]>([]);
   const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
   const [imgState, setImgState] = useState<Record<number, ImgState>>({});
+  const [comment, setComment] = useState('');
 
   const isConfirm = input.mode === 'confirm';
   const hasOptions = Array.isArray(input.options) && input.options.length > 0;
@@ -62,18 +64,22 @@ export const ImageDialog: React.FC<Props> = ({ input, onSubmit, loading }) => {
       ? (isMulti ? selectedOptions : selectedOptions[0])
       : (isMulti ? selectedIdx : selectedIdx[0]);
 
+    const c = normalizeOptionalComment(comment);
     await onSubmit({
       selected,
       timestamp: new Date().toISOString(),
+      ...(c ? { comment: c } : {})
     });
     setSubmitting(null);
   };
 
   const submitConfirm = async (approved: boolean) => {
     setSubmitting(approved ? 'approve' : 'reject');
+    const c = normalizeOptionalComment(comment);
     await onSubmit({
       selected: approved,
       timestamp: new Date().toISOString(),
+      ...(c ? { comment: c } : {})
     });
     setSubmitting(null);
   };
@@ -199,44 +205,48 @@ export const ImageDialog: React.FC<Props> = ({ input, onSubmit, loading }) => {
         </div>
       )}
 
-      {/* Footer actions */}
-      {isConfirm ? (
-        <div className="flex flex-col sm:flex-row gap-4 mt-auto pt-6 border-t border-border/50">
-          <Button
-            variant="outline"
-            className="cyber-button flex-1 h-14 text-lg border-destructive/50 text-destructive hover:bg-destructive/10 hover:text-destructive"
-            onClick={() => submitConfirm(false)}
-            disabled={loading || submitting !== null}
-          >
-            {submitting === 'reject' ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <X className="mr-2 h-5 w-5" />}
-            REJECT
-          </Button>
-          <Button
-            className="cyber-button flex-1 h-14 text-lg bg-primary text-primary-foreground hover:bg-primary/90"
-            onClick={() => submitConfirm(true)}
-            disabled={loading || submitting !== null}
-          >
-            {submitting === 'approve' ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Check className="mr-2 h-5 w-5" />}
-            APPROVE
-          </Button>
-        </div>
-      ) : (
-        <div className="flex justify-end pt-4 border-t border-border">
-          <div className="flex items-center gap-4 w-full">
-            <div className="text-xs font-mono text-muted-foreground flex-1">
-              {selectionCount} SELECTED
-            </div>
+      <div className="mt-auto pt-4 border-t border-border/50 space-y-3">
+        <OptionalComment value={comment} onChange={setComment} disabled={loading || submitting !== null} />
+
+        {/* Footer actions */}
+        {isConfirm ? (
+          <div className="flex flex-col sm:flex-row gap-4">
             <Button
-              className="cyber-button min-w-[160px]"
-              onClick={submitSelect}
-              disabled={loading || submitting !== null || selectionCount === 0}
+              variant="outline"
+              className="cyber-button flex-1 h-14 text-lg border-destructive/50 text-destructive hover:bg-destructive/10 hover:text-destructive"
+              onClick={() => submitConfirm(false)}
+              disabled={loading || submitting !== null}
             >
-              {submitting === 'submit' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-              SUBMIT_ANSWER
+              {submitting === 'reject' ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <X className="mr-2 h-5 w-5" />}
+              REJECT
+            </Button>
+            <Button
+              className="cyber-button flex-1 h-14 text-lg bg-primary text-primary-foreground hover:bg-primary/90"
+              onClick={() => submitConfirm(true)}
+              disabled={loading || submitting !== null}
+            >
+              {submitting === 'approve' ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Check className="mr-2 h-5 w-5" />}
+              APPROVE
             </Button>
           </div>
-        </div>
-      )}
+        ) : (
+          <div className="flex justify-end">
+            <div className="flex items-center gap-4 w-full">
+              <div className="text-xs font-mono text-muted-foreground flex-1">
+                {selectionCount} SELECTED
+              </div>
+              <Button
+                className="cyber-button min-w-[160px]"
+                onClick={submitSelect}
+                disabled={loading || submitting !== null || selectionCount === 0}
+              >
+                {submitting === 'submit' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                SUBMIT_ANSWER
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

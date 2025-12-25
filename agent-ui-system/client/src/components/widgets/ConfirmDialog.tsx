@@ -2,6 +2,7 @@ import React from 'react';
 import { ConfirmInput, ConfirmOutput } from '@/types/schemas';
 import { Button } from '@/components/ui/button';
 import { Loader2, AlertTriangle, Check, X } from 'lucide-react';
+import { OptionalComment, normalizeOptionalComment } from './OptionalComment';
 
 interface Props {
   requestId: string;
@@ -12,18 +13,21 @@ interface Props {
 
 export const ConfirmDialog: React.FC<Props> = ({ input, onSubmit, loading }) => {
   const [submitting, setSubmitting] = React.useState<'approve' | 'reject' | null>(null);
+  const [comment, setComment] = React.useState('');
 
   const handleAction = async (approved: boolean) => {
     setSubmitting(approved ? 'approve' : 'reject');
+    const c = normalizeOptionalComment(comment);
     await onSubmit({
       approved,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      ...(c ? { comment: c } : {})
     });
     setSubmitting(null);
   };
 
   return (
-    <div className="bg-background p-6 md:p-8 min-h-[300px] flex flex-col justify-between relative overflow-hidden">
+    <div className="bg-background p-6 md:p-8 min-h-[300px] flex flex-col relative overflow-hidden">
       {/* Background decoration */}
       <div className="absolute top-0 right-0 p-4 opacity-5">
         <AlertTriangle size={120} />
@@ -44,33 +48,37 @@ export const ConfirmDialog: React.FC<Props> = ({ input, onSubmit, loading }) => 
         )}
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-4 mt-8 pt-8 border-t border-border/50">
-        <Button 
-          variant="outline" 
-          className="cyber-button flex-1 h-14 text-lg border-destructive/50 text-destructive hover:bg-destructive/10 hover:text-destructive"
-          onClick={() => handleAction(false)}
-          disabled={loading || submitting !== null}
-        >
-          {submitting === 'reject' ? (
-            <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-          ) : (
-            <X className="mr-2 h-5 w-5" />
-          )}
-          {input.rejectText || 'REJECT'}
-        </Button>
-        
-        <Button 
-          className="cyber-button flex-1 h-14 text-lg bg-primary text-primary-foreground hover:bg-primary/90"
-          onClick={() => handleAction(true)}
-          disabled={loading || submitting !== null}
-        >
-          {submitting === 'approve' ? (
-            <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-          ) : (
-            <Check className="mr-2 h-5 w-5" />
-          )}
-          {input.approveText || 'APPROVE'}
-        </Button>
+      <div className="mt-auto pt-6 border-t border-border/50 space-y-4">
+        <OptionalComment value={comment} onChange={setComment} disabled={loading || submitting !== null} />
+
+        <div className="flex flex-col sm:flex-row gap-4">
+          <Button
+            variant="outline"
+            className="cyber-button flex-1 h-14 text-lg border-destructive/50 text-destructive hover:bg-destructive/10 hover:text-destructive"
+            onClick={() => handleAction(false)}
+            disabled={loading || submitting !== null}
+          >
+            {submitting === 'reject' ? (
+              <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+            ) : (
+              <X className="mr-2 h-5 w-5" />
+            )}
+            {input.rejectText || 'REJECT'}
+          </Button>
+
+          <Button
+            className="cyber-button flex-1 h-14 text-lg bg-primary text-primary-foreground hover:bg-primary/90"
+            onClick={() => handleAction(true)}
+            disabled={loading || submitting !== null}
+          >
+            {submitting === 'approve' ? (
+              <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+            ) : (
+              <Check className="mr-2 h-5 w-5" />
+            )}
+            {input.approveText || 'APPROVE'}
+          </Button>
+        </div>
       </div>
     </div>
   );
