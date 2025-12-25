@@ -93,14 +93,16 @@ func (s *Server) handleStaticFiles(mux *http.ServeMux) {
 				http.NotFound(w, r)
 				return
 			}
-			defer indexFile.Close()
+			defer func() {
+				_ = indexFile.Close()
+			}()
 
 			// Read and serve index.html
 			w.Header().Set("Content-Type", "text/html; charset=utf-8")
 			_, _ = io.Copy(w, indexFile)
 			return
 		}
-		file.Close()
+		_ = file.Close()
 
 		// File exists - serve it normally
 		fileServer.ServeHTTP(w, r)
@@ -358,6 +360,12 @@ func (s *Server) handleImagesCollection(w http.ResponseWriter, r *http.Request) 
 		http.Error(w, "invalid multipart form", http.StatusBadRequest)
 		return
 	}
+	// IMPORTANT: ParseMultipartForm may spill large parts to disk; ensure we clean up temp files.
+	if r.MultipartForm != nil {
+		defer func() {
+			_ = r.MultipartForm.RemoveAll()
+		}()
+	}
 	if rawTTL := r.FormValue("ttlSeconds"); rawTTL != "" {
 		if t, err := strconv.ParseInt(rawTTL, 10, 64); err == nil && t > 0 {
 			ttlSeconds = t
@@ -443,7 +451,9 @@ func (s *Server) handleImagesItem(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "not found", http.StatusNotFound)
 		return
 	}
-	defer f.Close()
+	defer func() {
+		_ = f.Close()
+	}()
 
 	st, err := f.Stat()
 	if err != nil {

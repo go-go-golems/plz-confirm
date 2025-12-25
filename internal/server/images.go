@@ -75,7 +75,9 @@ func (s *ImageStore) Put(
 	if err != nil {
 		return StoredImage{}, errors.Wrap(err, "open destination file")
 	}
-	defer f.Close()
+	defer func() {
+		_ = f.Close()
+	}()
 
 	n, err := io.Copy(f, r)
 	if err != nil {
@@ -119,7 +121,8 @@ func (s *ImageStore) Delete(_ context.Context, id string) {
 	}
 }
 
-func (s *ImageStore) Cleanup(_ context.Context, now time.Time) (deleted int) {
+func (s *ImageStore) Cleanup(_ context.Context, now time.Time) int {
+	deleted := 0
 	// Snapshot keys to avoid holding lock while deleting files.
 	toDelete := make([]string, 0)
 

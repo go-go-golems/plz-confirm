@@ -119,7 +119,9 @@ func (c *TableCommand) RunIntoGlazeProcessor(
 		if err != nil {
 			return errors.Wrapf(err, "open data file %s", dataPath)
 		}
-		defer f.Close()
+		defer func() {
+			_ = f.Close()
+		}()
 		dataReader = f
 	}
 

@@ -248,5 +248,3 @@ negative_case "Mismatched --image-label count" image \
 
 say "Done"
 echo "If you want to re-run just one case, copy/paste the printed command."
-
-

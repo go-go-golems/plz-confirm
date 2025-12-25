@@ -164,7 +164,9 @@ func (c *Client) UploadImage(ctx context.Context, filePath string, ttlSeconds in
 			_ = pw.CloseWithError(errors.Wrap(err, "open image file"))
 			return
 		}
-		defer f.Close()
+		defer func() {
+			_ = f.Close()
+		}()
 
 		if ttlSeconds > 0 {
 			if err := mw.WriteField("ttlSeconds", strconv.Itoa(ttlSeconds)); err != nil {

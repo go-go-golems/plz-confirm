@@ -259,5 +259,3 @@ plz-confirm help how-to-use
 ```
 
 - For the image widget design and UI sketches, see the ticket docs under `ttmp/2025/12/24/001-ADD-IMG-WIDGET--.../`.
-
-

@@ -99,7 +99,9 @@ func (c *FormCommand) RunIntoGlazeProcessor(
 		if err != nil {
 			return errors.Wrapf(err, "open schema file %s", schemaPath)
 		}
-		defer f.Close()
+		defer func() {
+			_ = f.Close()
+		}()
 		schemaReader = f
 	}
 
