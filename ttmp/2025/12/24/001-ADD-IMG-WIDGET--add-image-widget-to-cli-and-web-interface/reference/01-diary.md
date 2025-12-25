@@ -539,4 +539,41 @@ This step implemented the React side of the feature: rendering the image widget 
 - Output shape consistency: Variant A returns indices, Variant B returns strings (option labels). We should confirm this is what we want long-term.
 - UI affordances: ensure the “click tile” selection UX feels consistent with `SelectDialog` styling and keyboard navigation expectations.
 
+## Step 13: Document the image command + add a smoke script
+
+This step turned the implementation into something other developers can actually use without reading code. I updated the user-facing docs (`README.md` and `pkg/doc/how-to-use.md`) to mention the new `plz-confirm image` command, and added a ticket-local smoke script that exercises the three primary flows (Variant A, Variant B, confirm).
+
+**Commit (docs):** 375c846d30b2266ba659b6cb97cf6caaa34365e5 — "Docs: add image command docs and smoke script"
+
+### What I did
+- Updated `pkg/doc/how-to-use.md` to include an **Image Command** section with:
+  - flag list
+  - example calls for Variant A / Variant B / confirm
+  - notes on output shape (`selected_json`)
+- Updated `README.md` to:
+  - include “image prompts” in the feature list
+  - add `plz-confirm image` to the available commands
+  - add a simple “Image Prompt” example snippet
+- Added `ttmp/.../scripts/smoke-image-widget.sh` with runnable examples (expects a running server + UI).
+
+### Why
+- Without docs + examples, it’s easy to “have the feature” but still be unsure how to call it correctly.
+- The smoke script is the fastest path for manual parity testing during UI development.
+
+## Step 14: Add backend tests for /api/images
+
+This step added basic tests for the new image upload/serve endpoints. The goal is not exhaustive coverage, but to lock down the main contract so future refactors don’t break the feature silently.
+
+**Commit (code):** 8483bbac53310eea1ad37457e2648307654de894 — "Server: test /api/images upload+serve"
+
+### What I did
+- Added `internal/server/images_test.go`:
+  - happy path: upload a tiny PNG header and then GET it back
+  - rejection path: uploading non-image content returns 400
+- Verified with `go test ./... -count=1`.
+
+### What warrants a second pair of eyes
+- The PNG “minimal bytes” assumption: we rely on `http.DetectContentType` recognizing the header.
+- Whether we should also test expiry behavior (we currently set `ttlSeconds` and use cleanup on a ticker).
+
 

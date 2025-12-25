@@ -123,3 +123,16 @@ Implemented ImageDialog widget in React and wired WidgetRenderer to render type=
 - /home/manuel/workspaces/2025-12-24/add-img-widget-plz-confirm/plz-confirm/agent-ui-system/client/src/components/widgets/ImageDialog.tsx — New image widget UI (commit bae8d81)
 - /home/manuel/workspaces/2025-12-24/add-img-widget-plz-confirm/plz-confirm/ttmp/2025/12/24/001-ADD-IMG-WIDGET--add-image-widget-to-cli-and-web-interface/reference/01-diary.md — Recorded Step 12
 
+
+## 2025-12-24
+
+Docs: documented plz-confirm image in README + how-to-use and added ticket smoke script. Tests: added basic backend tests for /api/images upload+serve.
+
+### Related Files
+
+- /home/manuel/workspaces/2025-12-24/add-img-widget-plz-confirm/plz-confirm/README.md — Added image command to README (commit 375c846)
+- /home/manuel/workspaces/2025-12-24/add-img-widget-plz-confirm/plz-confirm/internal/server/images_test.go — Backend tests for /api/images (commit 8483bba)
+- /home/manuel/workspaces/2025-12-24/add-img-widget-plz-confirm/plz-confirm/pkg/doc/how-to-use.md — Added Image Command docs (commit 375c846)
+- /home/manuel/workspaces/2025-12-24/add-img-widget-plz-confirm/plz-confirm/ttmp/2025/12/24/001-ADD-IMG-WIDGET--add-image-widget-to-cli-and-web-interface/reference/01-diary.md — Recorded Steps 13-14
+- /home/manuel/workspaces/2025-12-24/add-img-widget-plz-confirm/plz-confirm/ttmp/2025/12/24/001-ADD-IMG-WIDGET--add-image-widget-to-cli-and-web-interface/scripts/smoke-image-widget.sh — Manual smoke script (commit 375c846)
+
