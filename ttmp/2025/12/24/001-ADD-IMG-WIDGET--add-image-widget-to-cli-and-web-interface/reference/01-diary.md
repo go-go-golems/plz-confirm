@@ -598,4 +598,36 @@ This step captured the “run all CLI verbs, but auto-answer them” workflow in
 - Log parsing robustness: if server log format changes, the script will need to be updated.
 - Dependency assumptions: script expects `jq`, `curl`, `go`, and `base64`.
 
+## Step 16: Run the tmux dev stack + execute the API-driven smoke script
+
+This step validated that the system actually runs end-to-end in the intended dev topology: Go server on `:3001`, Vite UI on `:3000` proxying `/api` and `/ws`, and the CLI talking to the UI base URL (`http://localhost:3000`). The smoke script then exercised all CLI verbs and confirmed that the CLI unblocks and prints output once the server receives `/response`.
+
+### What I did
+- Started a tmux session with two windows (server + Vite), logging to:
+  - `/tmp/plz-confirm-server.log`
+  - `/tmp/plz-confirm-vite.log`
+- Ran `scripts/auto-e2e-cli-via-api.sh`.
+
+### What worked
+- All CLI verbs completed successfully via auto-submitted responses:
+  - `confirm`, `select`, `form`, `table`, `upload`, and `image` (Variant A / Variant B / confirm).
+- The server log showed the expected lifecycle:
+  - `[API] Created request <id> (<type>)`
+  - `[API] Request <id> completed`
+
+### What didn’t work (small)
+- The script uses `curl -I` (HEAD) as a quick sanity check for `/api/images/{id}`, and the endpoint returned `405 Method Not Allowed` even though `GET` worked.
+
+## Step 17: Allow HEAD requests for /api/images/{id}
+
+This is a small HTTP compatibility fix: allowing `HEAD` makes it easier to validate endpoints with `curl -I` and matches common behavior for “static-ish” resources.
+
+**Commit (code):** 13b380c57c827891049519a28865cc3f10907a81 — "Server: allow HEAD on /api/images/{id}"
+
+### What I did
+- Updated the image serving handler to accept `HEAD` in addition to `GET`.
+
+### What worked
+- After restarting the running server, `curl -I http://localhost:3001/api/images/{id}` returns `200 OK` with the expected headers.
+
 

@@ -147,3 +147,14 @@ Added ticket-local script to run all CLI verbs and auto-submit responses via /ap
 - /home/manuel/workspaces/2025-12-24/add-img-widget-plz-confirm/plz-confirm/ttmp/2025/12/24/001-ADD-IMG-WIDGET--add-image-widget-to-cli-and-web-interface/scripts/auto-e2e-cli-via-api.sh — API-driven CLI smoke test script
 - /home/manuel/workspaces/2025-12-24/add-img-widget-plz-confirm/plz-confirm/ttmp/2025/12/24/001-ADD-IMG-WIDGET--add-image-widget-to-cli-and-web-interface/tasks.md — Added task entry for API-driven smoke script
 
+
+## 2025-12-24
+
+Tested dev stack in tmux (server :3001 + Vite :3000) and ran API-driven smoke script successfully across all verbs. Small follow-up: allowed HEAD on /api/images/{id} so curl -I works (commit 13b380c).
+
+### Related Files
+
+- /home/manuel/workspaces/2025-12-24/add-img-widget-plz-confirm/plz-confirm/internal/server/server.go — HEAD support for /api/images/{id} (commit 13b380c)
+- /home/manuel/workspaces/2025-12-24/add-img-widget-plz-confirm/plz-confirm/ttmp/2025/12/24/001-ADD-IMG-WIDGET--add-image-widget-to-cli-and-web-interface/reference/01-diary.md — Recorded Steps 16-17
+- /home/manuel/workspaces/2025-12-24/add-img-widget-plz-confirm/plz-confirm/ttmp/2025/12/24/001-ADD-IMG-WIDGET--add-image-widget-to-cli-and-web-interface/scripts/auto-e2e-cli-via-api.sh — Smoke test script used
+
