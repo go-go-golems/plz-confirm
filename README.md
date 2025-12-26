@@ -323,10 +323,10 @@ The project includes tmux scripts for easy development setup:
 
 ```bash
 # Start server and frontend dev server in tmux
-bash ttmp/2025/12/15/DESIGN-PLZ-CONFIRM-001--port-agent-ui-system-cli-backend-to-go-using-glazed-framework/scripts/tmux-up.sh
+bash scripts/tmux-up.sh
 
 # Attach to tmux session
-tmux attach -t DESIGN-PLZ-CONFIRM-001
+tmux attach -t PLZ-CONFIRM
 ```
 
 ## Contributing

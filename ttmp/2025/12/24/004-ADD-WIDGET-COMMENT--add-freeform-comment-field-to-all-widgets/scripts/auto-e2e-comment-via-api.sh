@@ -116,7 +116,7 @@ run_and_answer() {
 run_and_answer confirm confirm '{"approved":true,"timestamp":"2025-12-25T00:00:00Z","comment":"AUTO_OK"}' \
   confirm --title 'TEST confirm comment' --message 'auto-answered'
 
-run_and_answer select select '{"selected":"staging","comment":"AUTO_OK"}' \
+run_and_answer select select '{"selectedSingle":"staging","comment":"AUTO_OK"}' \
   select --title 'TEST select comment' --option production --option staging
 
 cat > /tmp/plz-form-schema.json <<'JSON'
@@ -128,13 +128,13 @@ run_and_answer form form '{"data":{"host":"example"},"comment":"AUTO_OK"}' \
 cat > /tmp/plz-table.json <<'JSON'
 [{"id":"srv-1","name":"alpha"},{"id":"srv-2","name":"beta"}]
 JSON
-run_and_answer table table '{"selected":{"id":"srv-2","name":"beta"},"comment":"AUTO_OK"}' \
+run_and_answer table table '{"selectedSingle":{"id":"srv-2","name":"beta"},"comment":"AUTO_OK"}' \
   table --title 'TEST table comment' --data @/tmp/plz-table.json --columns id,name
 
 run_and_answer upload upload '{"files":[{"name":"a.txt","size":1,"path":"/tmp/a.txt","mimeType":"text/plain"}],"comment":"AUTO_OK"}' \
   upload --title 'TEST upload comment' --accept .txt --multiple
 
-run_and_answer image_pick image '{"selected":0,"timestamp":"2025-12-25T00:00:00Z","comment":"AUTO_OK"}' \
+run_and_answer image_pick image '{"selectedNumber":0,"timestamp":"2025-12-25T00:00:00Z","comment":"AUTO_OK"}' \
   image --title 'TEST image comment' --message 'pick one' --image /tmp/plz-img-1.png --image /tmp/plz-img-2.png
 
 echo "== Done =="
