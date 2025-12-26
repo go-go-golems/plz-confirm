@@ -26,6 +26,19 @@ jobs:
           go-version: '>=1.19.5'
           cache: true
 
+      # goreleaser runs `go generate ./...` (see `.goreleaser.yaml`), which builds the frontend via pnpm/Vite.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+          cache-dependency-path: agent-ui-system/pnpm-lock.yaml
+
+      - name: Enable corepack (pnpm)
+        run: corepack enable
+
+      - name: Install frontend deps
+        run: pnpm -C agent-ui-system install --frozen-lockfile
+
       - name: Import GPG key
         id: import_gpg
         uses: crazy-max/ghaction-import-gpg@v6
