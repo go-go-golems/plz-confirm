@@ -1,0 +1,31 @@
+# Changelog
+
+## 2025-12-25
+
+- Initial workspace created
+
+
+## 2025-12-25
+
+Completed architecture analysis and protobuf design proposal. Documented all 11 shared data structures, API endpoints, and designed protobuf message hierarchy with oneof patterns for union types. Created 7-phase migration strategy.
+
+
+## 2025-12-26
+
+Updated design document: removed backward compatibility, changed to single-step migration, kept JSON wire format (no gRPC). Added 5 implementation tasks to ticket.
+
+### Related Files
+
+- /home/manuel/workspaces/2025-12-24/add-img-widget-plz-confirm/plz-confirm/ttmp/2025/12/25/006-USE-PROTOBUF--unify-backend-frontend-shared-data-with-protobuf-codegen/design-doc/01-protobuf-unification-codegen-proposal.md — Updated migration strategy and design decisions
+
+
+## 2025-12-26
+
+Step 1: Created protobuf definitions and build pipeline (commit db4b5f0)
+
+### Related Files
+
+- /home/manuel/workspaces/2025-12-24/add-img-widget-plz-confirm/plz-confirm/Makefile — Added proto generation target
+- /home/manuel/workspaces/2025-12-24/add-img-widget-plz-confirm/plz-confirm/proto/plz_confirm/v1/request.proto — Core protobuf definitions
+- /home/manuel/workspaces/2025-12-24/add-img-widget-plz-confirm/plz-confirm/proto/plz_confirm/v1/widgets.proto — Widget Input/Output types
+
