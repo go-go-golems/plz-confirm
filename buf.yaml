@@ -1,8 +1,16 @@
 # For details on buf.yaml configuration, visit https://buf.build/docs/configuration/v2/buf-yaml
 version: v2
+modules:
+  - path: proto
 lint:
   use:
     - STANDARD
+  except:
+    # We intentionally name enum values to preserve the existing JSON wire format
+    # when serializing with protojson (enums are emitted as their names).
+    - ENUM_VALUE_PREFIX
+    - ENUM_VALUE_UPPER_SNAKE_CASE
+    - ENUM_ZERO_VALUE_SUFFIX
 breaking:
   use:
     - FILE

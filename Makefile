@@ -1,4 +1,4 @@
-.PHONY: gifs
+.PHONY: gifs proto
 
 all: gifs
 

@@ -16,19 +16,19 @@ var errInvalidType = errors.New("invalid widget type")
 func widgetTypeStringToProto(wt string) v1.WidgetType {
 	switch wt {
 	case "confirm":
-		return v1.WidgetType_WIDGET_TYPE_CONFIRM
+		return v1.WidgetType_confirm
 	case "select":
-		return v1.WidgetType_WIDGET_TYPE_SELECT
+		return v1.WidgetType_select
 	case "form":
-		return v1.WidgetType_WIDGET_TYPE_FORM
+		return v1.WidgetType_form
 	case "upload":
-		return v1.WidgetType_WIDGET_TYPE_UPLOAD
+		return v1.WidgetType_upload
 	case "table":
-		return v1.WidgetType_WIDGET_TYPE_TABLE
+		return v1.WidgetType_table
 	case "image":
-		return v1.WidgetType_WIDGET_TYPE_IMAGE
+		return v1.WidgetType_image
 	default:
-		return v1.WidgetType_WIDGET_TYPE_UNSPECIFIED
+		return v1.WidgetType_widget_type_unspecified
 	}
 }
 
@@ -40,37 +40,37 @@ func convertJSONInputToProto(widgetType v1.WidgetType, inputJSON any) (proto.Mes
 	}
 
 	switch widgetType {
-	case v1.WidgetType_WIDGET_TYPE_CONFIRM:
+	case v1.WidgetType_confirm:
 		var input v1.ConfirmInput
 		if err := protojson.Unmarshal(jsonBytes, &input); err != nil {
 			return nil, err
 		}
 		return &input, nil
-	case v1.WidgetType_WIDGET_TYPE_SELECT:
+	case v1.WidgetType_select:
 		var input v1.SelectInput
 		if err := protojson.Unmarshal(jsonBytes, &input); err != nil {
 			return nil, err
 		}
 		return &input, nil
-	case v1.WidgetType_WIDGET_TYPE_FORM:
+	case v1.WidgetType_form:
 		var input v1.FormInput
 		if err := protojson.Unmarshal(jsonBytes, &input); err != nil {
 			return nil, err
 		}
 		return &input, nil
-	case v1.WidgetType_WIDGET_TYPE_UPLOAD:
+	case v1.WidgetType_upload:
 		var input v1.UploadInput
 		if err := protojson.Unmarshal(jsonBytes, &input); err != nil {
 			return nil, err
 		}
 		return &input, nil
-	case v1.WidgetType_WIDGET_TYPE_TABLE:
+	case v1.WidgetType_table:
 		var input v1.TableInput
 		if err := protojson.Unmarshal(jsonBytes, &input); err != nil {
 			return nil, err
 		}
 		return &input, nil
-	case v1.WidgetType_WIDGET_TYPE_IMAGE:
+	case v1.WidgetType_image:
 		var input v1.ImageInput
 		if err := protojson.Unmarshal(jsonBytes, &input); err != nil {
 			return nil, err
@@ -89,37 +89,37 @@ func convertJSONOutputToProto(widgetType v1.WidgetType, outputJSON any) (proto.M
 	}
 
 	switch widgetType {
-	case v1.WidgetType_WIDGET_TYPE_CONFIRM:
+	case v1.WidgetType_confirm:
 		var output v1.ConfirmOutput
 		if err := protojson.Unmarshal(jsonBytes, &output); err != nil {
 			return nil, err
 		}
 		return &output, nil
-	case v1.WidgetType_WIDGET_TYPE_SELECT:
+	case v1.WidgetType_select:
 		var output v1.SelectOutput
 		if err := protojson.Unmarshal(jsonBytes, &output); err != nil {
 			return nil, err
 		}
 		return &output, nil
-	case v1.WidgetType_WIDGET_TYPE_FORM:
+	case v1.WidgetType_form:
 		var output v1.FormOutput
 		if err := protojson.Unmarshal(jsonBytes, &output); err != nil {
 			return nil, err
 		}
 		return &output, nil
-	case v1.WidgetType_WIDGET_TYPE_UPLOAD:
+	case v1.WidgetType_upload:
 		var output v1.UploadOutput
 		if err := protojson.Unmarshal(jsonBytes, &output); err != nil {
 			return nil, err
 		}
 		return &output, nil
-	case v1.WidgetType_WIDGET_TYPE_TABLE:
+	case v1.WidgetType_table:
 		var output v1.TableOutput
 		if err := protojson.Unmarshal(jsonBytes, &output); err != nil {
 			return nil, err
 		}
 		return &output, nil
-	case v1.WidgetType_WIDGET_TYPE_IMAGE:
+	case v1.WidgetType_image:
 		var output v1.ImageOutput
 		if err := protojson.Unmarshal(jsonBytes, &output); err != nil {
 			return nil, err
@@ -133,7 +133,7 @@ func convertJSONOutputToProto(widgetType v1.WidgetType, outputJSON any) (proto.M
 // createUIRequestFromJSON creates a *v1.UIRequest from JSON createRequestBody
 func createUIRequestFromJSON(typeStr string, sessionID string, inputJSON any, timeoutS int) (*v1.UIRequest, error) {
 	widgetType := widgetTypeStringToProto(typeStr)
-	if widgetType == v1.WidgetType_WIDGET_TYPE_UNSPECIFIED {
+	if widgetType == v1.WidgetType_widget_type_unspecified {
 		return nil, errInvalidType
 	}
 

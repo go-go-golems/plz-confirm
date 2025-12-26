@@ -25,28 +25,30 @@ const (
 type RequestStatus int32
 
 const (
-	RequestStatus_REQUEST_STATUS_UNSPECIFIED RequestStatus = 0
-	RequestStatus_REQUEST_STATUS_PENDING     RequestStatus = 1
-	RequestStatus_REQUEST_STATUS_COMPLETED   RequestStatus = 2
-	RequestStatus_REQUEST_STATUS_TIMEOUT     RequestStatus = 3
-	RequestStatus_REQUEST_STATUS_ERROR       RequestStatus = 4
+	// NOTE: Enum value NAMES are chosen to preserve the existing JSON wire contract
+	// when using protojson (it serializes enums as their names).
+	RequestStatus_request_status_unspecified RequestStatus = 0
+	RequestStatus_pending                    RequestStatus = 1
+	RequestStatus_completed                  RequestStatus = 2
+	RequestStatus_timeout                    RequestStatus = 3
+	RequestStatus_error                      RequestStatus = 4
 )
 
 // Enum value maps for RequestStatus.
 var (
 	RequestStatus_name = map[int32]string{
-		0: "REQUEST_STATUS_UNSPECIFIED",
-		1: "REQUEST_STATUS_PENDING",
-		2: "REQUEST_STATUS_COMPLETED",
-		3: "REQUEST_STATUS_TIMEOUT",
-		4: "REQUEST_STATUS_ERROR",
+		0: "request_status_unspecified",
+		1: "pending",
+		2: "completed",
+		3: "timeout",
+		4: "error",
 	}
 	RequestStatus_value = map[string]int32{
-		"REQUEST_STATUS_UNSPECIFIED": 0,
-		"REQUEST_STATUS_PENDING":     1,
-		"REQUEST_STATUS_COMPLETED":   2,
-		"REQUEST_STATUS_TIMEOUT":     3,
-		"REQUEST_STATUS_ERROR":       4,
+		"request_status_unspecified": 0,
+		"pending":                    1,
+		"completed":                  2,
+		"timeout":                    3,
+		"error":                      4,
 	}
 )
 
@@ -81,34 +83,36 @@ func (RequestStatus) EnumDescriptor() ([]byte, []int) {
 type WidgetType int32
 
 const (
-	WidgetType_WIDGET_TYPE_UNSPECIFIED WidgetType = 0
-	WidgetType_WIDGET_TYPE_CONFIRM     WidgetType = 1
-	WidgetType_WIDGET_TYPE_SELECT      WidgetType = 2
-	WidgetType_WIDGET_TYPE_FORM        WidgetType = 3
-	WidgetType_WIDGET_TYPE_UPLOAD      WidgetType = 4
-	WidgetType_WIDGET_TYPE_TABLE       WidgetType = 5
-	WidgetType_WIDGET_TYPE_IMAGE       WidgetType = 6
+	// NOTE: Enum value NAMES are chosen to preserve the existing JSON wire contract
+	// when using protojson (it serializes enums as their names).
+	WidgetType_widget_type_unspecified WidgetType = 0
+	WidgetType_confirm                 WidgetType = 1
+	WidgetType_select                  WidgetType = 2
+	WidgetType_form                    WidgetType = 3
+	WidgetType_upload                  WidgetType = 4
+	WidgetType_table                   WidgetType = 5
+	WidgetType_image                   WidgetType = 6
 )
 
 // Enum value maps for WidgetType.
 var (
 	WidgetType_name = map[int32]string{
-		0: "WIDGET_TYPE_UNSPECIFIED",
-		1: "WIDGET_TYPE_CONFIRM",
-		2: "WIDGET_TYPE_SELECT",
-		3: "WIDGET_TYPE_FORM",
-		4: "WIDGET_TYPE_UPLOAD",
-		5: "WIDGET_TYPE_TABLE",
-		6: "WIDGET_TYPE_IMAGE",
+		0: "widget_type_unspecified",
+		1: "confirm",
+		2: "select",
+		3: "form",
+		4: "upload",
+		5: "table",
+		6: "image",
 	}
 	WidgetType_value = map[string]int32{
-		"WIDGET_TYPE_UNSPECIFIED": 0,
-		"WIDGET_TYPE_CONFIRM":     1,
-		"WIDGET_TYPE_SELECT":      2,
-		"WIDGET_TYPE_FORM":        3,
-		"WIDGET_TYPE_UPLOAD":      4,
-		"WIDGET_TYPE_TABLE":       5,
-		"WIDGET_TYPE_IMAGE":       6,
+		"widget_type_unspecified": 0,
+		"confirm":                 1,
+		"select":                  2,
+		"form":                    3,
+		"upload":                  4,
+		"table":                   5,
+		"image":                   6,
 	}
 )
 
@@ -217,7 +221,7 @@ func (x *UIRequest) GetType() WidgetType {
 	if x != nil {
 		return x.Type
 	}
-	return WidgetType_WIDGET_TYPE_UNSPECIFIED
+	return WidgetType_widget_type_unspecified
 }
 
 func (x *UIRequest) GetSessionId() string {
@@ -353,7 +357,7 @@ func (x *UIRequest) GetStatus() RequestStatus {
 	if x != nil {
 		return x.Status
 	}
-	return RequestStatus_REQUEST_STATUS_UNSPECIFIED
+	return RequestStatus_request_status_unspecified
 }
 
 func (x *UIRequest) GetCreatedAt() string {
@@ -501,22 +505,24 @@ const file_plz_confirm_v1_request_proto_rawDesc = "" +
 	"\x05inputB\b\n" +
 	"\x06outputB\x0f\n" +
 	"\r_completed_atB\b\n" +
-	"\x06_error*\x9f\x01\n" +
+	"\x06_error*c\n" +
 	"\rRequestStatus\x12\x1e\n" +
-	"\x1aREQUEST_STATUS_UNSPECIFIED\x10\x00\x12\x1a\n" +
-	"\x16REQUEST_STATUS_PENDING\x10\x01\x12\x1c\n" +
-	"\x18REQUEST_STATUS_COMPLETED\x10\x02\x12\x1a\n" +
-	"\x16REQUEST_STATUS_TIMEOUT\x10\x03\x12\x18\n" +
-	"\x14REQUEST_STATUS_ERROR\x10\x04*\xb6\x01\n" +
+	"\x1arequest_status_unspecified\x10\x00\x12\v\n" +
+	"\apending\x10\x01\x12\r\n" +
+	"\tcompleted\x10\x02\x12\v\n" +
+	"\atimeout\x10\x03\x12\t\n" +
+	"\x05error\x10\x04*n\n" +
 	"\n" +
 	"WidgetType\x12\x1b\n" +
-	"\x17WIDGET_TYPE_UNSPECIFIED\x10\x00\x12\x17\n" +
-	"\x13WIDGET_TYPE_CONFIRM\x10\x01\x12\x16\n" +
-	"\x12WIDGET_TYPE_SELECT\x10\x02\x12\x14\n" +
-	"\x10WIDGET_TYPE_FORM\x10\x03\x12\x16\n" +
-	"\x12WIDGET_TYPE_UPLOAD\x10\x04\x12\x15\n" +
-	"\x11WIDGET_TYPE_TABLE\x10\x05\x12\x15\n" +
-	"\x11WIDGET_TYPE_IMAGE\x10\x06BGZEgithub.com/go-go-golems/plz-confirm/proto/generated/go/plz_confirm/v1b\x06proto3"
+	"\x17widget_type_unspecified\x10\x00\x12\v\n" +
+	"\aconfirm\x10\x01\x12\n" +
+	"\n" +
+	"\x06select\x10\x02\x12\b\n" +
+	"\x04form\x10\x03\x12\n" +
+	"\n" +
+	"\x06upload\x10\x04\x12\t\n" +
+	"\x05table\x10\x05\x12\t\n" +
+	"\x05image\x10\x06BGZEgithub.com/go-go-golems/plz-confirm/proto/generated/go/plz_confirm/v1b\x06proto3"
 
 var (
 	file_plz_confirm_v1_request_proto_rawDescOnce sync.Once

@@ -34,7 +34,7 @@ func New() *Store {
 // The request should have Input oneof populated, Type set, and SessionId set.
 // ID, Status, CreatedAt, and ExpiresAt will be set automatically.
 func (s *Store) Create(_ context.Context, req *v1.UIRequest) (*v1.UIRequest, error) {
-	if req.Type == v1.WidgetType_WIDGET_TYPE_UNSPECIFIED {
+	if req.Type == v1.WidgetType_widget_type_unspecified {
 		return nil, errors.New("type is required")
 	}
 	if req.Input == nil {
@@ -55,7 +55,7 @@ func (s *Store) Create(_ context.Context, req *v1.UIRequest) (*v1.UIRequest, err
 		Type:      req.Type,
 		SessionId: req.SessionId,
 		Input:     req.Input, // Copy the oneof field
-		Status:    v1.RequestStatus_REQUEST_STATUS_PENDING,
+		Status:    v1.RequestStatus_pending,
 		CreatedAt: now.Format(time.RFC3339Nano),
 		ExpiresAt: now.Format(time.RFC3339Nano), // Will be set below
 	}
@@ -100,7 +100,7 @@ func (s *Store) Pending(_ context.Context) []*v1.UIRequest {
 
 	out := make([]*v1.UIRequest, 0, len(s.requests))
 	for _, e := range s.requests {
-		if e.req.Status == v1.RequestStatus_REQUEST_STATUS_PENDING {
+		if e.req.Status == v1.RequestStatus_pending {
 			out = append(out, e.req)
 		}
 	}
@@ -115,13 +115,13 @@ func (s *Store) Complete(_ context.Context, id string, output *v1.UIRequest) (*v
 	if !ok {
 		return nil, ErrNotFound
 	}
-	if e.req.Status != v1.RequestStatus_REQUEST_STATUS_PENDING {
+	if e.req.Status != v1.RequestStatus_pending {
 		return nil, ErrAlreadyCompleted
 	}
 
 	now := time.Now().UTC().Format(time.RFC3339Nano)
 	e.req.Output = output.Output // Copy the output oneof field
-	e.req.Status = v1.RequestStatus_REQUEST_STATUS_COMPLETED
+	e.req.Status = v1.RequestStatus_completed
 	completedAt := now
 	e.req.CompletedAt = &completedAt
 
@@ -138,7 +138,7 @@ func (s *Store) Wait(ctx context.Context, id string) (*v1.UIRequest, error) {
 	if !ok {
 		return nil, ErrNotFound
 	}
-	if e.req.Status == v1.RequestStatus_REQUEST_STATUS_COMPLETED {
+	if e.req.Status == v1.RequestStatus_completed {
 		return e.req, nil
 	}
 

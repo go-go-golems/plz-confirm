@@ -13,36 +13,36 @@ import (
 func widgetTypeToProto(wt string) v1.WidgetType {
 	switch wt {
 	case "confirm":
-		return v1.WidgetType_WIDGET_TYPE_CONFIRM
+		return v1.WidgetType_confirm
 	case "select":
-		return v1.WidgetType_WIDGET_TYPE_SELECT
+		return v1.WidgetType_select
 	case "form":
-		return v1.WidgetType_WIDGET_TYPE_FORM
+		return v1.WidgetType_form
 	case "upload":
-		return v1.WidgetType_WIDGET_TYPE_UPLOAD
+		return v1.WidgetType_upload
 	case "table":
-		return v1.WidgetType_WIDGET_TYPE_TABLE
+		return v1.WidgetType_table
 	case "image":
-		return v1.WidgetType_WIDGET_TYPE_IMAGE
+		return v1.WidgetType_image
 	default:
-		return v1.WidgetType_WIDGET_TYPE_UNSPECIFIED
+		return v1.WidgetType_widget_type_unspecified
 	}
 }
 
 // widgetTypeFromProto converts protobuf WidgetType to string
 func widgetTypeFromProto(wt v1.WidgetType) string {
 	switch wt {
-	case v1.WidgetType_WIDGET_TYPE_CONFIRM:
+	case v1.WidgetType_confirm:
 		return "confirm"
-	case v1.WidgetType_WIDGET_TYPE_SELECT:
+	case v1.WidgetType_select:
 		return "select"
-	case v1.WidgetType_WIDGET_TYPE_FORM:
+	case v1.WidgetType_form:
 		return "form"
-	case v1.WidgetType_WIDGET_TYPE_UPLOAD:
+	case v1.WidgetType_upload:
 		return "upload"
-	case v1.WidgetType_WIDGET_TYPE_TABLE:
+	case v1.WidgetType_table:
 		return "table"
-	case v1.WidgetType_WIDGET_TYPE_IMAGE:
+	case v1.WidgetType_image:
 		return "image"
 	default:
 		return ""
@@ -53,28 +53,28 @@ func widgetTypeFromProto(wt v1.WidgetType) string {
 func requestStatusToProto(status string) v1.RequestStatus {
 	switch status {
 	case "pending":
-		return v1.RequestStatus_REQUEST_STATUS_PENDING
+		return v1.RequestStatus_pending
 	case "completed":
-		return v1.RequestStatus_REQUEST_STATUS_COMPLETED
+		return v1.RequestStatus_completed
 	case "timeout":
-		return v1.RequestStatus_REQUEST_STATUS_TIMEOUT
+		return v1.RequestStatus_timeout
 	case "error":
-		return v1.RequestStatus_REQUEST_STATUS_ERROR
+		return v1.RequestStatus_error
 	default:
-		return v1.RequestStatus_REQUEST_STATUS_UNSPECIFIED
+		return v1.RequestStatus_request_status_unspecified
 	}
 }
 
 // requestStatusFromProto converts protobuf RequestStatus to string
 func requestStatusFromProto(status v1.RequestStatus) string {
 	switch status {
-	case v1.RequestStatus_REQUEST_STATUS_PENDING:
+	case v1.RequestStatus_pending:
 		return "pending"
-	case v1.RequestStatus_REQUEST_STATUS_COMPLETED:
+	case v1.RequestStatus_completed:
 		return "completed"
-	case v1.RequestStatus_REQUEST_STATUS_TIMEOUT:
+	case v1.RequestStatus_timeout:
 		return "timeout"
-	case v1.RequestStatus_REQUEST_STATUS_ERROR:
+	case v1.RequestStatus_error:
 		return "error"
 	default:
 		return ""

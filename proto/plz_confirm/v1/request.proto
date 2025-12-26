@@ -8,22 +8,26 @@ import "plz_confirm/v1/widgets.proto";
 
 // RequestStatus enum
 enum RequestStatus {
-  REQUEST_STATUS_UNSPECIFIED = 0;
-  REQUEST_STATUS_PENDING = 1;
-  REQUEST_STATUS_COMPLETED = 2;
-  REQUEST_STATUS_TIMEOUT = 3;
-  REQUEST_STATUS_ERROR = 4;
+  // NOTE: Enum value NAMES are chosen to preserve the existing JSON wire contract
+  // when using protojson (it serializes enums as their names).
+  request_status_unspecified = 0;
+  pending = 1;
+  completed = 2;
+  timeout = 3;
+  error = 4;
 }
 
 // WidgetType enum
 enum WidgetType {
-  WIDGET_TYPE_UNSPECIFIED = 0;
-  WIDGET_TYPE_CONFIRM = 1;
-  WIDGET_TYPE_SELECT = 2;
-  WIDGET_TYPE_FORM = 3;
-  WIDGET_TYPE_UPLOAD = 4;
-  WIDGET_TYPE_TABLE = 5;
-  WIDGET_TYPE_IMAGE = 6;
+  // NOTE: Enum value NAMES are chosen to preserve the existing JSON wire contract
+  // when using protojson (it serializes enums as their names).
+  widget_type_unspecified = 0;
+  confirm = 1;
+  select = 2;
+  form = 3;
+  upload = 4;
+  table = 5;
+  image = 6;
 }
 
 // UIRequest - main request/response envelope
