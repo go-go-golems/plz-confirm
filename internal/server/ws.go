@@ -54,6 +54,18 @@ func (b *wsBroadcaster) BroadcastJSON(msg any) {
 	}
 }
 
+func (b *wsBroadcaster) BroadcastRawJSON(msg []byte) {
+	conns := b.snapshot()
+	for _, c := range conns {
+		_ = c.SetWriteDeadline(time.Now().Add(5 * time.Second))
+		if err := c.WriteMessage(websocket.TextMessage, msg); err != nil {
+			log.Printf("[WS] write failed, dropping client: %v", err)
+			_ = c.Close()
+			b.remove(c)
+		}
+	}
+}
+
 var wsUpgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
@@ -80,7 +92,14 @@ func (s *Server) handleWS(w http.ResponseWriter, r *http.Request) {
 	pending := s.store.Pending(r.Context())
 	for _, req := range pending {
 		_ = conn.SetWriteDeadline(time.Now().Add(5 * time.Second))
-		if err := conn.WriteJSON(map[string]any{"type": "new_request", "request": req}); err != nil {
+		msg, err := marshalWSEvent("new_request", req)
+		if err != nil {
+			log.Printf("[WS] initial marshal failed: %v", err)
+			_ = conn.Close()
+			s.ws.remove(conn)
+			return
+		}
+		if err := conn.WriteMessage(websocket.TextMessage, msg); err != nil {
 			log.Printf("[WS] initial send failed: %v", err)
 			_ = conn.Close()
 			s.ws.remove(conn)

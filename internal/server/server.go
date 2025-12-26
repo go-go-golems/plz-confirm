@@ -14,7 +14,8 @@ import (
 	"time"
 
 	"github.com/go-go-golems/plz-confirm/internal/store"
-	"github.com/go-go-golems/plz-confirm/internal/types"
+	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
 )
 
 type Server struct {
@@ -163,10 +164,10 @@ func (s *Server) ListenAndServe(ctx context.Context, opts Options) error {
 // --- REST handlers ---
 
 type createRequestBody struct {
-	Type      types.WidgetType `json:"type"`
-	SessionID string           `json:"sessionId"`
-	Input     any              `json:"input"`
-	Timeout   int              `json:"timeout"` // seconds
+	Type      string `json:"type"`
+	SessionID string `json:"sessionId"`
+	Input     any    `json:"input"`
+	Timeout   int    `json:"timeout"` // seconds
 }
 
 func (s *Server) handleRequestsCollection(w http.ResponseWriter, r *http.Request) {
@@ -191,25 +192,29 @@ func (s *Server) handleCreateRequest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	req, err := s.store.Create(r.Context(), store.CreateParams{
-		Type:      body.Type,
-		SessionID: body.SessionID,
-		Input:     body.Input,
-		TimeoutS:  body.Timeout,
-	})
+	// Convert JSON to protobuf
+	reqProto, err := createUIRequestFromJSON(body.Type, body.SessionID, body.Input, body.Timeout)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// Create in store
+	req, err := s.store.Create(r.Context(), reqProto)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	// Broadcast new_request to all connected WS clients (G=no-session).
-	s.ws.BroadcastJSON(map[string]any{
-		"type":    "new_request",
-		"request": req,
-	})
+	if msg, err := marshalWSEvent("new_request", req); err == nil {
+		s.ws.BroadcastRawJSON(msg)
+	} else {
+		log.Printf("[WS] marshal new_request failed: %v", err)
+	}
 
-	log.Printf("[API] Created request %s (%s)", req.ID, req.Type)
-	writeJSON(w, http.StatusCreated, req)
+	log.Printf("[API] Created request %s (%s)", req.Id, req.Type)
+	writeProtoJSON(w, http.StatusCreated, req)
 }
 
 func (s *Server) handleRequestsItem(w http.ResponseWriter, r *http.Request) {
@@ -244,7 +249,7 @@ func (s *Server) handleRequestsItem(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "internal error", http.StatusInternalServerError)
 			return
 		}
-		writeJSON(w, http.StatusOK, req)
+		writeProtoJSON(w, http.StatusOK, req)
 		return
 	}
 
@@ -280,7 +285,25 @@ func (s *Server) handleSubmitResponse(w http.ResponseWriter, r *http.Request, id
 		return
 	}
 
-	req, err := s.store.Complete(r.Context(), id, body.Output)
+	// Get the request to determine widget type
+	existingReq, err := s.store.Get(r.Context(), id)
+	if err != nil {
+		if stderrors.Is(err, store.ErrNotFound) {
+			http.Error(w, "request not found", http.StatusNotFound)
+			return
+		}
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+
+	// Convert JSON output to protobuf
+	outputReq, err := createUIRequestWithOutput(existingReq.Type, body.Output)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	req, err := s.store.Complete(r.Context(), id, outputReq)
 	if err != nil {
 		if stderrors.Is(err, store.ErrNotFound) {
 			http.Error(w, "request not found", http.StatusNotFound)
@@ -295,13 +318,14 @@ func (s *Server) handleSubmitResponse(w http.ResponseWriter, r *http.Request, id
 	}
 
 	// Broadcast completion to all connected WS clients.
-	s.ws.BroadcastJSON(map[string]any{
-		"type":    "request_completed",
-		"request": req,
-	})
+	if msg, err := marshalWSEvent("request_completed", req); err == nil {
+		s.ws.BroadcastRawJSON(msg)
+	} else {
+		log.Printf("[WS] marshal request_completed failed: %v", err)
+	}
 
-	log.Printf("[API] Request %s completed", req.ID)
-	writeJSON(w, http.StatusOK, req)
+	log.Printf("[API] Request %s completed", req.Id)
+	writeProtoJSON(w, http.StatusOK, req)
 }
 
 func (s *Server) handleWait(w http.ResponseWriter, r *http.Request, id string) {
@@ -329,7 +353,7 @@ func (s *Server) handleWait(w http.ResponseWriter, r *http.Request, id string) {
 		return
 	}
 
-	writeJSON(w, http.StatusOK, req)
+	writeProtoJSON(w, http.StatusOK, req)
 }
 
 // --- Images handlers ---
@@ -474,4 +498,20 @@ func writeJSON(w http.ResponseWriter, status int, v any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	_ = json.NewEncoder(w).Encode(v)
+}
+
+// writeProtoJSON writes a protobuf message as JSON using protojson
+func writeProtoJSON(w http.ResponseWriter, status int, msg proto.Message) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	b, err := protojson.MarshalOptions{
+		EmitUnpopulated: true,
+		UseProtoNames:   false, // Use json_name tags (camelCase)
+	}.Marshal(msg)
+	if err != nil {
+		// Best-effort: keep response shape JSON, but signal failure.
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+	_, _ = w.Write(b)
 }
