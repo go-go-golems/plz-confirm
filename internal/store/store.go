@@ -8,11 +8,11 @@ import (
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 
-	"github.com/go-go-golems/plz-confirm/internal/types"
+	"github.com/go-go-golems/plz-confirm/proto/generated/go/plz_confirm/v1"
 )
 
 type requestEntry struct {
-	req      types.UIRequest
+	req      *v1.UIRequest
 	done     chan struct{}
 	doneOnce sync.Once
 }
@@ -30,107 +30,115 @@ func New() *Store {
 	}
 }
 
-type CreateParams struct {
-	Type      types.WidgetType
-	SessionID string
-	Input     any
-	TimeoutS  int
-}
-
-func (s *Store) Create(_ context.Context, p CreateParams) (types.UIRequest, error) {
-	if p.Type == "" {
-		return types.UIRequest{}, errors.New("type is required")
+// Create creates a new UIRequest from a protobuf UIRequest.
+// The request should have Input oneof populated, Type set, and SessionId set.
+// ID, Status, CreatedAt, and ExpiresAt will be set automatically.
+func (s *Store) Create(_ context.Context, req *v1.UIRequest) (*v1.UIRequest, error) {
+	if req.Type == v1.WidgetType_WIDGET_TYPE_UNSPECIFIED {
+		return nil, errors.New("type is required")
 	}
-	if p.Input == nil {
-		return types.UIRequest{}, errors.New("input is required")
+	if req.Input == nil {
+		return nil, errors.New("input is required")
 	}
-	if p.TimeoutS <= 0 {
-		p.TimeoutS = 300
-	}
-	if p.SessionID == "" {
+	if req.SessionId == "" {
 		// Compatibility: React/old server expect a string sessionId field.
 		// We intentionally ignore sessions (G=no-session), but keep a non-empty value.
-		p.SessionID = "global"
+		req.SessionId = "global"
 	}
 
 	now := time.Now().UTC()
 	id := uuid.NewString()
-	req := types.UIRequest{
-		ID:        id,
-		Type:      p.Type,
-		SessionID: p.SessionID,
-		Input:     p.Input,
-		Status:    types.StatusPending,
+	
+	// Clone the request and set required fields
+	reqCopy := &v1.UIRequest{
+		Id:        id,
+		Type:      req.Type,
+		SessionId: req.SessionId,
+		Input:     req.Input, // Copy the oneof field
+		Status:    v1.RequestStatus_REQUEST_STATUS_PENDING,
 		CreatedAt: now.Format(time.RFC3339Nano),
-		ExpiresAt: now.Add(time.Duration(p.TimeoutS) * time.Second).Format(time.RFC3339Nano),
+		ExpiresAt: now.Format(time.RFC3339Nano), // Will be set below
 	}
+
+	// Parse expiresAt if provided, otherwise use default timeout
+	var timeoutS int64 = 300
+	if req.ExpiresAt != "" {
+		if expTime, err := time.Parse(time.RFC3339Nano, req.ExpiresAt); err == nil {
+			timeoutS = int64(time.Until(expTime).Seconds())
+		}
+	}
+	if timeoutS <= 0 {
+		timeoutS = 300
+	}
+	reqCopy.ExpiresAt = now.Add(time.Duration(timeoutS) * time.Second).Format(time.RFC3339Nano)
 
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	s.requests[id] = &requestEntry{
-		req:  req,
+		req:  reqCopy,
 		done: make(chan struct{}),
 	}
 
-	return req, nil
+	return reqCopy, nil
 }
 
-func (s *Store) Get(_ context.Context, id string) (types.UIRequest, error) {
+func (s *Store) Get(_ context.Context, id string) (*v1.UIRequest, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
 	e, ok := s.requests[id]
 	if !ok {
-		return types.UIRequest{}, ErrNotFound
+		return nil, ErrNotFound
 	}
 	return e.req, nil
 }
 
-func (s *Store) Pending(_ context.Context) []types.UIRequest {
+func (s *Store) Pending(_ context.Context) []*v1.UIRequest {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	out := make([]types.UIRequest, 0, len(s.requests))
+	out := make([]*v1.UIRequest, 0, len(s.requests))
 	for _, e := range s.requests {
-		if e.req.Status == types.StatusPending {
+		if e.req.Status == v1.RequestStatus_REQUEST_STATUS_PENDING {
 			out = append(out, e.req)
 		}
 	}
 	return out
 }
 
-func (s *Store) Complete(_ context.Context, id string, output any) (types.UIRequest, error) {
+func (s *Store) Complete(_ context.Context, id string, output *v1.UIRequest) (*v1.UIRequest, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	e, ok := s.requests[id]
 	if !ok {
-		return types.UIRequest{}, ErrNotFound
+		return nil, ErrNotFound
 	}
-	if e.req.Status != types.StatusPending {
-		return types.UIRequest{}, ErrAlreadyCompleted
+	if e.req.Status != v1.RequestStatus_REQUEST_STATUS_PENDING {
+		return nil, ErrAlreadyCompleted
 	}
 
 	now := time.Now().UTC().Format(time.RFC3339Nano)
-	e.req.Output = output
-	e.req.Status = types.StatusCompleted
-	e.req.CompletedAt = &now
+	e.req.Output = output.Output // Copy the output oneof field
+	e.req.Status = v1.RequestStatus_REQUEST_STATUS_COMPLETED
+	completedAt := now
+	e.req.CompletedAt = &completedAt
 
 	e.doneOnce.Do(func() { close(e.done) })
 
 	return e.req, nil
 }
 
-func (s *Store) Wait(ctx context.Context, id string) (types.UIRequest, error) {
+func (s *Store) Wait(ctx context.Context, id string) (*v1.UIRequest, error) {
 	s.mu.RLock()
 	e, ok := s.requests[id]
 	s.mu.RUnlock()
 
 	if !ok {
-		return types.UIRequest{}, ErrNotFound
+		return nil, ErrNotFound
 	}
-	if e.req.Status == types.StatusCompleted {
+	if e.req.Status == v1.RequestStatus_REQUEST_STATUS_COMPLETED {
 		return e.req, nil
 	}
 
@@ -139,6 +147,6 @@ func (s *Store) Wait(ctx context.Context, id string) (types.UIRequest, error) {
 		// Return latest value (may have been updated)
 		return s.Get(ctx, id)
 	case <-ctx.Done():
-		return types.UIRequest{}, ErrWaitTimeout
+		return nil, ErrWaitTimeout
 	}
 }
