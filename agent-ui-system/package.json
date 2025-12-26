@@ -9,6 +9,7 @@
     "start": "NODE_ENV=production node dist/index.js",
     "preview": "vite preview --host",
     "check": "tsc --noEmit",
+    "proto": "protoc --proto_path=../proto --proto_path=/usr/include --ts_proto_out=client/src/proto/generated --ts_proto_opt=onlyTypes=true,useOptionals=messages,useJsonName=true,oneof=properties,forceLong=number,esModuleInterop=true,useStringEnums=true ../proto/plz_confirm/v1/*.proto",
     "format": "prettier --write ."
   },
   "dependencies": {

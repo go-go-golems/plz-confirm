@@ -298,11 +298,13 @@ plz-confirm/
 ├── cmd/plz-confirm/          # CLI entry point
 ├── internal/
 │   ├── cli/                  # Widget command implementations
+│   ├── client/               # CLI HTTP client (protojson <-> protobuf)
 │   ├── server/               # HTTP/WebSocket server
 │   ├── store/                 # Request storage
-│   └── types/                # Shared types
+├── proto/                    # Protobuf definitions + generated Go code
 ├── agent-ui-system/          # React frontend
-│   └── client/               # Frontend source code
+│   └── client/               # Frontend source code (protobuf TS types under src/proto/generated/)
+├── scripts/                  # Dev + inspection scripts (tmux, curl smoke)
 └── pkg/doc/                  # Documentation
 ```
 
@@ -310,11 +312,23 @@ plz-confirm/
 
 ```bash
 # Run Go tests
-go test ./...
+go test ./... -count=1
 
-# Run frontend tests
-cd agent-ui-system
-pnpm test
+# Lint protobuf files
+buf lint .
+
+# Run frontend typecheck
+pnpm -C agent-ui-system run check
+```
+
+### Code Generation
+
+```bash
+# Regenerate Go protobuf code
+make proto
+
+# Regenerate TypeScript protobuf types
+pnpm -C agent-ui-system run proto
 ```
 
 ### Development Scripts

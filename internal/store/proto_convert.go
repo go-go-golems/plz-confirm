@@ -9,7 +9,7 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
-// widgetTypeToProto converts internal/types.WidgetType to protobuf WidgetType
+// widgetTypeToProto converts a legacy widget type string to protobuf WidgetType.
 func widgetTypeToProto(wt string) v1.WidgetType {
 	switch wt {
 	case "confirm":
