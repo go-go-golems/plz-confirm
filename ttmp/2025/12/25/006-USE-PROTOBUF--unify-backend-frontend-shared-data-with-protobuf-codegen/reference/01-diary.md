@@ -481,3 +481,31 @@ I took over mid-migration: the server compilation was broken and the WebSocket p
 ### Code review instructions
 - Start in `internal/server/server.go` and verify each handler returns protojson output and still matches previous endpoint shapes.
 - Review `internal/server/ws_events.go` + `internal/server/ws.go` together to confirm camelCase WS payloads.
+
+## Step 8: Preserve legacy enum strings in protojson + fix proto generation target
+
+After the server switched to `protojson`, I realized protobuf enums serialize to JSON as their **enum value names**. With conventional names like `WIDGET_TYPE_CONFIRM` / `REQUEST_STATUS_PENDING`, the server would emit `"type": "WIDGET_TYPE_CONFIRM"` and `"status": "REQUEST_STATUS_PENDING"` which breaks the existing frontend/CLI that expect `"confirm"` and `"pending"`. This step changes enum *value names* to match the legacy JSON strings while keeping protobuf enums internally.
+
+**Commit (code):** 6cf1da0e9b08aea2d8b9c644a257a5ccf02f0c2c — "Proto: preserve JSON enum strings + fix make proto"
+
+### What I did
+- Updated `proto/plz_confirm/v1/request.proto` enum value names so `protojson` emits legacy strings:
+  - `WidgetType`: `confirm`, `select`, `form`, `upload`, `table`, `image`
+  - `RequestStatus`: `pending`, `completed`, `timeout`, `error`
+- Avoided the enum zero-value name collision (proto C++ scoping) by using distinct zero value names:
+  - `request_status_unspecified`, `widget_type_unspecified`
+- Regenerated Go code and updated all Go call sites to the new generated constant names (e.g. `v1.WidgetType_confirm`)
+- Fixed `make proto` by marking `proto` as phony (directory named `proto/` was causing “up to date” skips)
+- Updated `buf.yaml` to treat `proto/` as the module root and to explicitly ignore enum naming rules that conflict with this JSON-compat choice
+
+### Why
+- Keep the external JSON API stable while moving internals to protobuf types.
+
+### What was tricky to build
+- Protobuf enum scoping: enum values are siblings in the package scope, so zero values couldn’t both be named `unspecified`.
+
+### What warrants a second pair of eyes
+- Confirm that using non-standard enum value naming (for JSON compatibility) is an acceptable project tradeoff.
+
+### Code review instructions
+- Start in `proto/plz_confirm/v1/request.proto`, then check the regenerated `proto/generated/go/plz_confirm/v1/request.pb.go` enum value names.

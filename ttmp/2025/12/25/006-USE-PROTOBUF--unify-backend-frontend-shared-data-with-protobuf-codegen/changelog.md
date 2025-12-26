@@ -40,3 +40,14 @@ Step 2: Server now uses protobuf UIRequest internally and emits protojson for RE
 - /home/manuel/workspaces/2025-12-24/add-img-widget-plz-confirm/plz-confirm/internal/server/ws.go — WS sends raw JSON bytes
 - /home/manuel/workspaces/2025-12-24/add-img-widget-plz-confirm/plz-confirm/internal/server/ws_events.go — WS envelope marshaling
 
+
+## 2025-12-26
+
+Follow-up: protojson enum strings now match legacy wire contract (commit 6cf1da0)
+
+### Related Files
+
+- /home/manuel/workspaces/2025-12-24/add-img-widget-plz-confirm/plz-confirm/Makefile — Make proto marked phony
+- /home/manuel/workspaces/2025-12-24/add-img-widget-plz-confirm/plz-confirm/buf.yaml — Buf module root + lint exceptions
+- /home/manuel/workspaces/2025-12-24/add-img-widget-plz-confirm/plz-confirm/proto/plz_confirm/v1/request.proto — Enum value names adjusted for JSON compatibility
+
