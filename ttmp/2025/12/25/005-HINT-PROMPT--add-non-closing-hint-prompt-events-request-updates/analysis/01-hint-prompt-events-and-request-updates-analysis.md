@@ -12,11 +12,23 @@ Topics:
 - yaml
 ---
 
+## Executive summary
+
+The current plz-confirm request lifecycle is deliberately simple: **create a request**, **wait**, then **complete it once**. That simplicity is exactly why it works well for “one-shot” interactions, but it’s also why we can’t support “ask for more context” mid-flight: there’s no concept of an intermediate event, and there’s no supported way to update a pending request.
+
+This ticket proposes a new interaction loop where a user can trigger a **hint prompt** (a small embedded “ask for help” UI) that emits an **intermediate event** back to the agent while keeping the widget open. The agent can then respond by **updating the current request’s input**, allowing the user to continue in the same dialog without restarting the flow.
+
+There are a few viable ways to implement this. The cleanest long-term approach is to introduce explicit **event** and **update** endpoints (Option A) and a small event stream concept in the store. A lower-churn alternative is to overload the existing `/response` endpoint with a `kind=hint|final` field (Option B). We also consider a “linked request” approach (Option C), but it tends to reintroduce event semantics indirectly.
+
+Finally, because hint specs and request updates are inherently nested/structured, we also explore a **YAML DSL** approach (in addition to CLI flags) that could make both agent generation and human debugging easier.
+
 ## What we want (requirements in plain language)
 
 We want every widget to optionally include a **hint prompt** that the user can trigger to ask for more context/help **without closing the widget**.
 
-Concretely:
+The key idea is that “hint” is *not* the final answer—it’s an interruption that asks the agent to provide more information, after which the *same* widget continues. This makes the user experience feel more conversational and reduces the pressure to “get it right” on the first screen.
+
+Concretely, we want:
 
 - Each widget can optionally expose a folded “Hint / Ask for help” area.
 - The hint UI is configurable per request:
@@ -29,7 +41,7 @@ Concretely:
   - the CLI returns “user asked for hint” (including payload)
 - The agent can then **update the existing widget** with its response (e.g., add more info, change options, show additional images) and the user can continue.
 
-This implies two new capabilities:
+From an implementation perspective, this implies two capabilities we do not have today:
 
 1) **Intermediate events** on a request (hint events)
 2) **Mutating an existing request** (updating `input` of a pending request)
@@ -40,7 +52,9 @@ This section maps the current contracts with filenames and symbols, so it’s cl
 
 ### Server (Go): request lifecycle is “create → complete → wait”
 
-**REST endpoints (Go server)**
+At the server layer, the contract is intentionally widget-agnostic: `input` and `output` are `any`, and the server only cares about “pending vs completed”. That’s great for flexibility, but it also means there’s no native notion of events or partial progression.
+
+**REST endpoints (Go server)** (today)
 
 - Create request:
   - `POST /api/requests`
@@ -81,6 +95,8 @@ There is no concept of:
 
 The shared HTTP client is `internal/client/client.go`.
 
+The important piece to internalize here is that `WaitRequest` is currently synonymous with “wait for completion”. It does a long-poll loop against `/wait`, and `/wait` only returns 200 when the store considers the request completed.
+
 - `(*Client).CreateRequest(...)` posts to `/api/requests`
 - `(*Client).WaitRequest(ctx, id, waitTimeoutS)` long-polls `/api/requests/{id}/wait`
   - retries on HTTP 408
@@ -99,6 +115,8 @@ Today the CLI cannot “return on hint” because there is no hint event to wait
 ### Frontend (React): submitting always completes
 
 The UI receives new requests via WebSocket and shows exactly one `active` request.
+
+This is where “non-closing hint prompts” become visible: the current UI code path treats *every* submission as the final response. In other words, “submitting anything” today implies “closing the widget”.
 
 **Receiving WS**
 
@@ -125,15 +143,23 @@ We need a separate submit path that does **not** call `completeRequest`.
 
 ## What has to change (high-level)
 
-To support non-closing hint prompts + request updates, we need:
+To support non-closing hint prompts + request updates, we need changes in three places. It helps to think of this as “protocol + storage + UI ergonomics” rather than “just add a button”.
+
+**Protocol / server**
 
 - **New server endpoints** (or new semantics on existing ones) for:
   - “submit hint event”
   - “update request input”
   - “wait for next event” (hint or completion)
+
+**Storage / state model**
+
 - **New store model**:
   - completion-only `done` channel is insufficient
   - we need a per-request event stream / versioned state changes
+
+**UX + agent control loop**
+
 - **Frontend UX + state**:
   - optional hint UI per widget, folded by default
   - when user triggers hint → send hint event → keep active request on screen
@@ -142,6 +168,12 @@ To support non-closing hint prompts + request updates, we need:
   - ability to wait for “hint event” (and return early)
   - ability to “update request” (push new input to server)
 
+If we do this right, we unlock a more conversational pattern:
+
+```text
+agent creates widget -> user triggers hint -> agent updates widget -> user completes widget
+```
+
 ## Proposed wire model: “events” + “updates”
 
 This section proposes a clean way to express hint prompts and request updates.
@@ -149,6 +181,8 @@ This section proposes a clean way to express hint prompts and request updates.
 ### Data types (conceptual)
 
 #### 1) Add `hint` spec to widget input
+
+The hint prompt is best treated as part of the widget’s `input`—it’s UI configuration. This keeps the request self-contained: the browser can render the hint UI based on the request alone, and the agent can decide per-request whether hints should be enabled and what choices to offer.
 
 Each widget input can optionally carry:
 
@@ -166,7 +200,9 @@ This is UI-facing: it configures what the user sees and can click/type.
 
 #### 2) Introduce an event envelope
 
-Instead of treating “output” as only the final answer, model:
+Once hints exist, “output” is no longer a single thing. Sometimes it’s a final answer, and sometimes it’s “I need more context”. That’s why an explicit event envelope helps: it clearly distinguishes **intermediate events** from **completion**.
+
+Instead of treating “output” as only the final answer, model an event:
 
 ```json
 {
@@ -186,6 +222,8 @@ The key is **kind**:
 
 #### 3) Add “update request input”
 
+After a hint is emitted, the agent needs to push new information into the active widget. That means we need a supported way to modify `req.Input` while the request remains pending.
+
 Agent updates an in-flight request:
 
 - full replace: `PUT /api/requests/{id}/input`
@@ -203,7 +241,17 @@ UI updates `active.input` in-place.
 
 This section gives multiple approaches with tradeoffs. All can work; the decision is about complexity vs clarity vs compatibility.
 
+If you want a quick “how do these compare?” snapshot before the details, here’s a rough comparison:
+
+| Option | What it changes | Complexity | Back-compat risk | Long-term clarity |
+|---|---|---:|---:|---:|
+| **A** Events + Update endpoints | adds `/events` + `/input` + event-wait | High | Low | High |
+| **B** Overload `/response` | modifies `/response` semantics | Medium | Medium | Medium |
+| **C** Linked requests | treats hints as separate requests | Medium | Medium | Low |
+
 ### Option A (recommended): Add explicit event + update endpoints
+
+Option A turns “hint” into a first-class concept: a request can accumulate events while still pending, and the agent can update `input` without completing. This is the most work up-front, but it keeps the protocol clean and extensible.
 
 **New endpoints**
 
@@ -278,6 +326,8 @@ Cons:
 
 ### Option B: Overload `/response` with `kind=hint|final`
 
+Option B keeps the API surface smaller by teaching the existing `/response` endpoint a new behavior. This can be attractive if we want to avoid adding multiple endpoints right away, but it increases coupling because one endpoint now serves two “modes”.
+
 Instead of new endpoints, modify existing response body:
 
 ```json
@@ -304,6 +354,8 @@ Cons:
 
 ### Option C: Represent hints as separate linked requests
 
+Option C tries to “stay within the current lifecycle” by treating a hint as its own request. On paper this seems simpler, but in practice it creates a second channel of coordination and usually drags us back into building an event stream anyway.
+
 When user triggers hint, UI creates a new request “hint” linked to the parent:
 
 ```json
@@ -325,6 +377,8 @@ Cons:
 
 You asked whether we can use a YAML DSL rather than a forest of CLI flags. This fits especially well once we add “update input” and “hint events”, because those are naturally structured.
 
+Think of YAML here as “a stable, nested wire contract that’s easy for both humans and agents to generate”. Flags remain great for quick interactive use, but YAML becomes compelling as soon as you need nested objects and iterative updates.
+
 ### Why YAML helps here
 
 - Hint spec is nested (`hint.kind`, `hint.options`, `hint.buttons`, placeholders, etc.)
@@ -332,6 +386,8 @@ You asked whether we can use a YAML DSL rather than a forest of CLI flags. This 
 - A file-based spec is easier to generate from an agent than assembling flags
 
 ### DSL Option 1: Generic request spec command (recommended)
+
+This option introduces explicit “protocol verbs” for the new capabilities, and uses YAML as the natural input format for nested request specs and updates. It also avoids complicating existing widget commands.
 
 Add a new CLI command:
 
@@ -363,6 +419,8 @@ Implementation notes:
 
 ### DSL Option 2: Per-widget `--spec @file.yaml` override
 
+This keeps existing command names but adds a “spec override” escape hatch. It can work, but it tends to grow precedence rules (“what if both flags and spec are provided?”), which can be stressful for both users and maintainers.
+
 Each existing command supports `--spec` which, if present, overrides flags.
 
 Pros:
@@ -373,6 +431,8 @@ Cons:
 - Harder to keep consistent across commands
 
 ### DSL Option 3: YAML for output/events too
+
+This is mostly about ergonomics. If hint events become a first-class thing, rendering them as YAML by default can be pleasant for humans (“print the event envelope and payload”), while JSON remains best for automated piping.
 
 Events could be printed as YAML by default:
 
@@ -390,6 +450,8 @@ This is mostly an output formatting choice; it works nicely with Glazed’s outp
 
 ## Recommendations / decision points
 
+At this stage, the most useful outcome is for you to pick a direction that matches your appetite for protocol changes and future-proofing. In particular, the decision hinges on whether we’re comfortable introducing an explicit “event stream” concept now (Option A), or whether we prefer to keep the API smaller and accept more coupling (Option B).
+
 If you want the cleanest long-term protocol, pick **Option A**:
 
 - explicit `/events` + `/input` update endpoints
@@ -400,6 +462,8 @@ If you want minimal API churn and accept a bit more coupling, pick **Option B**.
 YAML DSL is most valuable if we do Option A, because “wait/update/event” flows become common, and YAML is a natural representation for nested `input` + `hint`.
 
 ## Next questions for you (so we can implement the right thing)
+
+These questions are about locking down the interaction semantics so we don’t build a protocol that feels wrong in practice.
 
 - Should hints be **per widget only**, or also available as a global “ask agent” panel even when no request is active?
 - When a hint is submitted, should the UI:
