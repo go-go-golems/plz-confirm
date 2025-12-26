@@ -12,24 +12,29 @@ DocType: index
 Intent: long-term
 Owners: []
 RelatedFiles:
+    - Path: internal/cli/confirm.go
+      Note: Example CLI command showing marshal/unmarshal pattern
+    - Path: internal/client/client.go
+      Note: HTTP client for CLI
+    - Path: internal/server/server.go
+      Note: HTTP server with REST API handlers
+    - Path: internal/server/ws.go
+      Note: WebSocket broadcaster implementation
     - Path: plz-confirm/agent-ui-system/client/src/types/schemas.ts
       Note: TypeScript type definitions (manually duplicated from backend)
-    - Path: plz-confirm/internal/cli/confirm.go
-      Note: Example CLI command showing marshal/unmarshal pattern
-    - Path: plz-confirm/internal/client/client.go
-      Note: HTTP client for CLI
-    - Path: plz-confirm/internal/server/server.go
-      Note: HTTP server with REST API handlers
-    - Path: plz-confirm/internal/server/ws.go
-      Note: WebSocket broadcaster implementation
     - Path: plz-confirm/internal/types/types.go
       Note: Core type definitions (manually duplicated from frontend)
+    - Path: scripts/curl-inspector-smoke.sh
+      Note: Curl-based inspector emulation (no browser)
+    - Path: scripts/tmux-up.sh
+      Note: Repo-agnostic tmux dev stack for inspectors/devs
 ExternalSources: []
 Summary: ""
 LastUpdated: 2025-12-25T22:56:37.739490019-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 
 # Unify backend↔frontend shared data with Protobuf + codegen
