@@ -565,3 +565,20 @@ This step updates the React frontend to consume the server’s protobuf-shaped J
 
 ### Code review instructions
 - Start in `agent-ui-system/client/src/services/websocket.ts` and `agent-ui-system/client/src/components/WidgetRenderer.tsx`, then review one widget like `SelectDialog` for the output shape change.
+
+## Step 11: Cleanup legacy types + refresh docs
+
+With server, CLI, and frontend migrated, the old manually duplicated Go types are no longer needed. This step removes the legacy Go type file and updates developer docs to point at protobuf as the source of truth.
+
+**Commit (code):** 9f00cadc1fc5404b7260012b652f023d69eff3f1 — "Cleanup: remove legacy internal/types and update docs"
+
+### What I did
+- Deleted `internal/types/types.go`
+- Updated `pkg/doc/adding-widgets.md` to describe protobuf-first schema changes and codegen locations
+- Verified `go test ./...`, `buf lint .`, and `pnpm -C agent-ui-system check` all pass
+
+### Why
+- Remove dead code and prevent future contributors from accidentally extending the wrong schema source.
+
+### What warrants a second pair of eyes
+- Confirm there are no remaining references (in code) to `internal/types` and that documentation now consistently points at protobuf.
