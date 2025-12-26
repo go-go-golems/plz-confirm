@@ -1,4 +1,4 @@
-.PHONY: gifs proto
+.PHONY: gifs proto ts-proto codegen frontend-check buf-lint test build install ci
 
 all: gifs
 
@@ -26,11 +26,28 @@ govulncheck:
 	govulncheck ./...
 
 test:
-	go test ./...
+	go test ./... -count=1
 
-build:
-	go generate ./...
-	go build ./...
+frontend-check:
+	pnpm -C agent-ui-system run check
+
+buf-lint:
+	buf lint .
+
+ts-proto:
+	pnpm -C agent-ui-system run proto
+
+proto:
+	protoc --proto_path=proto --proto_path=/usr/include \
+		--go_out=proto/generated/go --go_opt=paths=source_relative \
+		proto/plz_confirm/v1/*.proto
+
+codegen: proto ts-proto
+
+build: codegen
+	go generate ./... && go build ./...
+
+ci: buf-lint test frontend-check
 
 goreleaser:
 	goreleaser release --skip=sign --snapshot --clean
@@ -53,14 +70,7 @@ bump-glazed:
 	go get github.com/go-go-golems/clay@latest
 	go mod tidy
 
-proto:
-	mkdir -p proto/generated/go/plz_confirm/v1
-	protoc --proto_path=proto --proto_path=/usr/include \
-		--go_out=proto/generated/go --go_opt=paths=source_relative \
-		proto/plz_confirm/v1/*.proto
-
 PLZ_CONFIRM_BINARY=$(shell which plz-confirm)
 install:
-	go generate ./...
-	go build -o ./dist/plz-confirm ./cmd/plz-confirm && \
+	go generate ./... && go build -o ./dist/plz-confirm ./cmd/plz-confirm && \
 		cp ./dist/plz-confirm $(PLZ_CONFIRM_BINARY)
