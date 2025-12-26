@@ -29,3 +29,14 @@ Step 1: Created protobuf definitions and build pipeline (commit db4b5f0)
 - /home/manuel/workspaces/2025-12-24/add-img-widget-plz-confirm/plz-confirm/proto/plz_confirm/v1/request.proto — Core protobuf definitions
 - /home/manuel/workspaces/2025-12-24/add-img-widget-plz-confirm/plz-confirm/proto/plz_confirm/v1/widgets.proto — Widget Input/Output types
 
+
+## 2025-12-26
+
+Step 2: Server now uses protobuf UIRequest internally and emits protojson for REST/WS (commit e335e58)
+
+### Related Files
+
+- /home/manuel/workspaces/2025-12-24/add-img-widget-plz-confirm/plz-confirm/internal/server/server.go — REST handlers now return protojson
+- /home/manuel/workspaces/2025-12-24/add-img-widget-plz-confirm/plz-confirm/internal/server/ws.go — WS sends raw JSON bytes
+- /home/manuel/workspaces/2025-12-24/add-img-widget-plz-confirm/plz-confirm/internal/server/ws_events.go — WS envelope marshaling
+

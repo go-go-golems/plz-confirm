@@ -11,20 +11,13 @@ Topics:
 DocType: reference
 Intent: long-term
 Owners: []
-RelatedFiles:
-    - Path: Makefile
-      Note: Build pipeline for proto code generation
-    - Path: proto/plz_confirm/v1/request.proto
-      Note: Protobuf definitions for UIRequest and enums
-    - Path: proto/plz_confirm/v1/widgets.proto
-      Note: Protobuf definitions for all widget types
+RelatedFiles: []
 ExternalSources: []
 Summary: ""
 LastUpdated: 2025-12-25T22:56:38.027014007-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
-
 
 # Diary
 
@@ -422,3 +415,69 @@ make proto  # Generates Go code to proto/generated/go/plz_confirm/v1/
 ### What I'd do differently next time
 - Set up `buf` workspace configuration from the start (if using buf for linting)
 - Consider using `buf generate` instead of raw `protoc` commands (more consistent)
+
+## Step 6: Migrate the in-memory store to protobuf UIRequest
+
+This step switches the in-memory request store from the manually duplicated `internal/types.UIRequest` struct to the generated protobuf `plz_confirm.v1.UIRequest`. The goal is to make the store the first “protobuf-native” layer so the server/CLI/frontend can migrate on top without carrying `any`-typed request state internally.
+
+**Commit (code):** 6217b159d11fc423047c847951ce1131a08378eb — "Migrate store to use protobuf types"
+
+### What I did
+- Replaced `internal/types` usage in `internal/store/store.go` with `proto/generated/go/plz_confirm/v1`
+- Updated store API to return/store `*v1.UIRequest` (`Create`, `Get`, `Pending`, `Complete`, `Wait`)
+- Added conversion helpers in `internal/store/proto_convert.go` (still WIP / may be removed later)
+
+### Why
+- The store is the canonical source of truth for request state; moving it first reduces the surface area of the migration.
+
+### What worked
+- `go test ./...` still passed after the store migration.
+
+### What was tricky to build
+- Preserving the existing timeout semantics while moving from `timeoutS int` params to the protobuf `expiresAt` string.
+
+### What warrants a second pair of eyes
+- The store’s `ExpiresAt` handling: it currently treats `req.ExpiresAt` as an absolute RFC3339Nano timestamp and derives a timeout from it.
+
+### What should be done in the future
+- Decide whether `internal/store/proto_convert.go` is actually needed, or whether conversions should live only at the HTTP/WS edges.
+
+### Code review instructions
+- Start in `internal/store/store.go`, skim the new `*v1.UIRequest` flow, then check `Complete` + `Wait` semantics.
+
+## Step 7: Takeover + migrate server to protobuf types with protojson (REST + WS)
+
+I took over mid-migration: the server compilation was broken and the WebSocket path was about to accidentally change the JSON contract (protobuf structs encoded with `encoding/json` will use `snake_case` field names). This step fixes the build and makes the server consistently emit the original camelCase JSON over both REST and WebSocket by using `protojson` everywhere that protobuf messages cross the wire.
+
+**Commit (code):** e335e58b94c84fb85c955cace292a1595a635f1f — "Server: use protobuf UIRequest + protojson for REST/WS"
+
+### What I did
+- Updated `internal/server/server.go` REST handlers to use the protobuf-backed store and respond using `protojson` (camelCase JSON)
+- Fixed `protojson` usage (it returns `([]byte, error)`; it does not stream to an `io.Writer`)
+- Added `internal/server/ws_events.go` to build WS envelopes as `{type, request}` where `request` is a `json.RawMessage` produced by `protojson`
+- Updated `internal/server/ws.go` to broadcast WS events as raw JSON bytes (`WriteMessage(TextMessage, ...)`) so we don’t accidentally snake_case protobuf fields
+- Fixed `errInvalidType` issues in `internal/server/proto_convert.go` (duplicate var + invalid `json.SyntaxError` construction)
+- Wired `timeout` seconds into `ExpiresAt` so store expiry semantics remain consistent
+
+### Why
+- Preserve the existing REST/WS JSON contract while making the backend protobuf-native.
+- Avoid “silent” key-shape drift (`session_id` vs `sessionId`) on the frontend.
+
+### What didn't work
+- Initial build failures (before this commit):
+  - `errInvalidType redeclared`
+  - incorrect call to `protojson.MarshalOptions.Marshal` as if it wrote to `http.ResponseWriter`
+
+### What was tricky to build
+- WebSocket envelopes: `protojson` can serialize the protobuf request correctly, but the outer `{type, request}` wrapper still needs standard JSON encoding with the inner request embedded as raw JSON.
+
+### What warrants a second pair of eyes
+- Confirm that `EmitUnpopulated: true` is acceptable for frontend expectations (may add fields that were previously absent/`undefined`).
+- Confirm that WS broadcasting order/behavior is unchanged (especially initial “pending” send).
+
+### What should be done in the future
+- Once CLI/frontend migrate, remove the remaining JSON→proto conversion glue (and ideally delete `internal/types/types.go`).
+
+### Code review instructions
+- Start in `internal/server/server.go` and verify each handler returns protojson output and still matches previous endpoint shapes.
+- Review `internal/server/ws_events.go` + `internal/server/ws.go` together to confirm camelCase WS payloads.
