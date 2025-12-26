@@ -51,3 +51,13 @@ Follow-up: protojson enum strings now match legacy wire contract (commit 6cf1da0
 - /home/manuel/workspaces/2025-12-24/add-img-widget-plz-confirm/plz-confirm/buf.yaml — Buf module root + lint exceptions
 - /home/manuel/workspaces/2025-12-24/add-img-widget-plz-confirm/plz-confirm/proto/plz_confirm/v1/request.proto — Enum value names adjusted for JSON compatibility
 
+
+## 2025-12-26
+
+Step 3: CLI + Go client migrated to protobuf types; removed double marshal/unmarshal (commit d4af4b9)
+
+### Related Files
+
+- /home/manuel/workspaces/2025-12-24/add-img-widget-plz-confirm/plz-confirm/internal/cli/confirm.go — CLI commands now use v1 inputs/outputs
+- /home/manuel/workspaces/2025-12-24/add-img-widget-plz-confirm/plz-confirm/internal/client/client.go — Client now uses protojson + v1.UIRequest
+

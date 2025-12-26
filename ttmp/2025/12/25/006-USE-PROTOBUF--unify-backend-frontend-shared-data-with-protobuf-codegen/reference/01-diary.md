@@ -509,3 +509,31 @@ After the server switched to `protojson`, I realized protobuf enums serialize to
 
 ### Code review instructions
 - Start in `proto/plz_confirm/v1/request.proto`, then check the regenerated `proto/generated/go/plz_confirm/v1/request.pb.go` enum value names.
+
+## Step 9: Migrate CLI + Go HTTP client to protobuf types
+
+This step updates the CLI and its HTTP client to stop depending on `internal/types` and to stop doing the “double marshal/unmarshal” dance for outputs. The server still accepts the legacy create/response request bodies, so the client keeps sending `{type, sessionId, input, timeout}` but now builds `input` by protojson-marshaling protobuf widget inputs into the legacy JSON payload.
+
+**Commit (code):** d4af4b9dbe7aeafc08d468f05a6d2b5533d7359f — "CLI+client: switch to protobuf types (no double JSON marshal)"
+
+### What I did
+- Updated `internal/client/client.go`:
+  - `CreateRequest` now accepts protobuf widget inputs and marshals them via `protojson` into the legacy create-request JSON shape
+  - `WaitRequest` now decodes the server response directly into `*v1.UIRequest` via `protojson`
+- Updated all CLI commands in `internal/cli/*.go` to:
+  - construct `v1.*Input` messages
+  - read `v1.*Output` via `UIRequest.Get*Output()` helpers (no re-marshal/unmarshal)
+  - keep “selected/data” outputs as `*_json` strings for glazed row output
+- Updated `internal/client/client_test.go` to return protojson `v1.UIRequest` from the test server
+
+### Why
+- Remove manual type duplication from CLI/client and eliminate brittle runtime decoding.
+
+### What was tricky to build
+- We must not use `encoding/json` directly on protobuf messages because it will emit `snake_case` keys; using `protojson` keeps camelCase JSON names consistent.
+
+### What warrants a second pair of eyes
+- Confirm the client-side create payload still matches what the server expects for every widget.
+
+### Code review instructions
+- Start in `internal/client/client.go` (`CreateRequest`, `WaitRequest`) and then skim one CLI command (e.g. `internal/cli/confirm.go`) to see the new pattern.
