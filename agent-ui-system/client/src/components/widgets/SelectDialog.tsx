@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { SelectInput, SelectOutput } from '@/types/schemas';
+import { SelectInput, SelectOutput } from '@/proto/generated/plz_confirm/v1/widgets';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -20,12 +20,14 @@ export const SelectDialog: React.FC<Props> = ({ input, onSubmit, loading }) => {
   const [submitting, setSubmitting] = useState(false);
   const [comment, setComment] = useState('');
 
+  const isMulti = Boolean(input.multi);
+
   const filteredOptions = input.options.filter(opt => 
     opt.toLowerCase().includes(search.toLowerCase())
   );
 
   const toggleSelection = (option: string) => {
-    if (input.multi) {
+    if (isMulti) {
       setSelected(prev => 
         prev.includes(option) 
           ? prev.filter(i => i !== option)
@@ -42,8 +44,9 @@ export const SelectDialog: React.FC<Props> = ({ input, onSubmit, loading }) => {
     setSubmitting(true);
     const c = normalizeOptionalComment(comment);
     await onSubmit({
-      selected: input.multi ? selected : selected[0],
-      ...(c ? { comment: c } : {})
+      selectedSingle: isMulti ? undefined : selected[0],
+      selectedMulti: isMulti ? { values: selected } : undefined,
+      ...(c ? { comment: c } : {}),
     });
     setSubmitting(false);
   };

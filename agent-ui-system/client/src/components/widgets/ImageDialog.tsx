@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { ImageInput, ImageOutput } from '@/types/schemas';
+import { ImageInput, ImageOutput } from '@/proto/generated/plz_confirm/v1/widgets';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -60,15 +60,20 @@ export const ImageDialog: React.FC<Props> = ({ input, onSubmit, loading }) => {
     if (hasOptions && selectedOptions.length === 0) return;
 
     setSubmitting('submit');
-    const selected = hasOptions
-      ? (isMulti ? selectedOptions : selectedOptions[0])
-      : (isMulti ? selectedIdx : selectedIdx[0]);
-
     const c = normalizeOptionalComment(comment);
+    const timestamp = new Date().toISOString();
+
+    const output: ImageOutput = hasOptions
+      ? (isMulti
+          ? { selectedStrings: { values: selectedOptions }, timestamp }
+          : { selectedString: selectedOptions[0], timestamp })
+      : (isMulti
+          ? { selectedNumbers: { values: selectedIdx }, timestamp }
+          : { selectedNumber: selectedIdx[0], timestamp });
+
     await onSubmit({
-      selected,
-      timestamp: new Date().toISOString(),
-      ...(c ? { comment: c } : {})
+      ...output,
+      ...(c ? { comment: c } : {}),
     });
     setSubmitting(null);
   };
@@ -77,9 +82,9 @@ export const ImageDialog: React.FC<Props> = ({ input, onSubmit, loading }) => {
     setSubmitting(approved ? 'approve' : 'reject');
     const c = normalizeOptionalComment(comment);
     await onSubmit({
-      selected: approved,
+      selectedBool: approved,
       timestamp: new Date().toISOString(),
-      ...(c ? { comment: c } : {})
+      ...(c ? { comment: c } : {}),
     });
     setSubmitting(null);
   };

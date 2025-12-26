@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { TableInput, TableOutput } from '@/types/schemas';
+import { TableInput, TableOutput } from '@/proto/generated/plz_confirm/v1/widgets';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -114,8 +114,9 @@ export const TableDialog: React.FC<Props> = ({ input, onSubmit, loading }) => {
 
     const c = normalizeOptionalComment(comment);
     await onSubmit({
-      selected: input.multiSelect ? selectedObjects : selectedObjects[0],
-      ...(c ? { comment: c } : {})
+      selectedSingle: input.multiSelect ? undefined : selectedObjects[0],
+      selectedMulti: input.multiSelect ? { values: selectedObjects } : undefined,
+      ...(c ? { comment: c } : {}),
     });
     setSubmitting(false);
   };

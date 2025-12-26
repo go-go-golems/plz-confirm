@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { FormInput, FormOutput } from '@/types/schemas';
+import { FormInput, FormOutput } from '@/proto/generated/plz_confirm/v1/widgets';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';

@@ -9,6 +9,7 @@ import { FormDialog } from './widgets/FormDialog';
 import { UploadDialog } from './widgets/UploadDialog';
 import { ImageDialog } from './widgets/ImageDialog';
 import { Loader2 } from 'lucide-react';
+import { WidgetType } from '@/proto/generated/plz_confirm/v1/request';
 
 export const WidgetRenderer: React.FC = () => {
   const { active, loading } = useSelector((state: RootState) => state.request);
@@ -29,8 +30,8 @@ export const WidgetRenderer: React.FC = () => {
 
   const handleSubmit = async (output: any) => {
     try {
-      await submitResponse(active.id, output);
-      dispatch(completeRequest({ id: active.id, output }));
+      const completedReq = await submitResponse(active.id, output);
+      dispatch(completeRequest(completedReq));
     } catch (error) {
       console.error("Failed to submit response", error);
       // Ideally show error toast here
@@ -39,29 +40,29 @@ export const WidgetRenderer: React.FC = () => {
 
   const commonProps = {
     requestId: active.id,
-    input: active.input,
     onSubmit: handleSubmit,
-    loading: loading
+    loading: loading,
   };
 
   const renderWidget = () => {
+    const typeLabel = (WidgetType as any)[active.type] ?? 'unknown';
     switch (active.type) {
-      case 'confirm':
-        return <ConfirmDialog {...commonProps} input={active.input} />;
-      case 'select':
-        return <SelectDialog {...commonProps} input={active.input} />;
-      case 'table':
-        return <TableDialog {...commonProps} input={active.input} />;
-      case 'form':
-        return <FormDialog {...commonProps} input={active.input} />;
-      case 'upload':
-        return <UploadDialog {...commonProps} input={active.input} />;
-      case 'image':
-        return <ImageDialog {...commonProps} input={active.input} />;
+      case WidgetType.confirm:
+        return active.confirmInput ? <ConfirmDialog {...commonProps} input={active.confirmInput} /> : null;
+      case WidgetType.select:
+        return active.selectInput ? <SelectDialog {...commonProps} input={active.selectInput} /> : null;
+      case WidgetType.table:
+        return active.tableInput ? <TableDialog {...commonProps} input={active.tableInput} /> : null;
+      case WidgetType.form:
+        return active.formInput ? <FormDialog {...commonProps} input={active.formInput} /> : null;
+      case WidgetType.upload:
+        return active.uploadInput ? <UploadDialog {...commonProps} input={active.uploadInput} /> : null;
+      case WidgetType.image:
+        return active.imageInput ? <ImageDialog {...commonProps} input={active.imageInput} /> : null;
       default:
         return (
           <div className="p-8 border border-destructive/50 bg-destructive/10 text-destructive">
-            ERROR: UNKNOWN_WIDGET_TYPE [{active.type}]
+            ERROR: UNKNOWN_WIDGET_TYPE [{String(typeLabel)}]
           </div>
         );
     }
@@ -71,7 +72,7 @@ export const WidgetRenderer: React.FC = () => {
     <div className="w-full max-w-3xl mx-auto animate-in slide-in-from-bottom-4 duration-500">
       <div className="mb-2 flex justify-between items-end text-xs text-muted-foreground font-mono uppercase">
         <span>REQ_ID: {active.id.substring(0, 8)}</span>
-        <span>TYPE: {active.type.toUpperCase()}</span>
+        <span>TYPE: {String((WidgetType as any)[active.type] ?? active.type).toUpperCase()}</span>
       </div>
       
       <div className="cyber-card p-1">

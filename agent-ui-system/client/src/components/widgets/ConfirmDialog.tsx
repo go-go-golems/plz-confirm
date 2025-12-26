@@ -1,5 +1,5 @@
 import React from 'react';
-import { ConfirmInput, ConfirmOutput } from '@/types/schemas';
+import { ConfirmInput, ConfirmOutput } from '@/proto/generated/plz_confirm/v1/widgets';
 import { Button } from '@/components/ui/button';
 import { Loader2, AlertTriangle, Check, X } from 'lucide-react';
 import { OptionalComment, normalizeOptionalComment } from './OptionalComment';
