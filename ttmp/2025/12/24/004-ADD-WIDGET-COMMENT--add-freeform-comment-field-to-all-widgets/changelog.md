@@ -27,3 +27,8 @@ Validated comment field end-to-end: manual confirm in browser and automated smok
 - /home/manuel/workspaces/2025-12-24/add-img-widget-plz-confirm/plz-confirm/ttmp/2025/12/24/004-ADD-WIDGET-COMMENT--add-freeform-comment-field-to-all-widgets/scripts/auto-e2e-comment-via-api.sh — New validation script
 - /home/manuel/workspaces/2025-12-24/add-img-widget-plz-confirm/plz-confirm/ttmp/2025/12/24/004-ADD-WIDGET-COMMENT--add-freeform-comment-field-to-all-widgets/tasks.md — Marked validation complete
 
+
+## 2025-12-25
+
+Ticket closed: optional folded comment field added to all widgets; CLI returns comment; validated via tmux + API smoke script.
+

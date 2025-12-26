@@ -1,7 +1,7 @@
 ---
 Title: Add freeform comment field to all widgets
 Ticket: 004-ADD-WIDGET-COMMENT
-Status: active
+Status: complete
 Topics:
     - cli
     - frontend
@@ -13,10 +13,11 @@ Owners: []
 RelatedFiles: []
 ExternalSources: []
 Summary: ""
-LastUpdated: 2025-12-24T22:34:49.779117745-05:00
+LastUpdated: 2025-12-25T22:22:04.741692926-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 # Add freeform comment field to all widgets
 
