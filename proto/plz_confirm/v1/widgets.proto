@@ -1,0 +1,138 @@
+syntax = "proto3";
+
+package plz_confirm.v1;
+
+option go_package = "github.com/go-go-golems/plz-confirm/proto/generated/go/plz_confirm/v1";
+
+import "google/protobuf/struct.proto";
+
+// Confirm Widget
+message ConfirmInput {
+  string title = 1;
+  optional string message = 2;
+  optional string approve_text = 3;
+  optional string reject_text = 4;
+}
+
+message ConfirmOutput {
+  bool approved = 1;
+  string timestamp = 2;  // ISO 8601
+  optional string comment = 3;
+}
+
+// Select Widget
+message SelectInput {
+  string title = 1;
+  repeated string options = 2;
+  optional bool multi = 3;
+  optional bool searchable = 4;
+}
+
+message SelectOutput {
+  // Union type: string | []string
+  oneof selected {
+    string selected_single = 1;
+    SelectOutputMulti selected_multi = 2;
+  }
+  optional string comment = 3;
+}
+
+message SelectOutputMulti {
+  repeated string values = 1;
+}
+
+// Form Widget
+message FormInput {
+  string title = 1;
+  // JSON Schema as Struct (dynamic)
+  google.protobuf.Struct schema = 2;
+}
+
+message FormOutput {
+  // Dynamic form results as Struct
+  google.protobuf.Struct data = 1;
+  optional string comment = 2;
+}
+
+// Upload Widget
+message UploadInput {
+  string title = 1;
+  repeated string accept = 2;
+  optional bool multiple = 3;
+  optional int64 max_size = 4;
+  optional string callback_url = 5;
+}
+
+message UploadOutput {
+  repeated UploadedFile files = 1;
+  optional string comment = 2;
+}
+
+message UploadedFile {
+  string name = 1;
+  int64 size = 2;
+  string path = 3;
+  string mime_type = 4;
+}
+
+// Table Widget
+message TableInput {
+  string title = 1;
+  // Dynamic rows as repeated Struct
+  repeated google.protobuf.Struct data = 2;
+  repeated string columns = 3;
+  optional bool multi_select = 4;
+  optional bool searchable = 5;
+}
+
+message TableOutput {
+  // Union type: any | []any
+  oneof selected {
+    google.protobuf.Struct selected_single = 1;
+    TableOutputMulti selected_multi = 2;
+  }
+  optional string comment = 3;
+}
+
+message TableOutputMulti {
+  repeated google.protobuf.Struct values = 1;
+}
+
+// Image Widget
+message ImageItem {
+  string src = 1;  // URL or data URI
+  optional string alt = 2;
+  optional string label = 3;
+  optional string caption = 4;
+}
+
+message ImageInput {
+  string title = 1;
+  optional string message = 2;
+  repeated ImageItem images = 3;
+  string mode = 4;  // "select" | "confirm"
+  repeated string options = 5;
+  optional bool multi = 6;
+}
+
+message ImageOutput {
+  // Complex union: number | []number | boolean | string | []string
+  oneof selected {
+    int64 selected_number = 1;
+    ImageOutputNumbers selected_numbers = 2;
+    bool selected_bool = 3;
+    string selected_string = 4;
+    ImageOutputStrings selected_strings = 5;
+  }
+  string timestamp = 6;  // ISO 8601
+  optional string comment = 7;
+}
+
+message ImageOutputNumbers {
+  repeated int64 values = 1;
+}
+
+message ImageOutputStrings {
+  repeated string values = 1;
+}
+

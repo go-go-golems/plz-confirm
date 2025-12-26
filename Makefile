@@ -53,6 +53,12 @@ bump-glazed:
 	go get github.com/go-go-golems/clay@latest
 	go mod tidy
 
+proto:
+	mkdir -p proto/generated/go/plz_confirm/v1
+	protoc --proto_path=proto --proto_path=/usr/include \
+		--go_out=proto/generated/go --go_opt=paths=source_relative \
+		proto/plz_confirm/v1/*.proto
+
 PLZ_CONFIRM_BINARY=$(shell which plz-confirm)
 install:
 	go generate ./...
