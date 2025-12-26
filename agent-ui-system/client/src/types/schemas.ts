@@ -21,6 +21,7 @@ export interface ConfirmInput {
 export interface ConfirmOutput {
   approved: boolean;
   timestamp: string;
+  comment?: string;
 }
 
 export interface SelectInput {
@@ -32,6 +33,7 @@ export interface SelectInput {
 
 export interface SelectOutput {
   selected: string | string[];
+  comment?: string;
 }
 
 export interface FormInput {
@@ -41,6 +43,7 @@ export interface FormInput {
 
 export interface FormOutput {
   data: any;
+  comment?: string;
 }
 
 export interface UploadInput {
@@ -58,6 +61,7 @@ export interface UploadOutput {
     path: string;
     mimeType: string;
   }>;
+  comment?: string;
 }
 
 export interface TableInput {
@@ -70,6 +74,7 @@ export interface TableInput {
 
 export interface TableOutput {
   selected: any | any[];
+  comment?: string;
 }
 
 export interface ImageItem {
@@ -91,6 +96,7 @@ export interface ImageInput {
 export interface ImageOutput {
   selected: number | number[] | boolean | string | string[];
   timestamp: string;
+  comment?: string;
 }
 
 export interface Notification {

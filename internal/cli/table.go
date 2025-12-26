@@ -166,10 +166,15 @@ func (c *TableCommand) RunIntoGlazeProcessor(
 	}
 
 	selectedJSON, _ := json.Marshal(out.Selected)
+	comment := ""
+	if out.Comment != nil {
+		comment = *out.Comment
+	}
 
 	row := types.NewRow(
 		types.MRP("request_id", created.ID),
 		types.MRP("selected_json", string(selectedJSON)),
+		types.MRP("comment", comment),
 	)
 	return gp.AddRow(ctx, row)
 }

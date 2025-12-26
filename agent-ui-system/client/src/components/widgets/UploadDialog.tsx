@@ -3,6 +3,7 @@ import { UploadInput, UploadOutput } from '@/types/schemas';
 import { Button } from '@/components/ui/button';
 import { Loader2, Upload, File, X, CheckCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { OptionalComment, normalizeOptionalComment } from './OptionalComment';
 
 interface Props {
   requestId: string;
@@ -23,6 +24,7 @@ export const UploadDialog: React.FC<Props> = ({ input, onSubmit, loading }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [comment, setComment] = useState('');
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -93,7 +95,8 @@ export const UploadDialog: React.FC<Props> = ({ input, onSubmit, loading }) => {
       };
     }));
 
-    await onSubmit({ files: uploadedFiles });
+    const c = normalizeOptionalComment(comment);
+    await onSubmit({ files: uploadedFiles, ...(c ? { comment: c } : {}) });
     setSubmitting(false);
   };
 
@@ -176,15 +179,19 @@ export const UploadDialog: React.FC<Props> = ({ input, onSubmit, loading }) => {
         </div>
       )}
 
-      <div className="flex justify-end pt-4 border-t border-border mt-auto">
-        <Button 
-          className="cyber-button min-w-[140px]"
-          onClick={simulateUpload}
-          disabled={loading || submitting || files.length === 0}
-        >
-          {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-          {submitting ? 'UPLOADING...' : 'START_UPLOAD'}
-        </Button>
+      <div className="pt-4 border-t border-border mt-auto space-y-3">
+        <OptionalComment value={comment} onChange={setComment} disabled={loading || submitting} />
+
+        <div className="flex justify-end">
+          <Button
+            className="cyber-button min-w-[140px]"
+            onClick={simulateUpload}
+            disabled={loading || submitting || files.length === 0}
+          >
+            {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+            {submitting ? 'UPLOADING...' : 'START_UPLOAD'}
+          </Button>
+        </div>
       </div>
     </div>
   );

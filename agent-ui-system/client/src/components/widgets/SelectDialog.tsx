@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Loader2, Search, CheckSquare, Square, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { OptionalComment, normalizeOptionalComment } from './OptionalComment';
 
 interface Props {
   requestId: string;
@@ -17,6 +18,7 @@ export const SelectDialog: React.FC<Props> = ({ input, onSubmit, loading }) => {
   const [selected, setSelected] = useState<string[]>([]);
   const [search, setSearch] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [comment, setComment] = useState('');
 
   const filteredOptions = input.options.filter(opt => 
     opt.toLowerCase().includes(search.toLowerCase())
@@ -38,8 +40,10 @@ export const SelectDialog: React.FC<Props> = ({ input, onSubmit, loading }) => {
     if (selected.length === 0) return;
     
     setSubmitting(true);
+    const c = normalizeOptionalComment(comment);
     await onSubmit({
-      selected: input.multi ? selected : selected[0]
+      selected: input.multi ? selected : selected[0],
+      ...(c ? { comment: c } : {})
     });
     setSubmitting(false);
   };
@@ -112,19 +116,23 @@ export const SelectDialog: React.FC<Props> = ({ input, onSubmit, loading }) => {
         </div>
       </ScrollArea>
 
-      <div className="flex justify-end pt-4 border-t border-border">
-        <div className="flex items-center gap-4 w-full">
-          <div className="text-xs font-mono text-muted-foreground flex-1">
-            {selected.length} SELECTED
+      <div className="pt-4 border-t border-border space-y-3">
+        <OptionalComment value={comment} onChange={setComment} disabled={loading || submitting} />
+
+        <div className="flex justify-end">
+          <div className="flex items-center gap-4 w-full">
+            <div className="text-xs font-mono text-muted-foreground flex-1">
+              {selected.length} SELECTED
+            </div>
+            <Button 
+              className="cyber-button min-w-[140px]"
+              onClick={handleSubmit}
+              disabled={loading || submitting || selected.length === 0}
+            >
+              {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              CONFIRM_SELECTION
+            </Button>
           </div>
-          <Button 
-            className="cyber-button min-w-[140px]"
-            onClick={handleSubmit}
-            disabled={loading || submitting || selected.length === 0}
-          >
-            {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-            CONFIRM_SELECTION
-          </Button>
         </div>
       </div>
     </div>

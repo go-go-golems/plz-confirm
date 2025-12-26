@@ -50,8 +50,9 @@ type ConfirmInput struct {
 }
 
 type ConfirmOutput struct {
-	Approved  bool   `json:"approved"`
-	Timestamp string `json:"timestamp"`
+	Approved  bool    `json:"approved"`
+	Timestamp string  `json:"timestamp"`
+	Comment   *string `json:"comment,omitempty"`
 }
 
 type SelectInput struct {
@@ -62,7 +63,8 @@ type SelectInput struct {
 }
 
 type SelectOutput struct {
-	Selected any `json:"selected"` // string | []string
+	Selected any     `json:"selected"` // string | []string
+	Comment  *string `json:"comment,omitempty"`
 }
 
 type FormInput struct {
@@ -71,7 +73,8 @@ type FormInput struct {
 }
 
 type FormOutput struct {
-	Data any `json:"data"`
+	Data    any     `json:"data"`
+	Comment *string `json:"comment,omitempty"`
 }
 
 type UploadInput struct {
@@ -83,7 +86,8 @@ type UploadInput struct {
 }
 
 type UploadOutput struct {
-	Files []UploadedFile `json:"files"`
+	Files   []UploadedFile `json:"files"`
+	Comment *string        `json:"comment,omitempty"`
 }
 
 type UploadedFile struct {
@@ -102,7 +106,8 @@ type TableInput struct {
 }
 
 type TableOutput struct {
-	Selected any `json:"selected"` // any | []any
+	Selected any     `json:"selected"` // any | []any
+	Comment  *string `json:"comment,omitempty"`
 }
 
 // ImageItem represents a single image and optional UI metadata.
@@ -134,6 +139,7 @@ type ImageOutput struct {
 	// - int or []int for image-pick select mode
 	// - bool for confirm mode
 	// - string or []string for checkbox-question variant (if we choose to return labels)
-	Selected  any    `json:"selected"`
-	Timestamp string `json:"timestamp"`
+	Selected  any     `json:"selected"`
+	Timestamp string  `json:"timestamp"`
+	Comment   *string `json:"comment,omitempty"`
 }

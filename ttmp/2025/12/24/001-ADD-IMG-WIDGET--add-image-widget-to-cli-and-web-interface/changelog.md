@@ -169,3 +169,22 @@ Docs: updated pkg/doc/how-to-use.md for the image widget (six widget types + loc
 - /home/manuel/workspaces/2025-12-24/add-img-widget-plz-confirm/plz-confirm/pkg/doc/how-to-use.md — Updated user docs with image widget details
 - /home/manuel/workspaces/2025-12-24/add-img-widget-plz-confirm/plz-confirm/ttmp/2025/12/24/001-ADD-IMG-WIDGET--add-image-widget-to-cli-and-web-interface/reference/01-diary.md — Recorded Step 18
 
+
+## 2025-12-24
+
+PR polish: fixed multipart upload temp-file cleanup (defer r.MultipartForm.RemoveAll), eliminated Makefile lint noise (wildcard tapes), addressed errcheck Close() warnings, removed nonamedreturns violation, and ensured gofmt. go test + make lint are clean.
+
+### Related Files
+
+- /home/manuel/workspaces/2025-12-24/add-img-widget-plz-confirm/plz-confirm/Makefile — use wildcard for TAPES
+- /home/manuel/workspaces/2025-12-24/add-img-widget-plz-confirm/plz-confirm/internal/client/client.go — errcheck Close()
+- /home/manuel/workspaces/2025-12-24/add-img-widget-plz-confirm/plz-confirm/internal/server/images.go — nonamedreturns + errcheck fixes
+- /home/manuel/workspaces/2025-12-24/add-img-widget-plz-confirm/plz-confirm/internal/server/server.go — defer RemoveAll for multipart temp files
+- /home/manuel/workspaces/2025-12-24/add-img-widget-plz-confirm/plz-confirm/ttmp/2025/12/24/001-ADD-IMG-WIDGET--add-image-widget-to-cli-and-web-interface/reference/01-diary.md — Recorded Step 19
+- /home/manuel/workspaces/2025-12-24/add-img-widget-plz-confirm/plz-confirm/ttmp/2025/12/24/001-ADD-IMG-WIDGET--add-image-widget-to-cli-and-web-interface/tasks.md — Marked completed
+
+
+## 2025-12-24
+
+Ticket closed: image widget implemented end-to-end (CLI+server+UI), docs+tests added, lint clean.
+
