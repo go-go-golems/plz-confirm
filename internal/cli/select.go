@@ -12,7 +12,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/go-go-golems/plz-confirm/internal/client"
-	agenttypes "github.com/go-go-golems/plz-confirm/internal/types"
+	"github.com/go-go-golems/plz-confirm/proto/generated/go/plz_confirm/v1"
 )
 
 type SelectCommand struct {
@@ -99,7 +99,7 @@ func (c *SelectCommand) RunIntoGlazeProcessor(
 
 	cl := client.New(settings.BaseURL)
 
-	input := agenttypes.SelectInput{
+	input := &v1.SelectInput{
 		Title:      settings.Title,
 		Options:    settings.Options,
 		Multi:      &settings.Multi,
@@ -107,7 +107,7 @@ func (c *SelectCommand) RunIntoGlazeProcessor(
 	}
 
 	created, err := cl.CreateRequest(ctx, client.CreateRequestParams{
-		Type:      agenttypes.WidgetSelect,
+		Type:      v1.WidgetType_select,
 		SessionID: "global", // ignored by server; kept for compatibility
 		Input:     input,
 		TimeoutS:  settings.TimeoutS,
@@ -116,31 +116,35 @@ func (c *SelectCommand) RunIntoGlazeProcessor(
 		return errors.Wrap(err, "create select request")
 	}
 
-	completed, err := cl.WaitRequest(ctx, created.ID, settings.WaitTimeout)
+	completed, err := cl.WaitRequest(ctx, created.Id, settings.WaitTimeout)
 	if err != nil {
 		return errors.Wrap(err, "wait for select response")
 	}
 
-	// selected can be string or []string (or other, depending on frontend).
-	var out agenttypes.SelectOutput
-	if completed.Output != nil {
-		b, err := json.Marshal(completed.Output)
-		if err != nil {
-			return errors.Wrap(err, "marshal output")
-		}
-		if err := json.Unmarshal(b, &out); err != nil {
-			return errors.Wrap(err, "unmarshal output")
+	out := completed.GetSelectOutput()
+
+	var selectedAny any
+	if out != nil {
+		switch sel := out.Selected.(type) {
+		case *v1.SelectOutput_SelectedSingle:
+			selectedAny = sel.SelectedSingle
+		case *v1.SelectOutput_SelectedMulti:
+			if sel.SelectedMulti != nil {
+				selectedAny = sel.SelectedMulti.Values
+			}
+		default:
+			selectedAny = nil
 		}
 	}
 
-	selectedJSON, _ := json.Marshal(out.Selected)
+	selectedJSON, _ := json.Marshal(selectedAny)
 	comment := ""
-	if out.Comment != nil {
+	if out != nil && out.Comment != nil {
 		comment = *out.Comment
 	}
 
 	row := types.NewRow(
-		types.MRP("request_id", created.ID),
+		types.MRP("request_id", created.Id),
 		types.MRP("selected_json", string(selectedJSON)),
 		types.MRP("comment", comment),
 	)

@@ -2,7 +2,6 @@ package client
 
 import (
 	"context"
-	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -10,7 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/go-go-golems/plz-confirm/internal/types"
+	"github.com/go-go-golems/plz-confirm/proto/generated/go/plz_confirm/v1"
+	"google.golang.org/protobuf/encoding/protojson"
 )
 
 func TestWaitRequest_RetriesOn408(t *testing.T) {
@@ -28,15 +28,19 @@ func TestWaitRequest_RetriesOn408(t *testing.T) {
 			return
 		}
 		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(types.UIRequest{
-			ID:        "req-1",
-			Type:      types.WidgetConfirm,
-			SessionID: "global",
-			Input:     map[string]any{"title": "t"},
-			Status:    types.StatusCompleted,
+		resp := &v1.UIRequest{
+			Id:        "req-1",
+			Type:      v1.WidgetType_confirm,
+			SessionId: "global",
+			Input: &v1.UIRequest_ConfirmInput{
+				ConfirmInput: &v1.ConfirmInput{Title: "t"},
+			},
+			Status:    v1.RequestStatus_completed,
 			CreatedAt: time.Now().UTC().Format(time.RFC3339Nano),
 			ExpiresAt: time.Now().UTC().Add(10 * time.Second).Format(time.RFC3339Nano),
-		})
+		}
+		b, _ := protojson.MarshalOptions{EmitUnpopulated: true}.Marshal(resp)
+		_, _ = w.Write(b)
 	}))
 	defer srv.Close()
 
@@ -48,8 +52,8 @@ func TestWaitRequest_RetriesOn408(t *testing.T) {
 	if err != nil {
 		t.Fatalf("WaitRequest returned error: %v", err)
 	}
-	if got.ID != "req-1" {
-		t.Fatalf("unexpected request id: %q", got.ID)
+	if got.Id != "req-1" {
+		t.Fatalf("unexpected request id: %q", got.Id)
 	}
 	if atomic.LoadInt32(&calls) < 3 {
 		t.Fatalf("expected at least 3 calls, got %d", atomic.LoadInt32(&calls))

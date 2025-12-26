@@ -18,7 +18,9 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/go-go-golems/plz-confirm/internal/types"
+	"github.com/go-go-golems/plz-confirm/proto/generated/go/plz_confirm/v1"
+	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
 )
 
 type Client struct {
@@ -41,51 +43,88 @@ func New(baseURL string) *Client {
 }
 
 type CreateRequestParams struct {
-	Type     types.WidgetType `json:"type"`
-	Input    any              `json:"input"`
-	TimeoutS int              `json:"timeout,omitempty"`
+	Type     v1.WidgetType
+	Input    proto.Message
+	TimeoutS int
 
 	// Compatibility with the Node server shape. The Go server ignores sessions,
 	// but we keep the field so old clients remain valid.
+	SessionID string
+}
+
+type createRequestBody struct {
+	Type      string `json:"type"`
+	Input     any    `json:"input"`
+	TimeoutS  int    `json:"timeout,omitempty"`
 	SessionID string `json:"sessionId,omitempty"`
 }
 
-func (c *Client) CreateRequest(ctx context.Context, p CreateRequestParams) (types.UIRequest, error) {
+func (c *Client) CreateRequest(ctx context.Context, p CreateRequestParams) (*v1.UIRequest, error) {
 	u, err := url.Parse(c.BaseURL + "/api/requests")
 	if err != nil {
-		return types.UIRequest{}, errors.Wrap(err, "parse base url")
+		return nil, errors.Wrap(err, "parse base url")
 	}
 
-	bodyBytes, err := json.Marshal(p)
+	if p.Input == nil {
+		return nil, errors.New("input is required")
+	}
+
+	// Marshal protobuf input to JSON (camelCase) then decode to `any` so it embeds
+	// as the legacy create-request shape.
+	inputJSONBytes, err := protojson.MarshalOptions{
+		EmitUnpopulated: true,
+		UseProtoNames:   false,
+	}.Marshal(p.Input)
 	if err != nil {
-		return types.UIRequest{}, errors.Wrap(err, "marshal create request")
+		return nil, errors.Wrap(err, "marshal input protojson")
+	}
+	var inputAny any
+	if err := json.Unmarshal(inputJSONBytes, &inputAny); err != nil {
+		return nil, errors.Wrap(err, "unmarshal input into any")
+	}
+
+	body := createRequestBody{
+		Type:      p.Type.String(),
+		Input:     inputAny,
+		TimeoutS:  p.TimeoutS,
+		SessionID: p.SessionID,
+	}
+
+	bodyBytes, err := json.Marshal(body)
+	if err != nil {
+		return nil, errors.Wrap(err, "marshal create request")
 	}
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, u.String(), bytes.NewReader(bodyBytes))
 	if err != nil {
-		return types.UIRequest{}, errors.Wrap(err, "create http request")
+		return nil, errors.Wrap(err, "create http request")
 	}
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := c.HTTPClient.Do(req)
 	if err != nil {
-		return types.UIRequest{}, errors.Wrap(err, "post /api/requests")
+		return nil, errors.Wrap(err, "post /api/requests")
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		b, _ := io.ReadAll(io.LimitReader(resp.Body, 16<<10))
-		return types.UIRequest{}, errors.Errorf("create request failed: status=%d body=%s", resp.StatusCode, string(b))
+		return nil, errors.Errorf("create request failed: status=%d body=%s", resp.StatusCode, string(b))
 	}
 
-	var out types.UIRequest
-	if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
-		return types.UIRequest{}, errors.Wrap(err, "decode create response")
+	respBytes, err := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
+	if err != nil {
+		return nil, errors.Wrap(err, "read create response")
+	}
+
+	out := &v1.UIRequest{}
+	if err := protojson.Unmarshal(respBytes, out); err != nil {
+		return nil, errors.Wrap(err, "protojson unmarshal create response")
 	}
 	return out, nil
 }
 
-func (c *Client) WaitRequest(ctx context.Context, id string, waitTimeoutS int) (types.UIRequest, error) {
+func (c *Client) WaitRequest(ctx context.Context, id string, waitTimeoutS int) (*v1.UIRequest, error) {
 	// Long-poll loop:
 	// - waitTimeoutS > 0 is an overall deadline (seconds)
 	// - waitTimeoutS <= 0 waits forever (until ctx is cancelled)
@@ -100,14 +139,14 @@ func (c *Client) WaitRequest(ctx context.Context, id string, waitTimeoutS int) (
 	for {
 		// If the caller cancelled (or overall deadline elapsed), stop.
 		if err := ctx.Err(); err != nil {
-			return types.UIRequest{}, errors.Wrap(err, "wait cancelled")
+			return nil, errors.Wrap(err, "wait cancelled")
 		}
 
 		pollTimeoutS := defaultPollTimeoutS
 		if dl, ok := ctx.Deadline(); ok {
 			remaining := time.Until(dl)
 			if remaining <= 0 {
-				return types.UIRequest{}, ErrWaitTimeout
+				return nil, ErrWaitTimeout
 			}
 			// Clamp poll timeout to remaining time; always >= 1s.
 			remS := int(remaining.Seconds())
@@ -130,7 +169,7 @@ func (c *Client) WaitRequest(ctx context.Context, id string, waitTimeoutS int) (
 		if stderrors.Is(err, ErrWaitTimeout) {
 			continue
 		}
-		return types.UIRequest{}, err
+		return nil, err
 	}
 }
 
@@ -211,10 +250,10 @@ func (c *Client) UploadImage(ctx context.Context, filePath string, ttlSeconds in
 	return out, nil
 }
 
-func (c *Client) waitOnce(ctx context.Context, id string, pollTimeoutS int) (types.UIRequest, error) {
+func (c *Client) waitOnce(ctx context.Context, id string, pollTimeoutS int) (*v1.UIRequest, error) {
 	u, err := url.Parse(fmt.Sprintf("%s/api/requests/%s/wait", c.BaseURL, url.PathEscape(id)))
 	if err != nil {
-		return types.UIRequest{}, errors.Wrap(err, "parse wait url")
+		return nil, errors.Wrap(err, "parse wait url")
 	}
 	q := u.Query()
 	q.Set("timeout", fmt.Sprintf("%d", pollTimeoutS))
@@ -222,26 +261,31 @@ func (c *Client) waitOnce(ctx context.Context, id string, pollTimeoutS int) (typ
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u.String(), nil)
 	if err != nil {
-		return types.UIRequest{}, errors.Wrap(err, "create wait request")
+		return nil, errors.Wrap(err, "create wait request")
 	}
 
 	resp, err := c.HTTPClient.Do(req)
 	if err != nil {
-		return types.UIRequest{}, errors.Wrap(err, "get /wait")
+		return nil, errors.Wrap(err, "get /wait")
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode == http.StatusRequestTimeout {
-		return types.UIRequest{}, ErrWaitTimeout
+		return nil, ErrWaitTimeout
 	}
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		b, _ := io.ReadAll(io.LimitReader(resp.Body, 16<<10))
-		return types.UIRequest{}, errors.Errorf("wait failed: status=%d body=%s", resp.StatusCode, string(b))
+		return nil, errors.Errorf("wait failed: status=%d body=%s", resp.StatusCode, string(b))
 	}
 
-	var out types.UIRequest
-	if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
-		return types.UIRequest{}, errors.Wrap(err, "decode wait response")
+	respBytes, err := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
+	if err != nil {
+		return nil, errors.Wrap(err, "read wait response")
+	}
+
+	out := &v1.UIRequest{}
+	if err := protojson.Unmarshal(respBytes, out); err != nil {
+		return nil, errors.Wrap(err, "protojson unmarshal wait response")
 	}
 	return out, nil
 }

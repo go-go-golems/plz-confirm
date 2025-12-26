@@ -13,7 +13,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/go-go-golems/plz-confirm/internal/client"
-	agenttypes "github.com/go-go-golems/plz-confirm/internal/types"
+	"github.com/go-go-golems/plz-confirm/proto/generated/go/plz_confirm/v1"
 )
 
 type ImageCommand struct {
@@ -208,7 +208,7 @@ func (c *ImageCommand) RunIntoGlazeProcessor(
 		ttl = 300
 	}
 
-	images := make([]agenttypes.ImageItem, 0, len(settings.Images))
+	images := make([]*v1.ImageItem, 0, len(settings.Images))
 	for i, raw := range settings.Images {
 		src := raw
 		// Treat non-URL / non-data URIs as local paths to upload.
@@ -233,7 +233,7 @@ func (c *ImageCommand) RunIntoGlazeProcessor(
 			caption = &settings.ImageCaptions[i]
 		}
 
-		images = append(images, agenttypes.ImageItem{
+		images = append(images, &v1.ImageItem{
 			Src:     src,
 			Alt:     alt,
 			Label:   label,
@@ -241,7 +241,7 @@ func (c *ImageCommand) RunIntoGlazeProcessor(
 		})
 	}
 
-	input := agenttypes.ImageInput{
+	input := &v1.ImageInput{
 		Title:   settings.Title,
 		Message: settings.Message,
 		Images:  images,
@@ -251,7 +251,7 @@ func (c *ImageCommand) RunIntoGlazeProcessor(
 	}
 
 	created, err := cl.CreateRequest(ctx, client.CreateRequestParams{
-		Type:      agenttypes.WidgetImage,
+		Type:      v1.WidgetType_image,
 		SessionID: "global", // ignored by server; kept for compatibility
 		Input:     input,
 		TimeoutS:  settings.TimeoutS,
@@ -260,32 +260,47 @@ func (c *ImageCommand) RunIntoGlazeProcessor(
 		return errors.Wrap(err, "create image request")
 	}
 
-	completed, err := cl.WaitRequest(ctx, created.ID, settings.WaitTimeout)
+	completed, err := cl.WaitRequest(ctx, created.Id, settings.WaitTimeout)
 	if err != nil {
 		return errors.Wrap(err, "wait for image response")
 	}
 
-	var out agenttypes.ImageOutput
-	if completed.Output != nil {
-		b, err := json.Marshal(completed.Output)
-		if err != nil {
-			return errors.Wrap(err, "marshal output")
+	out := completed.GetImageOutput()
+
+	var selectedAny any
+	timestamp := ""
+	comment := ""
+	if out != nil {
+		switch sel := out.Selected.(type) {
+		case *v1.ImageOutput_SelectedNumber:
+			selectedAny = sel.SelectedNumber
+		case *v1.ImageOutput_SelectedNumbers:
+			if sel.SelectedNumbers != nil {
+				selectedAny = sel.SelectedNumbers.Values
+			}
+		case *v1.ImageOutput_SelectedBool:
+			selectedAny = sel.SelectedBool
+		case *v1.ImageOutput_SelectedString:
+			selectedAny = sel.SelectedString
+		case *v1.ImageOutput_SelectedStrings:
+			if sel.SelectedStrings != nil {
+				selectedAny = sel.SelectedStrings.Values
+			}
+		default:
+			selectedAny = nil
 		}
-		if err := json.Unmarshal(b, &out); err != nil {
-			return errors.Wrap(err, "unmarshal output")
+		timestamp = out.GetTimestamp()
+		if out.Comment != nil {
+			comment = *out.Comment
 		}
 	}
 
-	selectedJSON, _ := json.Marshal(out.Selected)
-	comment := ""
-	if out.Comment != nil {
-		comment = *out.Comment
-	}
+	selectedJSON, _ := json.Marshal(selectedAny)
 
 	row := types.NewRow(
-		types.MRP("request_id", created.ID),
+		types.MRP("request_id", created.Id),
 		types.MRP("selected_json", string(selectedJSON)),
-		types.MRP("timestamp", out.Timestamp),
+		types.MRP("timestamp", timestamp),
 		types.MRP("comment", comment),
 	)
 	return gp.AddRow(ctx, row)

@@ -14,7 +14,9 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/go-go-golems/plz-confirm/internal/client"
-	agenttypes "github.com/go-go-golems/plz-confirm/internal/types"
+	"github.com/go-go-golems/plz-confirm/proto/generated/go/plz_confirm/v1"
+	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 type TableCommand struct {
@@ -130,17 +132,30 @@ func (c *TableCommand) RunIntoGlazeProcessor(
 		return errors.Wrap(err, "decode data JSON")
 	}
 
+	pbRows := make([]*structpb.Struct, 0, len(rows))
+	for i, row := range rows {
+		rowBytes, err := json.Marshal(row)
+		if err != nil {
+			return errors.Wrapf(err, "marshal row %d", i)
+		}
+		st := &structpb.Struct{}
+		if err := protojson.Unmarshal(rowBytes, st); err != nil {
+			return errors.Wrapf(err, "protojson unmarshal row %d", i)
+		}
+		pbRows = append(pbRows, st)
+	}
+
 	cl := client.New(settings.BaseURL)
-	input := agenttypes.TableInput{
+	input := &v1.TableInput{
 		Title:       settings.Title,
-		Data:        rows,
+		Data:        pbRows,
 		Columns:     settings.Columns,
 		MultiSelect: &settings.MultiSelect,
 		Searchable:  &settings.Searchable,
 	}
 
 	created, err := cl.CreateRequest(ctx, client.CreateRequestParams{
-		Type:      agenttypes.WidgetTable,
+		Type:      v1.WidgetType_table,
 		SessionID: "global", // ignored by server; kept for compatibility
 		Input:     input,
 		TimeoutS:  settings.TimeoutS,
@@ -149,30 +164,43 @@ func (c *TableCommand) RunIntoGlazeProcessor(
 		return errors.Wrap(err, "create table request")
 	}
 
-	completed, err := cl.WaitRequest(ctx, created.ID, settings.WaitTimeout)
+	completed, err := cl.WaitRequest(ctx, created.Id, settings.WaitTimeout)
 	if err != nil {
 		return errors.Wrap(err, "wait for table response")
 	}
 
-	var out agenttypes.TableOutput
-	if completed.Output != nil {
-		b, err := json.Marshal(completed.Output)
-		if err != nil {
-			return errors.Wrap(err, "marshal output")
+	out := completed.GetTableOutput()
+
+	var selectedAny any
+	comment := ""
+	if out != nil {
+		switch sel := out.Selected.(type) {
+		case *v1.TableOutput_SelectedSingle:
+			if sel.SelectedSingle != nil {
+				selectedAny = sel.SelectedSingle.AsMap()
+			}
+		case *v1.TableOutput_SelectedMulti:
+			if sel.SelectedMulti != nil {
+				arr := make([]any, 0, len(sel.SelectedMulti.Values))
+				for _, s := range sel.SelectedMulti.Values {
+					if s != nil {
+						arr = append(arr, s.AsMap())
+					}
+				}
+				selectedAny = arr
+			}
+		default:
+			selectedAny = nil
 		}
-		if err := json.Unmarshal(b, &out); err != nil {
-			return errors.Wrap(err, "unmarshal output")
+		if out.Comment != nil {
+			comment = *out.Comment
 		}
 	}
 
-	selectedJSON, _ := json.Marshal(out.Selected)
-	comment := ""
-	if out.Comment != nil {
-		comment = *out.Comment
-	}
+	selectedJSON, _ := json.Marshal(selectedAny)
 
 	row := types.NewRow(
-		types.MRP("request_id", created.ID),
+		types.MRP("request_id", created.Id),
 		types.MRP("selected_json", string(selectedJSON)),
 		types.MRP("comment", comment),
 	)

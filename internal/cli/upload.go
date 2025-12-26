@@ -2,7 +2,6 @@ package cli
 
 import (
 	"context"
-	"encoding/json"
 
 	"github.com/go-go-golems/glazed/pkg/cmds"
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
@@ -12,7 +11,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/go-go-golems/plz-confirm/internal/client"
-	agenttypes "github.com/go-go-golems/plz-confirm/internal/types"
+	"github.com/go-go-golems/plz-confirm/proto/generated/go/plz_confirm/v1"
 )
 
 type UploadCommand struct {
@@ -102,16 +101,16 @@ func (c *UploadCommand) RunIntoGlazeProcessor(
 	}
 
 	cl := client.New(settings.BaseURL)
-	input := agenttypes.UploadInput{
+	input := &v1.UploadInput{
 		Title:       settings.Title,
 		Accept:      settings.Accept,
 		Multiple:    &settings.Multiple,
 		MaxSize:     settings.MaxSize,
-		CallbackURL: settings.CallbackURL,
+		CallbackUrl: settings.CallbackURL,
 	}
 
 	created, err := cl.CreateRequest(ctx, client.CreateRequestParams{
-		Type:      agenttypes.WidgetUpload,
+		Type:      v1.WidgetType_upload,
 		SessionID: "global", // ignored by server; kept for compatibility
 		Input:     input,
 		TimeoutS:  settings.TimeoutS,
@@ -120,35 +119,27 @@ func (c *UploadCommand) RunIntoGlazeProcessor(
 		return errors.Wrap(err, "create upload request")
 	}
 
-	completed, err := cl.WaitRequest(ctx, created.ID, settings.WaitTimeout)
+	completed, err := cl.WaitRequest(ctx, created.Id, settings.WaitTimeout)
 	if err != nil {
 		return errors.Wrap(err, "wait for upload response")
 	}
 
-	var out agenttypes.UploadOutput
-	if completed.Output != nil {
-		b, err := json.Marshal(completed.Output)
-		if err != nil {
-			return errors.Wrap(err, "marshal output")
-		}
-		if err := json.Unmarshal(b, &out); err != nil {
-			return errors.Wrap(err, "unmarshal output")
-		}
-	}
+	out := completed.GetUploadOutput()
 
 	comment := ""
-	if out.Comment != nil {
+	if out != nil && out.Comment != nil {
 		comment = *out.Comment
 	}
 
 	// Output files as rows (one per file)
-	for _, file := range out.Files {
+	files := out.GetFiles()
+	for _, file := range files {
 		row := types.NewRow(
-			types.MRP("request_id", created.ID),
-			types.MRP("file_name", file.Name),
-			types.MRP("file_size", file.Size),
-			types.MRP("file_path", file.Path),
-			types.MRP("mime_type", file.MimeType),
+			types.MRP("request_id", created.Id),
+			types.MRP("file_name", file.GetName()),
+			types.MRP("file_size", file.GetSize()),
+			types.MRP("file_path", file.GetPath()),
+			types.MRP("mime_type", file.GetMimeType()),
 			types.MRP("comment", comment),
 		)
 		if err := gp.AddRow(ctx, row); err != nil {
@@ -157,9 +148,9 @@ func (c *UploadCommand) RunIntoGlazeProcessor(
 	}
 
 	// If no files, still output a row with request_id
-	if len(out.Files) == 0 {
+	if len(files) == 0 {
 		row := types.NewRow(
-			types.MRP("request_id", created.ID),
+			types.MRP("request_id", created.Id),
 			types.MRP("file_name", ""),
 			types.MRP("file_size", int64(0)),
 			types.MRP("file_path", ""),
