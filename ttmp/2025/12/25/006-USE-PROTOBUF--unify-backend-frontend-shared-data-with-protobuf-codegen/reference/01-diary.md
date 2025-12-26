@@ -11,13 +11,28 @@ Topics:
 DocType: reference
 Intent: long-term
 Owners: []
-RelatedFiles: []
+RelatedFiles:
+    - Path: .github/workflows/push.yml
+      Note: CI now runs codegen+checks consistently
+    - Path: .github/workflows/release.yml
+      Note: Release pipeline installs node/pnpm for go generate UI bundling
+    - Path: Makefile
+      Note: Added codegen/ci targets used to enforce protobuf+TS invariants
+    - Path: internal/server/proto_convert.go
+      Note: Exhaustive enum handling fix
+    - Path: internal/server/ws_events.go
+      Note: gofmt fix (protojson WS envelope)
+    - Path: internal/store/store.go
+      Note: gofmt fix
+    - Path: lefthook.yml
+      Note: Local hooks enforcing buf lint + TS check
 ExternalSources: []
 Summary: ""
 LastUpdated: 2025-12-25T22:56:38.027014007-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 # Diary
 
@@ -258,6 +273,59 @@ Starting to document the current architecture and protocols in the analysis docu
 
 ### Code review instructions
 - Review `analysis/01-backend-frontend-architecture-current-protocols.md` for accuracy
+
+## Step 6: Closeout — align hooks/CI with protobuf workflow + fix post-merge lint
+
+This closeout step wrapped the migration with the operational glue that makes it stick: repo-local hooks enforce `buf lint` and frontend typechecking, CI now runs the same checks and ensures generated code stays in sync, and we cleaned up a few strict `golangci-lint` failures (exhaustive enum switches + gofmt + dead code).
+
+The key outcome is that the protobuf migration is not just “green on my machine”: it’s continuously enforced in the developer loop (lefthook) and in CI (GitHub Actions), so drift is caught immediately.
+
+**Commits (code):**
+- `6c6f5e0` — “Build: add codegen + CI targets (proto + ts-proto + lint/check)”
+- `9a27083` — “Dev: enforce buf lint + frontend check via lefthook”
+- `32948ef` — “CI: run buf/ts checks + codegen; install node/pnpm for goreleaser”
+- `96697d3` — “Lint: fix exhaustive enum cases; gofmt; remove dead store proto_convert helpers”
+
+### What I did
+- Updated Make targets to expose `buf-lint`, `frontend-check`, and `codegen`, and aligned CI usage.
+- Extended `lefthook.yml` so commits/pushes enforce protobuf + TS invariants.
+- Updated GitHub Actions so PRs run `make codegen && git diff --exit-code`, `make ci`, and `make build` with the correct toolchain installed.
+- Fixed strict lint failures:
+  - added explicit `*_unspecified` enum cases for `exhaustive`
+  - ran gofmt on flagged files
+  - deleted a now-unused legacy helper file (`internal/store/proto_convert.go`)
+
+### Why
+- Prevent schema drift after the migration (generated code must match `.proto`).
+- Make the inspector workflow reproducible and enforce it in CI rather than relying on tribal knowledge.
+
+### What worked
+- `make lint` is clean again and `go test ./... -count=1` passes.
+- CI now checks the same invariants that local dev hooks enforce.
+
+### What didn't work
+- N/A (this was mainly follow-through polish; issues were straightforward to resolve).
+
+### What was tricky to build
+- `exhaustive` in golangci-lint requires explicit handling of protobuf “unspecified” enum values even when a `default` exists.
+- Keeping CI toolchain correct: TS proto generation needs Node/pnpm and the Go build needs `protoc-gen-go` available for `make proto`.
+
+### What warrants a second pair of eyes
+- Confirm the CI changes match the org’s expectations for release: e.g., whether `make build` should always run in PRs (it runs `pnpm build` via `go generate` and can be heavier).
+
+### What should be done in the future
+- N/A (migration is complete; follow-ups should be new tickets).
+
+### Code review instructions
+- Start with:
+  - `plz-confirm/Makefile`
+  - `plz-confirm/lefthook.yml`
+  - `.github/workflows/push.yml`
+  - `.github/workflows/release.yml`
+- Then skim:
+  - `internal/server/proto_convert.go` (exhaustive fix)
+  - `internal/server/ws_events.go` (gofmt)
+  - `internal/store/store.go` (gofmt)
 - Cross-reference with actual code in `plz-confirm/internal/server/server.go`
 
 ## Step 4: Designing protobuf message hierarchy

@@ -1,7 +1,7 @@
 ---
 Title: Unify backend↔frontend shared data with Protobuf + codegen
 Ticket: 006-USE-PROTOBUF
-Status: active
+Status: closed
 Topics:
     - backend
     - frontend
@@ -30,10 +30,11 @@ RelatedFiles:
       Note: Repo-agnostic tmux dev stack for inspectors/devs
 ExternalSources: []
 Summary: ""
-LastUpdated: 2025-12-25T22:56:37.739490019-05:00
+LastUpdated: 2025-12-26T13:27:00.834871117-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 
 

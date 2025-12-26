@@ -91,3 +91,8 @@ Post-migration testing: added repo-agnostic tmux dev stack + curl inspector smok
 - /home/manuel/workspaces/2025-12-24/add-img-widget-plz-confirm/plz-confirm/scripts/tmux-up.sh — Repo-agnostic dev tmux
 - /home/manuel/workspaces/2025-12-24/add-img-widget-plz-confirm/plz-confirm/ttmp/2025/12/25/006-USE-PROTOBUF--unify-backend-frontend-shared-data-with-protobuf-codegen/playbook/01-test-inspection-playbook-post-protobuf-migration.md — Inspector playbook
 
+
+## 2025-12-26
+
+Ticket complete: protobuf unification merged; added CI+lefthook checks; lint cleanups applied.
+
