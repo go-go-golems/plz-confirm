@@ -26,5 +26,3 @@ func marshalWSEvent(eventType string, req proto.Message) ([]byte, error) {
 		Request: reqJSON,
 	})
 }
-
-

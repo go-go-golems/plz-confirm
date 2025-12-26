@@ -48,7 +48,7 @@ func (s *Store) Create(_ context.Context, req *v1.UIRequest) (*v1.UIRequest, err
 
 	now := time.Now().UTC()
 	id := uuid.NewString()
-	
+
 	// Clone the request and set required fields
 	reqCopy := &v1.UIRequest{
 		Id:        id,

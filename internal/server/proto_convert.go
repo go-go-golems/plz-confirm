@@ -40,6 +40,8 @@ func convertJSONInputToProto(widgetType v1.WidgetType, inputJSON any) (proto.Mes
 	}
 
 	switch widgetType {
+	case v1.WidgetType_widget_type_unspecified:
+		return nil, errInvalidType
 	case v1.WidgetType_confirm:
 		var input v1.ConfirmInput
 		if err := protojson.Unmarshal(jsonBytes, &input); err != nil {
@@ -89,6 +91,8 @@ func convertJSONOutputToProto(widgetType v1.WidgetType, outputJSON any) (proto.M
 	}
 
 	switch widgetType {
+	case v1.WidgetType_widget_type_unspecified:
+		return nil, errInvalidType
 	case v1.WidgetType_confirm:
 		var output v1.ConfirmOutput
 		if err := protojson.Unmarshal(jsonBytes, &output); err != nil {
