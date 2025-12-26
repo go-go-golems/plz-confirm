@@ -61,3 +61,13 @@ Step 3: CLI + Go client migrated to protobuf types; removed double marshal/unmar
 - /home/manuel/workspaces/2025-12-24/add-img-widget-plz-confirm/plz-confirm/internal/cli/confirm.go — CLI commands now use v1 inputs/outputs
 - /home/manuel/workspaces/2025-12-24/add-img-widget-plz-confirm/plz-confirm/internal/client/client.go — Client now uses protojson + v1.UIRequest
 
+
+## 2025-12-26
+
+Step 4: Frontend migrated to protobuf-generated types; schemas.ts removed (commit e5125fc)
+
+### Related Files
+
+- /home/manuel/workspaces/2025-12-24/add-img-widget-plz-confirm/plz-confirm/agent-ui-system/client/src/proto/generated/plz_confirm/v1/request.ts — Generated UIRequest types
+- /home/manuel/workspaces/2025-12-24/add-img-widget-plz-confirm/plz-confirm/agent-ui-system/client/src/services/websocket.ts — WS client now normalizes + uses new UIRequest shape
+

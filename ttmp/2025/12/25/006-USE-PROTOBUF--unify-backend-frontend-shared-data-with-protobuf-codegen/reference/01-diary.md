@@ -537,3 +537,31 @@ This step updates the CLI and its HTTP client to stop depending on `internal/typ
 
 ### Code review instructions
 - Start in `internal/client/client.go` (`CreateRequest`, `WaitRequest`) and then skim one CLI command (e.g. `internal/cli/confirm.go`) to see the new pattern.
+
+## Step 10: Migrate frontend to protobuf-generated types (delete schemas.ts)
+
+This step updates the React frontend to consume the server’s protobuf-shaped JSON (`confirmInput`, `selectOutput`, etc) and removes the manually duplicated TypeScript definitions in `client/src/types/schemas.ts`. To keep the frontend strongly typed, we generate TypeScript interfaces from the same `.proto` files the Go backend uses.
+
+**Commit (code):** e5125fcdef770607ebe191ff0159af329891e718 — "Frontend: switch to protobuf-generated types (remove schemas.ts)"
+
+### What I did
+- Generated TS types into `agent-ui-system/client/src/proto/generated/` using `ts-proto`
+- Added `agent-ui-system/client/src/proto/normalize.ts` to coerce incoming JSON enum strings into the generated enum values
+- Updated Redux store + WS client + widget renderer to use the new `UIRequest` shape and enums
+- Updated widgets to submit outputs in protobuf oneof JSON shape:
+  - `SelectOutput`: `selectedSingle` or `selectedMulti`
+  - `TableOutput`: `selectedSingle` or `selectedMulti`
+  - `ImageOutput`: `selectedBool` / `selectedNumber` / `selectedNumbers` / `selectedString` / `selectedStrings`
+- Deleted `agent-ui-system/client/src/types/schemas.ts` and replaced Notification type with `client/src/types/notifications.ts`
+
+### Why
+- Eliminate backend/frontend type drift by generating frontend types from protobuf.
+
+### What was tricky to build
+- Enums: protojson emits enum names as strings; the generated TS enums are numeric, so we added a small normalization step.
+
+### What warrants a second pair of eyes
+- Confirm widget output JSON shapes match what `protojson.Unmarshal` expects server-side for each oneof.
+
+### Code review instructions
+- Start in `agent-ui-system/client/src/services/websocket.ts` and `agent-ui-system/client/src/components/WidgetRenderer.tsx`, then review one widget like `SelectDialog` for the output shape change.
