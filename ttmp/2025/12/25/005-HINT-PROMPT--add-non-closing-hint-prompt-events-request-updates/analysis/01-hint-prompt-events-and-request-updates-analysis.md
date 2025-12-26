@@ -50,6 +50,63 @@ From an implementation perspective, this implies two capabilities we do not have
 
 This section maps the current contracts with filenames and symbols, so it’s clear what has to change.
 
+### Frontend ↔ backend API surface (today) and what hint prompts change
+
+Even though the feature we want is “a hint UI inside each widget”, the thing that makes it non-trivial is the *protocol* between the browser, the server, and the CLI. This subsection makes that surface explicit so we can reason about what needs to change (and what can remain stable).
+
+#### What the frontend calls today
+
+The React frontend uses a very small set of APIs:
+
+- **WebSocket**: `GET /ws?sessionId=<id>`
+  - Implemented in `agent-ui-system/client/src/services/websocket.ts` (`connectWebSocket`)
+  - In the Go backend, `sessionId` is currently tolerated but ignored (`internal/server/ws.go`)
+
+- **REST**: `POST /api/requests/{id}/response`
+  - Implemented in `agent-ui-system/client/src/services/websocket.ts` (`submitResponse`)
+  - Called from `agent-ui-system/client/src/components/WidgetRenderer.tsx` (`handleSubmit`)
+  - Payload shape: `{ "output": <any> }`
+
+In development, Vite proxies both `/api` and `/ws` to the Go backend, so new endpoints under `/api/...` “just work”:
+
+- `agent-ui-system/vite.config.ts`
+  - `/api` → `http://localhost:3001`
+  - `/ws`  → `ws://localhost:3001`
+
+#### How hint prompts affect the frontend surface
+
+Hint prompts introduce a new user action: **“send something to the agent without completing the request.”**
+
+Today, the UI code path is “submit ⇒ complete”:
+
+- `WidgetRenderer.handleSubmit` calls `submitResponse(...)`
+- then immediately dispatches `completeRequest(...)`, which clears `active`
+
+With hints, we need a second submission path:
+
+- `submitHint(...)` should send a hint payload but **must not** call `completeRequest`
+- the widget stays open and the user can continue after the agent updates the request
+
+Depending on the backend option, this will look different:
+
+- **Option A (explicit events endpoint)**:
+  - Add a new REST call, e.g. `POST /api/requests/{id}/events` with `{ event: {...} }`
+  - Keep `/response` as “final completion” for backwards compatibility
+- **Option B (overload /response)**:
+  - Extend `submitResponse` to accept `{ kind: "hint" | "final", output: ... }`
+  - Higher coupling: one endpoint now means “sometimes complete, sometimes not”
+
+Finally, request updates need to reach the UI. The simplest approach is a new WS message:
+
+```json
+{ "type": "request_updated", "request": <UIRequest> }
+```
+
+Frontend impact:
+
+- Add a new `ws.onmessage` branch in `agent-ui-system/client/src/services/websocket.ts`
+- Add a reducer that updates `state.request.active` in-place when IDs match (rather than moving to history)
+
 ### Server (Go): request lifecycle is “create → complete → wait”
 
 At the server layer, the contract is intentionally widget-agnostic: `input` and `output` are `any`, and the server only cares about “pending vs completed”. That’s great for flexibility, but it also means there’s no native notion of events or partial progression.
@@ -236,6 +293,144 @@ Server broadcasts:
 ```
 
 UI updates `active.input` in-place.
+
+## CLI design options (flags/arguments + workflow)
+
+The CLI today is optimized for a one-shot lifecycle. Each widget command (for example `plz-confirm confirm`) follows the same pattern:
+
+```text
+CreateRequest → WaitRequest → decode final output → print rows
+```
+
+Hint prompts introduce a loop. Instead of “wait for final answer once”, we want:
+
+```text
+create request →
+wait for hint or final →
+if hint: agent updates request →
+wait again →
+eventually: final answer
+```
+
+So we need two things in the CLI UX:
+
+1) a way to **encode hint configuration** into request input (flags and/or YAML)
+2) a way to **return on hint events** and **update** an in-flight request
+
+Below are several CLI interface options. They’re not mutually exclusive; we can start minimal and evolve toward a cleaner model.
+
+### Option 1 (recommended): add dedicated protocol verbs: `request`, `wait`, `update`
+
+This option keeps the existing widget commands stable and introduces explicit commands for the new capabilities. It tends to be the most readable once you’re writing agent scripts because each command does one thing.
+
+#### `plz-confirm request --spec @request.yaml`
+
+Purpose: create a request from a YAML/JSON spec (see YAML DSL section). This avoids adding lots of `--hint-*` flags to every widget command.
+
+Example:
+
+```bash
+plz-confirm request --base-url http://localhost:3000 --spec @request.yaml --output yaml
+```
+
+Suggested flags:
+- **`--base-url`**: same meaning as today (works via Vite proxy or direct backend)
+- **`--spec`**: `@file.yaml` or `-` for stdin
+
+Output columns:
+- `request_id`
+- `type`
+- `status`
+
+#### `plz-confirm wait --id ... --return-on hint|final|any`
+
+Purpose: block until *an event* arrives (hint or final), and return structured information to the agent.
+
+Example:
+
+```bash
+plz-confirm wait \
+  --base-url http://localhost:3000 \
+  --id <request-id> \
+  --return-on hint \
+  --cursor 0 \
+  --wait-timeout 600 \
+  --output yaml
+```
+
+Suggested flags:
+- **`--id`**: request id (required)
+- **`--return-on`**: `hint|final|any` (default: `final` to match today’s mental model)
+- **`--cursor`**: integer cursor for event streams (default: `0`)
+- **`--wait-timeout`**: overall deadline (seconds; `0` = forever)
+
+Suggested output columns:
+- `request_id`
+- `event_kind` (`hint` or `final`)
+- `event_type` (e.g. `hint.textarea`)
+- `event_payload_json` (string)
+- `cursor` (next cursor)
+- `status` (`pending` or `completed`)
+
+Why this column set works well:
+- It’s **widget-agnostic** (agents can handle hints generically).
+- It’s easy to pipe in shell scripts (`jq -r '.event_payload_json'`).
+
+#### `plz-confirm update --id ... --input @input.yaml` (or patch)
+
+Purpose: update a pending request’s `input` so the UI re-renders without closing.
+
+Example (full replace):
+
+```bash
+plz-confirm update --base-url http://localhost:3000 --id <id> --input @updated-input.yaml
+```
+
+Suggested flags:
+- `--id` (required)
+- `--input` (full replace; YAML or JSON)
+- optional `--patch` (JSON merge patch) if we want smaller diffs
+
+### Option 2: extend existing widget commands with hint flags + return mode
+
+This option keeps the familiar `plz-confirm confirm|select|...` commands as the entry point, but it increases complexity because the command can now return either:
+
+- a final widget output (today)
+- *or* a hint event (new)
+
+There are two groups of flags we’d need.
+
+#### A) Flags to define the hint UI (input-side flags)
+
+We can add these flags to each widget command:
+
+- `--hint-kind textarea|select|buttons`
+- `--hint-title <string>`
+- `--hint-message <string>`
+- `--hint-placeholder <string>` (textarea)
+- `--hint-option <string>` (repeatable; select)
+- `--hint-button <string>` (repeatable; buttons)
+
+This is convenient for manual use, but agents often prefer a spec file once nested configs grow.
+
+#### B) Flags to control waiting semantics (output-side flags)
+
+We’d need something like:
+
+- `--return-on hint|final|any` (default `final`)
+- optional `--cursor` if we adopt an event stream
+
+Trade-off to be aware of:
+- If a command sometimes returns widget-specific rows and sometimes returns event-shaped rows, shell scripts become more fragile unless we standardize the output envelope.
+
+### Option 3: hybrid: flags for hint spec, but separate verbs for the loop
+
+In practice, this hybrid often feels best:
+
+- Keep widget commands for fast manual creation, optionally with `--hint-*` flags.
+- Use `wait`/`update` verbs in automation and agent loops.
+
+This avoids “one command that does everything”, while still letting humans stay in familiar territory.
 
 ## Design options (choose one)
 
