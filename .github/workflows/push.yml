@@ -42,7 +42,9 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y protobuf-compiler
 
       - name: Install protoc-gen-go
-        run: go install google.golang.org/protobuf/cmd/protoc-gen-go@latest && echo \"$(go env GOPATH)/bin\" >> \"$GITHUB_PATH\"
+        run: |
+          go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
 
       - name: Ensure generated code is up to date
         run: make codegen && git diff --exit-code
