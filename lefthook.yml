@@ -1,11 +1,17 @@
 pre-commit:
   commands:
     lint:
-      glob: '*.go'
+      glob: '**/*.go'
       run: make lint
     test:
-      glob: '*.go'
+      glob: '**/*.go'
       run: make test
+    buf-lint:
+      glob: 'proto/**/*.proto'
+      run: make buf-lint
+    frontend-check:
+      glob: 'agent-ui-system/**'
+      run: make frontend-check
   parallel: true
 
 pre-push:
@@ -16,4 +22,8 @@ pre-push:
       run: make lint
     test:
       run: make test
+    buf-lint:
+      run: make buf-lint
+    frontend-check:
+      run: make frontend-check
   parallel: true

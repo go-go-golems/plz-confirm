@@ -1,0 +1,65 @@
+syntax = "proto3";
+
+package plz_confirm.v1;
+
+option go_package = "github.com/go-go-golems/plz-confirm/proto/generated/go/plz_confirm/v1";
+
+import "plz_confirm/v1/widgets.proto";
+
+// RequestStatus enum
+enum RequestStatus {
+  // NOTE: Enum value NAMES are chosen to preserve the existing JSON wire contract
+  // when using protojson (it serializes enums as their names).
+  request_status_unspecified = 0;
+  pending = 1;
+  completed = 2;
+  timeout = 3;
+  error = 4;
+}
+
+// WidgetType enum
+enum WidgetType {
+  // NOTE: Enum value NAMES are chosen to preserve the existing JSON wire contract
+  // when using protojson (it serializes enums as their names).
+  widget_type_unspecified = 0;
+  confirm = 1;
+  select = 2;
+  form = 3;
+  upload = 4;
+  table = 5;
+  image = 6;
+}
+
+// UIRequest - main request/response envelope
+message UIRequest {
+  string id = 1;
+  WidgetType type = 2;
+  string session_id = 3;
+  
+  // Widget-specific input (oneof for type safety)
+  oneof input {
+    ConfirmInput confirm_input = 4;
+    SelectInput select_input = 5;
+    FormInput form_input = 6;
+    UploadInput upload_input = 7;
+    TableInput table_input = 8;
+    ImageInput image_input = 9;
+  }
+  
+  // Widget-specific output (oneof for type safety)
+  oneof output {
+    ConfirmOutput confirm_output = 10;
+    SelectOutput select_output = 11;
+    FormOutput form_output = 12;
+    UploadOutput upload_output = 13;
+    TableOutput table_output = 14;
+    ImageOutput image_output = 15;
+  }
+  
+  RequestStatus status = 16;
+  string created_at = 17;        // RFC3339Nano timestamp
+  optional string completed_at = 18;
+  string expires_at = 19;       // RFC3339Nano timestamp
+  optional string error = 20;
+}
+

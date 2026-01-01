@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { UploadInput, UploadOutput } from '@/types/schemas';
+import { UploadInput, UploadOutput } from '@/proto/generated/plz_confirm/v1/widgets';
 import { Button } from '@/components/ui/button';
 import { Loader2, Upload, File, X, CheckCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';

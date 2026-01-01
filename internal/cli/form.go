@@ -14,7 +14,9 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/go-go-golems/plz-confirm/internal/client"
-	agenttypes "github.com/go-go-golems/plz-confirm/internal/types"
+	"github.com/go-go-golems/plz-confirm/proto/generated/go/plz_confirm/v1"
+	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 type FormCommand struct {
@@ -110,13 +112,22 @@ func (c *FormCommand) RunIntoGlazeProcessor(
 		return errors.Wrap(err, "decode schema JSON")
 	}
 
+	schemaBytes, err := json.Marshal(schema)
+	if err != nil {
+		return errors.Wrap(err, "marshal schema")
+	}
+	schemaPB := &structpb.Struct{}
+	if err := protojson.Unmarshal(schemaBytes, schemaPB); err != nil {
+		return errors.Wrap(err, "protojson unmarshal schema into structpb.Struct")
+	}
+
 	cl := client.New(settings.BaseURL)
 	created, err := cl.CreateRequest(ctx, client.CreateRequestParams{
-		Type:      agenttypes.WidgetForm,
+		Type:      v1.WidgetType_form,
 		SessionID: "global", // ignored by server; kept for compatibility
-		Input: agenttypes.FormInput{
+		Input: &v1.FormInput{
 			Title:  settings.Title,
-			Schema: schema,
+			Schema: schemaPB,
 		},
 		TimeoutS: settings.TimeoutS,
 	})
@@ -124,30 +135,26 @@ func (c *FormCommand) RunIntoGlazeProcessor(
 		return errors.Wrap(err, "create form request")
 	}
 
-	completed, err := cl.WaitRequest(ctx, created.ID, settings.WaitTimeout)
+	completed, err := cl.WaitRequest(ctx, created.Id, settings.WaitTimeout)
 	if err != nil {
 		return errors.Wrap(err, "wait for form response")
 	}
 
-	var out agenttypes.FormOutput
-	if completed.Output != nil {
-		b, err := json.Marshal(completed.Output)
-		if err != nil {
-			return errors.Wrap(err, "marshal output")
-		}
-		if err := json.Unmarshal(b, &out); err != nil {
-			return errors.Wrap(err, "unmarshal output")
+	out := completed.GetFormOutput()
+
+	dataJSON := "null"
+	if out != nil && out.Data != nil {
+		if b, err := protojson.Marshal(out.Data); err == nil {
+			dataJSON = string(b)
 		}
 	}
-
-	dataJSON, _ := json.Marshal(out.Data)
 	comment := ""
-	if out.Comment != nil {
+	if out != nil && out.Comment != nil {
 		comment = *out.Comment
 	}
 
 	row := types.NewRow(
-		types.MRP("request_id", created.ID),
+		types.MRP("request_id", created.Id),
 		types.MRP("data_json", string(dataJSON)),
 		types.MRP("comment", comment),
 	)

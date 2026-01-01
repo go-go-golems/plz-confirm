@@ -7,7 +7,7 @@ on:
   pull_request:
 
 jobs:
-  test:
+  ci:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -18,6 +18,39 @@ jobs:
         with:
           go-version: '>=1.19.5'
           cache: true
-      -
-        name: Run unit tests
-        run: go test ./...
+
+      # actions/setup-node's pnpm caching expects pnpm to be available on PATH.
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.4.1
+          run_install: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+          cache-dependency-path: agent-ui-system/pnpm-lock.yaml
+
+      - name: Install frontend deps
+        run: pnpm -C agent-ui-system install --frozen-lockfile
+
+      - name: Setup buf
+        uses: bufbuild/buf-setup-action@v1
+
+      - name: Install protoc (protobuf-compiler)
+        run: sudo apt-get update && sudo apt-get install -y protobuf-compiler
+
+      - name: Install protoc-gen-go
+        run: |
+          go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+
+      - name: Ensure generated code is up to date
+        run: make codegen && git diff --exit-code
+
+      - name: Run checks (buf lint, go test, TS check)
+        run: make ci
+
+      - name: Build (includes go generate / embedded UI assets)
+        run: make build

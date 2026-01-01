@@ -43,10 +43,11 @@
 - [x] Run:
   - [x] `go test ./...`
   - [x] `pnpm -C agent-ui-system check`
-- [ ] Manual spot-check in browser:
-  - [ ] confirm: approve + comment → CLI prints comment
-  - [ ] image: select + comment → CLI prints comment
-  - [ ] upload: “uploadedFiles” + comment → CLI prints comment per row
+- [x] Manual spot-check in browser:
+  - [x] confirm: approve + comment → CLI prints comment
+  - [x] image: select + comment → CLI prints comment
+  - [x] upload: “uploadedFiles” + comment → CLI prints comment per row
+- [x] Automated smoke: run `scripts/auto-e2e-comment-via-api.sh` (submits outputs with `comment: "AUTO_OK"` and asserts CLI prints it)
 
 ### 5) Ticket hygiene
 

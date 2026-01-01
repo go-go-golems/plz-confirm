@@ -1,4 +1,4 @@
-import { UIRequest } from "@/types/schemas";
+import { RequestStatus, UIRequest, WidgetType } from "@/proto/generated/plz_confirm/v1/request";
 import { nanoid } from "nanoid";
 
 const SESSION_ID = "550e8400-e29b-41d4-a716-446655440000";
@@ -6,39 +6,39 @@ const SESSION_ID = "550e8400-e29b-41d4-a716-446655440000";
 export const MOCK_REQUESTS: UIRequest[] = [
   {
     id: nanoid(),
-    type: "confirm",
+    type: WidgetType.confirm,
     sessionId: SESSION_ID,
-    input: {
+    confirmInput: {
       title: "Deploy to production?",
       message: "This will deploy v2.3.1 to the production environment. Are you sure?",
       approveText: "Deploy",
       rejectText: "Cancel"
     },
-    status: "pending",
+    status: RequestStatus.pending,
     createdAt: new Date().toISOString(),
     expiresAt: new Date(Date.now() + 300000).toISOString() // 5 mins
   },
   {
     id: nanoid(),
-    type: "select",
+    type: WidgetType.select,
     sessionId: SESSION_ID,
-    input: {
+    selectInput: {
       title: "Choose environment",
       options: ["development", "staging", "production", "disaster-recovery"],
       multi: false,
       searchable: true
     },
-    status: "completed",
-    output: { selected: "staging" },
+    status: RequestStatus.completed,
+    selectOutput: { selectedSingle: "staging" },
     createdAt: new Date(Date.now() - 3600000).toISOString(),
     completedAt: new Date(Date.now() - 3500000).toISOString(),
     expiresAt: new Date(Date.now() - 3300000).toISOString()
   },
   {
     id: nanoid(),
-    type: "table",
+    type: WidgetType.table,
     sessionId: SESSION_ID,
-    input: {
+    tableInput: {
       title: "Select users to notify",
       multiSelect: true,
       searchable: true,
@@ -51,7 +51,7 @@ export const MOCK_REQUESTS: UIRequest[] = [
         { id: 5, name: "Eve Davis", email: "eve@example.com", role: "Editor" },
       ]
     },
-    status: "pending",
+    status: RequestStatus.pending,
     createdAt: new Date().toISOString(),
     expiresAt: new Date(Date.now() + 600000).toISOString()
   }

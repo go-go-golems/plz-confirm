@@ -90,21 +90,26 @@ CLI prints structured output
 
 Each step starts with *why it exists*, then gives the mechanical checklist.
 
-### Step 1: Define the wire schema (Go + TypeScript)
+### Step 1: Define the wire schema (Protobuf + codegen)
 
-Typed schemas prevent “shape drift”. The server stores `input` and `output` as `any`, but the CLI and UI still need a clear contract so they can marshal/unmarshal reliably.
+Typed schemas prevent “shape drift”. In plz-confirm, the single source of truth for shared request/widget data is now **protobuf** (`.proto`), with code generated for **Go** and **TypeScript**.
 
 **What to change**
-- `internal/types/types.go`
-  - Add a new `WidgetType` constant (e.g. `WidgetImage`)
-  - Add `XInput` / `XOutput` structs (and helper structs like `ImageItem`)
-- `agent-ui-system/client/src/types/schemas.ts`
-  - Extend the `UIRequest.type` union
-  - Add matching TS interfaces
+- `proto/plz_confirm/v1/request.proto`
+  - Extend `WidgetType` enum (ensure the enum **value name** matches the JSON string you want emitted by `protojson`, e.g. `image`)
+  - Extend `UIRequest` oneofs if you add new input/output message types
+- `proto/plz_confirm/v1/widgets.proto`
+  - Add `XInput` / `XOutput` messages (and helper messages like `ImageItem`)
+- (optional) `proto/plz_confirm/v1/image.proto`
+  - If the widget needs new image/upload related messages
+
+**Generated outputs**
+- Go: `proto/generated/go/plz_confirm/v1/*.pb.go` (run `make proto`)
+- TS: `agent-ui-system/client/src/proto/generated/**` (generated via `protoc-gen-ts_proto`)
 
 **Example (image widget)**
-- Go: `internal/types/types.go` → `WidgetImage`, `ImageInput`, `ImageOutput`, `ImageItem`
-- TS: `client/src/types/schemas.ts` → `type: ... | 'image'` + `ImageInput`, `ImageOutput`
+- Protobuf: add `image` to `WidgetType` and add `ImageInput`/`ImageOutput`/`ImageItem` in `widgets.proto`
+- Then regenerate Go + TS code and update server/CLI/UI to use the generated types.
 
 ### Step 2: Add server endpoints (only if the widget needs them)
 

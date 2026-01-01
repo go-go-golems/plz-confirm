@@ -2,7 +2,6 @@ package cli
 
 import (
 	"context"
-	"encoding/json"
 
 	"github.com/go-go-golems/glazed/pkg/cmds"
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
@@ -12,7 +11,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/go-go-golems/plz-confirm/internal/client"
-	agenttypes "github.com/go-go-golems/plz-confirm/internal/types"
+	"github.com/go-go-golems/plz-confirm/proto/generated/go/plz_confirm/v1"
 )
 
 type ConfirmCommand struct {
@@ -96,9 +95,9 @@ func (c *ConfirmCommand) RunIntoGlazeProcessor(
 
 	cl := client.New(settings.BaseURL)
 	created, err := cl.CreateRequest(ctx, client.CreateRequestParams{
-		Type:      agenttypes.WidgetConfirm,
+		Type:      v1.WidgetType_confirm,
 		SessionID: "global", // ignored by server; kept for compatibility
-		Input: agenttypes.ConfirmInput{
+		Input: &v1.ConfirmInput{
 			Title:       settings.Title,
 			Message:     settings.Message,
 			ApproveText: settings.ApproveText,
@@ -110,32 +109,22 @@ func (c *ConfirmCommand) RunIntoGlazeProcessor(
 		return errors.Wrap(err, "create confirm request")
 	}
 
-	completed, err := cl.WaitRequest(ctx, created.ID, settings.WaitTimeout)
+	completed, err := cl.WaitRequest(ctx, created.Id, settings.WaitTimeout)
 	if err != nil {
 		return errors.Wrap(err, "wait for confirm response")
 	}
 
-	var out agenttypes.ConfirmOutput
-	// Output is decoded as `any` through UIRequest. Re-marshal/unmarshal to typed output.
-	if completed.Output != nil {
-		b, err := json.Marshal(completed.Output)
-		if err != nil {
-			return errors.Wrap(err, "marshal output")
-		}
-		if err := json.Unmarshal(b, &out); err != nil {
-			return errors.Wrap(err, "unmarshal output")
-		}
-	}
+	out := completed.GetConfirmOutput()
 
 	comment := ""
-	if out.Comment != nil {
+	if out != nil && out.Comment != nil {
 		comment = *out.Comment
 	}
 
 	row := types.NewRow(
-		types.MRP("request_id", created.ID),
-		types.MRP("approved", out.Approved),
-		types.MRP("timestamp", out.Timestamp),
+		types.MRP("request_id", created.Id),
+		types.MRP("approved", out.GetApproved()),
+		types.MRP("timestamp", out.GetTimestamp()),
 		types.MRP("comment", comment),
 	)
 	return gp.AddRow(ctx, row)

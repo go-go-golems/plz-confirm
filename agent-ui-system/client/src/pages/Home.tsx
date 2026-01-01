@@ -8,13 +8,14 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Clock, CheckCircle, XCircle, Terminal } from 'lucide-react';
 import { nanoid } from 'nanoid';
+import { RequestStatus, WidgetType } from '@/proto/generated/plz_confirm/v1/request';
 
 export default function Home() {
   const dispatch = useDispatch();
   const { active, history } = useSelector((state: RootState) => state.request);
 
   // Simulate receiving a new request if none is active
-  const simulateNewRequest = (type: string) => {
+  const simulateNewRequest = (type: WidgetType) => {
     if (active) return;
     
     const template = MOCK_REQUESTS.find(r => r.type === type);
@@ -22,7 +23,7 @@ export default function Home() {
       dispatch(setActiveRequest({
         ...template,
         id: nanoid(),
-        status: 'pending',
+        status: RequestStatus.pending,
         createdAt: new Date().toISOString()
       }));
     }
@@ -47,7 +48,7 @@ export default function Home() {
                 variant="outline" 
                 size="sm" 
                 className="cyber-button text-xs"
-                onClick={() => simulateNewRequest('confirm')}
+                onClick={() => simulateNewRequest(WidgetType.confirm)}
                 disabled={!!active}
               >
                 CONFIRM_REQ
@@ -56,7 +57,7 @@ export default function Home() {
                 variant="outline" 
                 size="sm" 
                 className="cyber-button text-xs"
-                onClick={() => simulateNewRequest('select')}
+                onClick={() => simulateNewRequest(WidgetType.select)}
                 disabled={!!active}
               >
                 SELECT_REQ
@@ -65,7 +66,7 @@ export default function Home() {
                 variant="outline" 
                 size="sm" 
                 className="cyber-button text-xs"
-                onClick={() => simulateNewRequest('table')}
+                onClick={() => simulateNewRequest(WidgetType.table)}
                 disabled={!!active}
               >
                 TABLE_REQ
@@ -78,12 +79,12 @@ export default function Home() {
                   if (active) return;
                   dispatch(setActiveRequest({
                     id: nanoid(),
-                    type: 'form',
+                    type: WidgetType.form,
                     sessionId: 'mock',
-                    status: 'pending',
+                    status: RequestStatus.pending,
                     createdAt: new Date().toISOString(),
                     expiresAt: new Date(Date.now() + 300000).toISOString(),
-                    input: {
+                    formInput: {
                       title: "CONFIGURE_DATABASE",
                       schema: {
                         properties: {
@@ -110,12 +111,12 @@ export default function Home() {
                   if (active) return;
                   dispatch(setActiveRequest({
                     id: nanoid(),
-                    type: 'upload',
+                    type: WidgetType.upload,
                     sessionId: 'mock',
-                    status: 'pending',
+                    status: RequestStatus.pending,
                     createdAt: new Date().toISOString(),
                     expiresAt: new Date(Date.now() + 300000).toISOString(),
-                    input: {
+                    uploadInput: {
                       title: "UPLOAD_LOGS",
                       accept: [".log", ".txt"],
                       multiple: true,
@@ -150,17 +151,23 @@ export default function Home() {
                     <div key={req.id} className="p-4 hover:bg-primary/5 transition-colors group">
                       <div className="flex items-start justify-between mb-1">
                         <span className="font-mono text-xs text-primary font-bold uppercase">
-                          {req.type}
+                          {String((WidgetType as any)[req.type] ?? req.type)}
                         </span>
                         <span className="font-mono text-[10px] text-muted-foreground">
                           {new Date(req.completedAt || req.createdAt).toLocaleTimeString()}
                         </span>
                       </div>
                       <div className="text-sm font-mono mb-2 line-clamp-1">
-                        {req.input.title}
+                        {req.confirmInput?.title ||
+                          req.selectInput?.title ||
+                          req.formInput?.title ||
+                          req.uploadInput?.title ||
+                          req.tableInput?.title ||
+                          req.imageInput?.title ||
+                          "UNKNOWN_REQUEST"}
                       </div>
                       <div className="flex items-center gap-2">
-                        {req.status === 'completed' ? (
+                        {req.status === RequestStatus.completed ? (
                           <div className="flex items-center text-[10px] text-green-500">
                             <CheckCircle className="h-3 w-3 mr-1" />
                             COMPLETED
@@ -197,7 +204,7 @@ export default function Home() {
                 <div className="text-primary">system: ready for input</div>
                 {active && (
                   <div className="text-yellow-500">
-                    incoming: new request [{active.type}] received
+                    incoming: new request [{String((WidgetType as any)[active.type] ?? active.type)}] received
                   </div>
                 )}
               </div>

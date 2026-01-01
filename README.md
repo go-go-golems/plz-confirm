@@ -298,11 +298,13 @@ plz-confirm/
 ├── cmd/plz-confirm/          # CLI entry point
 ├── internal/
 │   ├── cli/                  # Widget command implementations
+│   ├── client/               # CLI HTTP client (protojson <-> protobuf)
 │   ├── server/               # HTTP/WebSocket server
 │   ├── store/                 # Request storage
-│   └── types/                # Shared types
+├── proto/                    # Protobuf definitions + generated Go code
 ├── agent-ui-system/          # React frontend
-│   └── client/               # Frontend source code
+│   └── client/               # Frontend source code (protobuf TS types under src/proto/generated/)
+├── scripts/                  # Dev + inspection scripts (tmux, curl smoke)
 └── pkg/doc/                  # Documentation
 ```
 
@@ -310,11 +312,23 @@ plz-confirm/
 
 ```bash
 # Run Go tests
-go test ./...
+go test ./... -count=1
 
-# Run frontend tests
-cd agent-ui-system
-pnpm test
+# Lint protobuf files
+buf lint .
+
+# Run frontend typecheck
+pnpm -C agent-ui-system run check
+```
+
+### Code Generation
+
+```bash
+# Regenerate Go protobuf code
+make proto
+
+# Regenerate TypeScript protobuf types
+pnpm -C agent-ui-system run proto
 ```
 
 ### Development Scripts
@@ -323,10 +337,10 @@ The project includes tmux scripts for easy development setup:
 
 ```bash
 # Start server and frontend dev server in tmux
-bash ttmp/2025/12/15/DESIGN-PLZ-CONFIRM-001--port-agent-ui-system-cli-backend-to-go-using-glazed-framework/scripts/tmux-up.sh
+bash scripts/tmux-up.sh
 
 # Attach to tmux session
-tmux attach -t DESIGN-PLZ-CONFIRM-001
+tmux attach -t PLZ-CONFIRM
 ```
 
 ## Contributing

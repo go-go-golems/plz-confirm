@@ -12,6 +12,8 @@ builds:
       - CGO_ENABLED=0
     main: ./cmd/plz-confirm
     binary: plz-confirm
+    tags:
+      - embed
     goos:
       - linux
 # I am not able to test windows at the time

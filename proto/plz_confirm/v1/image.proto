@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package plz_confirm.v1;
+
+option go_package = "github.com/go-go-golems/plz-confirm/proto/generated/go/plz_confirm/v1";
+
+message UploadImageResponse {
+  string id = 1;
+  string url = 2;  // "/api/images/{id}"
+  string mime_type = 3;
+  int64 size = 4;
+}
+

@@ -11,7 +11,7 @@ set -euo pipefail
 # This is a pragmatic smoke test for plumbing:
 # - CLI creates request -> server logs "Created request <id> (<type>)"
 # - We parse the request id from the server logfile
-# - We submit a response payload
+# - We submit a response payload (protobuf/oneof JSON shapes)
 # - CLI should unblock and print output
 #
 # Prereqs:
@@ -126,7 +126,7 @@ run_and_answer confirm confirm '{"approved":true,"timestamp":"2025-12-25T00:00:0
   confirm --title 'TEST confirm' --message 'Auto-answered via /response'
 
 # select
-run_and_answer select select '{"selected":"staging"}' \
+run_and_answer select select '{"selectedSingle":"staging"}' \
   select --title 'TEST select' --option production --option staging --option development
 
 # form (needs schema file)
@@ -140,7 +140,7 @@ run_and_answer form form '{"data":{"host":"example"}}' \
 cat > /tmp/plz-table.json <<'JSON'
 [{"id":"srv-1","name":"alpha"},{"id":"srv-2","name":"beta"}]
 JSON
-run_and_answer table table '{"selected":{"id":"srv-2","name":"beta"}}' \
+run_and_answer table table '{"selectedSingle":{"id":"srv-2","name":"beta"}}' \
   table --title 'TEST table' --data @/tmp/plz-table.json --columns id,name
 
 # upload (note: current UI upload is simulated; we still validate CLI/server plumbing by directly submitting output)
@@ -148,12 +148,12 @@ run_and_answer upload upload '{"files":[{"name":"a.txt","size":1,"path":"/tmp/a.
   upload --title 'TEST upload' --accept .txt --multiple
 
 # image (Variant A: pick an image)
-run_and_answer image_pick image '{"selected":0,"timestamp":"2025-12-25T00:00:00Z"}' \
+run_and_answer image_pick image '{"selectedNumber":0,"timestamp":"2025-12-25T00:00:00Z"}' \
   image --title 'TEST image pick' --message 'Pick one image' \
   --image /tmp/plz-img-1.png --image /tmp/plz-img-2.png
 
 # image (Variant B: images as context + checkbox question)
-run_and_answer image_opts image '{"selected":["Wrong color theme","Missing icon"],"timestamp":"2025-12-25T00:00:00Z"}' \
+run_and_answer image_opts image '{"selectedStrings":{"values":["Wrong color theme","Missing icon"]},"timestamp":"2025-12-25T00:00:00Z"}' \
   image --title 'TEST image options' --message 'Which issues are present?' \
   --image /tmp/plz-img-a.png --image /tmp/plz-img-b.png \
   --multi \
@@ -162,7 +162,7 @@ run_and_answer image_opts image '{"selected":["Wrong color theme","Missing icon"
   --option 'Missing icon'
 
 # image (confirm mode)
-run_and_answer image_confirm image '{"selected":true,"timestamp":"2025-12-25T00:00:00Z"}' \
+run_and_answer image_confirm image '{"selectedBool":true,"timestamp":"2025-12-25T00:00:00Z"}' \
   image --title 'TEST image confirm' --message 'Are these similar?' --mode confirm \
   --image /tmp/plz-img-a.png --image /tmp/plz-img-b.png
 

@@ -1,0 +1,652 @@
+---
+Title: Diary
+Ticket: 006-USE-PROTOBUF
+Status: active
+Topics:
+    - backend
+    - frontend
+    - api
+    - protobuf
+    - codegen
+DocType: reference
+Intent: long-term
+Owners: []
+RelatedFiles:
+    - Path: .github/workflows/push.yml
+      Note: CI now runs codegen+checks consistently
+    - Path: .github/workflows/release.yml
+      Note: Release pipeline installs node/pnpm for go generate UI bundling
+    - Path: Makefile
+      Note: Added codegen/ci targets used to enforce protobuf+TS invariants
+    - Path: internal/server/proto_convert.go
+      Note: Exhaustive enum handling fix
+    - Path: internal/server/ws_events.go
+      Note: gofmt fix (protojson WS envelope)
+    - Path: internal/store/store.go
+      Note: gofmt fix
+    - Path: lefthook.yml
+      Note: Local hooks enforcing buf lint + TS check
+ExternalSources: []
+Summary: ""
+LastUpdated: 2025-12-25T22:56:38.027014007-05:00
+WhatFor: ""
+WhenToUse: ""
+---
+
+
+# Diary
+
+## Goal
+
+Step-by-step narrative of investigating the plz-confirm codebase to understand current backend↔frontend data contracts, then design a protobuf-based unification strategy with code generation for both Go backend and TypeScript frontend.
+
+## Step 1: Initial exploration — mapping the architecture
+
+Started by creating ticket 006-USE-PROTOBUF and three core documents (analysis, design-doc, diary). Then scanned the codebase to understand the current data flow.
+
+### What I did
+- Read `plz-confirm/internal/server/server.go` — Go HTTP server with REST + WebSocket
+- Read `plz-confirm/internal/types/types.go` — Go type definitions (manually duplicated from frontend)
+- Read `plz-confirm/agent-ui-system/client/src/types/schemas.ts` — TypeScript type definitions
+- Read `plz-confirm/internal/client/client.go` — Go HTTP client for CLI
+- Read `plz-confirm/internal/cli/confirm.go` — Example CLI command showing marshal/unmarshal pattern
+- Read `plz-confirm/internal/server/ws.go` — WebSocket broadcaster implementation
+- Read `plz-confirm/agent-ui-system/client/src/services/websocket.ts` — Frontend WebSocket client
+- Read `plz-confirm/agent-ui-system/client/src/store/store.ts` — Redux store with UIRequest state
+
+### What I learned
+
+**Current architecture:**
+1. **Go backend** (`internal/server/server.go`):
+   - REST API: `/api/requests` (POST), `/api/requests/{id}` (GET), `/api/requests/{id}/response` (POST), `/api/requests/{id}/wait` (GET)
+   - WebSocket: `/ws` broadcasts `new_request` and `request_completed` events
+   - Image API: `/api/images` (POST), `/api/images/{id}` (GET)
+   - All request/response bodies use JSON with `any` for Input/Output fields
+
+2. **Type duplication problem** (explicitly noted in `internal/types/types.go:3-6`):
+   ```go
+   // NOTE: These types are intentionally duplicated (manually) from the React frontend
+   // (`vibes/2025-12-15/agent-ui-system/client/src/types/schemas.ts`).
+   //
+   // We will introduce schema/codegen later; for now we keep wire-compat JSON fields.
+   ```
+
+3. **Wire format uses `any`**:
+   - `UIRequest.Input` is `any` (JSON)
+   - `UIRequest.Output` is `any` (JSON)
+   - Server stores these as `any`, frontend receives as `any`
+
+4. **CLI workaround pattern** (seen in all CLI commands):
+   ```go
+   var out agenttypes.ConfirmOutput
+   // Output is decoded as `any` through UIRequest. Re-marshal/unmarshal to typed output.
+   if completed.Output != nil {
+       b, err := json.Marshal(completed.Output)
+       if err != nil {
+           return errors.Wrap(err, "marshal output")
+       }
+       if err := json.Unmarshal(b, &out); err != nil {
+           return errors.Wrap(err, "unmarshal output")
+       }
+   }
+   ```
+
+5. **Widget types** (6 total):
+   - `confirm` — ConfirmInput/ConfirmOutput
+   - `select` — SelectInput/SelectOutput
+   - `form` — FormInput/FormOutput (schema is `any` JSON Schema)
+   - `upload` — UploadInput/UploadOutput
+   - `table` — TableInput/TableOutput
+   - `image` — ImageInput/ImageOutput
+
+6. **WebSocket message envelopes**:
+   - `{type: "new_request", request: UIRequest}`
+   - `{type: "request_completed", request: UIRequest}`
+
+### What was tricky to build
+- The `any` → typed struct conversion requires double marshal/unmarshal (inefficient, error-prone)
+- Frontend components receive `input: any` and must trust the shape matches the widget type
+- No compile-time guarantee that Input/Output types match between backend and frontend
+
+### What warrants a second pair of eyes
+- Verify all widget Input/Output types are identical between Go and TypeScript (manual comparison needed)
+- Check if there are any other shared data structures beyond UIRequest (image upload responses, WebSocket envelopes)
+
+### What should be done in the future
+- Document exact JSON schema for each widget Input/Output
+- Identify all shared data structures (not just UIRequest)
+- Design protobuf message hierarchy that preserves backward compatibility during migration
+
+### Code review instructions
+- Start with `plz-confirm/internal/types/types.go` and compare field-by-field with `plz-confirm/agent-ui-system/client/src/types/schemas.ts`
+- Check `plz-confirm/internal/server/server.go` for all JSON response shapes
+- Review `plz-confirm/internal/cli/*.go` for marshal/unmarshal patterns
+
+### Technical details
+
+**Key files:**
+- `plz-confirm/internal/types/types.go` — Go type definitions
+- `plz-confirm/agent-ui-system/client/src/types/schemas.ts` — TypeScript type definitions
+- `plz-confirm/internal/server/server.go` — HTTP handlers
+- `plz-confirm/internal/server/ws.go` — WebSocket broadcaster
+- `plz-confirm/internal/client/client.go` — HTTP client
+- `plz-confirm/internal/cli/*.go` — CLI commands (6 widget types)
+
+**API endpoints:**
+- `POST /api/requests` — Create request (body: `{type, sessionId, input, timeout}`)
+- `GET /api/requests/{id}` — Get request
+- `POST /api/requests/{id}/response` — Submit response (body: `{output}`)
+- `GET /api/requests/{id}/wait?timeout=N` — Long-poll wait
+- `POST /api/images` — Upload image (multipart/form-data)
+- `GET /api/images/{id}` — Get image
+- `WS /ws?sessionId=X` — WebSocket connection
+
+**WebSocket messages:**
+- `{type: "new_request", request: UIRequest}`
+- `{type: "request_completed", request: UIRequest}`
+
+## Step 2: Deep dive — comparing Go and TypeScript type definitions
+
+Continuing investigation to verify type alignment and identify all shared data structures.
+
+### What I did
+- Compared `plz-confirm/internal/types/types.go` with `plz-confirm/agent-ui-system/client/src/types/schemas.ts` field-by-field
+- Found `UploadImageResponse` / `uploadImageResponse` structure (Go client vs server)
+- Reviewed `plz-confirm/internal/server/images.go` — server-side image storage (not shared, internal only)
+- Checked WebSocket message envelopes in `plz-confirm/internal/server/ws.go` and `plz-confirm/agent-ui-system/client/src/services/websocket.ts`
+
+### What I learned
+
+**Shared data structures identified:**
+
+1. **UIRequest** (core structure):
+   - Go: `internal/types/types.go:32-43`
+   - TS: `agent-ui-system/client/src/types/schemas.ts:1-12`
+   - Fields match exactly (id, type, sessionId, input, output, status, createdAt, completedAt, expiresAt, error)
+
+2. **Widget Input/Output types** (6 widgets × 2 = 12 types):
+   - `ConfirmInput` / `ConfirmOutput`
+   - `SelectInput` / `SelectOutput`
+   - `FormInput` / `FormOutput`
+   - `UploadInput` / `UploadOutput`
+   - `TableInput` / `TableOutput`
+   - `ImageInput` / `ImageOutput`
+   - Plus helper: `ImageItem` (used in ImageInput)
+
+3. **UploadImageResponse** (image upload API):
+   - Go client: `internal/client/client.go:137-142`
+   - Go server: `internal/server/server.go:337-342`
+   - Fields: `id`, `url`, `mimeType`, `size`
+   - **Note:** Frontend doesn't seem to use this directly (uploads via form, receives URL in ImageItem.src)
+
+4. **WebSocket message envelopes**:
+   - `{type: "new_request", request: UIRequest}`
+   - `{type: "request_completed", request: UIRequest}`
+   - These are ad-hoc JSON objects, not typed structures
+
+5. **Enums/constants:**
+   - `RequestStatus`: `pending`, `completed`, `timeout`, `error`
+   - `WidgetType`: `confirm`, `select`, `form`, `upload`, `table`, `image`
+
+**Type alignment verification:**
+- All field names match (Go uses `json:"camelCase"` tags)
+- Optional fields use pointers in Go (`*string`) vs optional in TS (`string?`)
+- Arrays/slices match (`[]string` ↔ `string[]`)
+- Timestamps are ISO 8601 strings in both
+
+**Gaps found:**
+- `FormInput.Schema` is `any` (JSON Schema) — cannot be strongly typed without schema registry
+- `FormOutput.Data` is `any` — dynamic form results
+- `TableInput.Data` is `[]any` — dynamic table rows
+- `TableOutput.Selected` is `any | []any` — union type
+- `SelectOutput.Selected` is `string | []string` — union type
+- `ImageOutput.Selected` is `number | number[] | boolean | string | string[]` — complex union
+
+### What was tricky to build
+- Union types in Go require type assertions or custom unmarshalers (currently handled via `any` + re-marshal/unmarshal)
+- JSON Schema (`FormInput.Schema`) is inherently dynamic — protobuf can't directly represent it (would need `google.protobuf.Struct` or `bytes` with JSON)
+
+### What warrants a second pair of eyes
+- Verify `UploadImageResponse` is actually used by frontend (or if it's only CLI↔server)
+- Check if WebSocket message envelopes should be typed structures (currently ad-hoc JSON)
+- Decide how to handle dynamic types (`FormInput.Schema`, `FormOutput.Data`, `TableInput.Data`) in protobuf
+
+### What should be done in the future
+- Create field-by-field comparison table for all widget Input/Output types
+- Design protobuf `oneof` patterns for union types (`SelectOutput.Selected`, `ImageOutput.Selected`)
+- Decide on JSON Schema representation (protobuf `Struct` vs `bytes` vs separate schema service)
+
+### Technical details
+
+**Complete list of shared structures:**
+1. `UIRequest` — main request/response envelope
+2. `ConfirmInput` / `ConfirmOutput`
+3. `SelectInput` / `SelectOutput`
+4. `FormInput` / `FormOutput`
+5. `UploadInput` / `UploadOutput`
+6. `TableInput` / `TableOutput`
+7. `ImageInput` / `ImageOutput`
+8. `ImageItem` — helper for ImageInput
+9. `UploadImageResponse` — image upload API response
+10. `RequestStatus` enum
+11. `WidgetType` enum
+
+**WebSocket messages (not typed):**
+- `{type: "new_request", request: UIRequest}`
+- `{type: "request_completed", request: UIRequest}`
+
+## Step 3: Writing architecture analysis document
+
+Starting to document the current architecture and protocols in the analysis document.
+
+### What I did
+- Wrote comprehensive architecture analysis document (`analysis/01-backend-frontend-architecture-current-protocols.md`)
+- Documented all REST API endpoints with request/response shapes
+- Documented WebSocket message formats
+- Listed all 11 shared data structures with field-by-field details
+- Identified pain points (type safety, performance, maintainability, union types, dynamic types)
+
+### What I learned
+
+**Complete API surface:**
+- 6 REST endpoints (create, get, submit, wait, upload image, get image)
+- 2 WebSocket message types (new_request, request_completed)
+- 11 shared data structures total
+
+**Key insights:**
+- All widget Input/Output types are well-defined except for union types (`Selected` fields)
+- Dynamic types (`FormInput.Schema`, `FormOutput.Data`, `TableInput.Data`) will require special handling in protobuf
+- WebSocket messages are ad-hoc JSON objects (not typed structures)
+
+### What was tricky to build
+- Organizing the document to be both reference (API contracts) and analysis (pain points)
+- Balancing detail (field-by-field) with readability
+
+### What warrants a second pair of eyes
+- Verify all API endpoint documentation matches actual implementation
+- Confirm WebSocket message formats are complete
+
+### What should be done in the future
+- Add pseudocode examples for each API endpoint
+- Create visual diagrams of data flow
+- Document error response formats
+
+### Code review instructions
+- Review `analysis/01-backend-frontend-architecture-current-protocols.md` for accuracy
+
+## Step 6: Closeout — align hooks/CI with protobuf workflow + fix post-merge lint
+
+This closeout step wrapped the migration with the operational glue that makes it stick: repo-local hooks enforce `buf lint` and frontend typechecking, CI now runs the same checks and ensures generated code stays in sync, and we cleaned up a few strict `golangci-lint` failures (exhaustive enum switches + gofmt + dead code).
+
+The key outcome is that the protobuf migration is not just “green on my machine”: it’s continuously enforced in the developer loop (lefthook) and in CI (GitHub Actions), so drift is caught immediately.
+
+**Commits (code):**
+- `6c6f5e0` — “Build: add codegen + CI targets (proto + ts-proto + lint/check)”
+- `9a27083` — “Dev: enforce buf lint + frontend check via lefthook”
+- `32948ef` — “CI: run buf/ts checks + codegen; install node/pnpm for goreleaser”
+- `96697d3` — “Lint: fix exhaustive enum cases; gofmt; remove dead store proto_convert helpers”
+
+### What I did
+- Updated Make targets to expose `buf-lint`, `frontend-check`, and `codegen`, and aligned CI usage.
+- Extended `lefthook.yml` so commits/pushes enforce protobuf + TS invariants.
+- Updated GitHub Actions so PRs run `make codegen && git diff --exit-code`, `make ci`, and `make build` with the correct toolchain installed.
+- Fixed strict lint failures:
+  - added explicit `*_unspecified` enum cases for `exhaustive`
+  - ran gofmt on flagged files
+  - deleted a now-unused legacy helper file (`internal/store/proto_convert.go`)
+
+### Why
+- Prevent schema drift after the migration (generated code must match `.proto`).
+- Make the inspector workflow reproducible and enforce it in CI rather than relying on tribal knowledge.
+
+### What worked
+- `make lint` is clean again and `go test ./... -count=1` passes.
+- CI now checks the same invariants that local dev hooks enforce.
+
+### What didn't work
+- N/A (this was mainly follow-through polish; issues were straightforward to resolve).
+
+### What was tricky to build
+- `exhaustive` in golangci-lint requires explicit handling of protobuf “unspecified” enum values even when a `default` exists.
+- Keeping CI toolchain correct: TS proto generation needs Node/pnpm and the Go build needs `protoc-gen-go` available for `make proto`.
+
+### What warrants a second pair of eyes
+- Confirm the CI changes match the org’s expectations for release: e.g., whether `make build` should always run in PRs (it runs `pnpm build` via `go generate` and can be heavier).
+
+### What should be done in the future
+- N/A (migration is complete; follow-ups should be new tickets).
+
+### Code review instructions
+- Start with:
+  - `plz-confirm/Makefile`
+  - `plz-confirm/lefthook.yml`
+  - `.github/workflows/push.yml`
+  - `.github/workflows/release.yml`
+- Then skim:
+  - `internal/server/proto_convert.go` (exhaustive fix)
+  - `internal/server/ws_events.go` (gofmt)
+  - `internal/store/store.go` (gofmt)
+- Cross-reference with actual code in `plz-confirm/internal/server/server.go`
+
+## Step 4: Designing protobuf message hierarchy
+
+Next: design protobuf `.proto` files that can replace the current JSON-based types while handling union types and dynamic data.
+
+### What I did
+- Designed complete protobuf message hierarchy (`design-doc/01-protobuf-unification-codegen-proposal.md`)
+- Created `.proto` pseudocode for all 11 shared data structures
+- Designed `oneof` patterns for union types (`SelectOutput.Selected`, `ImageOutput.Selected`, `TableOutput.Selected`)
+- Proposed `google.protobuf.Struct` for dynamic types (`FormInput.Schema`, `FormOutput.Data`, `TableInput.Data`)
+- Designed code generation pipeline (Go + TypeScript)
+- Created 7-phase migration strategy (gradual, backward compatible)
+- Documented design decisions and alternatives considered
+- Added pseudocode examples for Go and TypeScript usage
+
+### What I learned
+
+**Protobuf design patterns:**
+- `oneof` is perfect for union types (type-safe, eliminates `any`)
+- `google.protobuf.Struct` handles dynamic JSON data elegantly
+- Separate `.proto` files by domain (request, widgets, image) improves maintainability
+- Protobuf can coexist with JSON during migration (via `protojson`)
+
+**Migration strategy:**
+- Phase 1: Setup (no breaking changes)
+- Phase 2: Gradual migration (backward compatible)
+- Phase 3: Full migration (optional breaking changes)
+- Total timeline: ~4 weeks
+
+**Key design decisions:**
+1. Use `oneof` for union types (type safety)
+2. Use `google.protobuf.Struct` for dynamic types (JSON Schema, form/table data)
+3. Gradual migration (not big-bang)
+4. Keep JSON wire format initially (easier debugging)
+5. Separate `.proto` files by domain
+
+### What was tricky to build
+- Designing `oneof` patterns for complex union types (`ImageOutput.Selected` has 5 variants)
+- Deciding how to represent JSON Schema (`google.protobuf.Struct` vs `bytes` vs schema registry)
+- Balancing type safety with flexibility for dynamic data
+
+### What warrants a second pair of eyes
+- Verify protobuf message field numbers are optimal (no gaps, future-proof)
+- Review `oneof` patterns for union types (are there better alternatives?)
+- Confirm `google.protobuf.Struct` is the right choice for JSON Schema
+
+### What should be done in the future
+- Create actual `.proto` files (not just pseudocode)
+- Set up `buf` or `protoc` build pipeline
+- Implement conversion helpers (`JSONToProto`, `ProtoToJSON`)
+- Start Phase 1 implementation
+
+### Code review instructions
+- Review `design-doc/01-protobuf-unification-codegen-proposal.md` for completeness
+- Verify protobuf message definitions match current Go/TypeScript types
+- Check migration strategy is feasible
+
+### Technical details
+
+**Protobuf message structure:**
+- `request.proto`: UIRequest, RequestStatus, WidgetType enums
+- `widgets.proto`: All 6 widget Input/Output types + helper types
+- `image.proto`: UploadImageResponse
+
+**Union type patterns:**
+- `SelectOutput.Selected`: `oneof { string, SelectOutputMulti }`
+- `ImageOutput.Selected`: `oneof { int64, ImageOutputNumbers, bool, string, ImageOutputStrings }`
+- `TableOutput.Selected`: `oneof { Struct, TableOutputMulti }`
+
+**Dynamic type patterns:**
+- `FormInput.Schema`: `google.protobuf.Struct` (JSON Schema)
+- `FormOutput.Data`: `google.protobuf.Struct` (dynamic form results)
+- `TableInput.Data`: `repeated google.protobuf.Struct` (dynamic rows)
+
+## Step 5: Creating protobuf definitions and build pipeline
+
+This step implements the protobuf message definitions based on the design document and sets up the code generation pipeline. The goal is to have a working foundation for generating Go (and later TypeScript) code from `.proto` files.
+
+**Commit (code):** db4b5f04e22570146548dcf1c4d9562186a1d3ff — "Add protobuf definitions and build pipeline"
+
+### What I did
+- Created `proto/plz_confirm/v1/request.proto` with UIRequest message and enums (RequestStatus, WidgetType)
+- Created `proto/plz_confirm/v1/widgets.proto` with all widget Input/Output types (Confirm, Select, Form, Upload, Table, Image)
+- Created `proto/plz_confirm/v1/image.proto` with UploadImageResponse message
+- Set up `buf.yaml` configuration file
+- Added `make proto` target to Makefile for code generation
+- Generated Go code using `protoc` with `--go_out` flag
+- Added `google.golang.org/protobuf` dependency to go.mod
+- Verified generated code compiles successfully
+
+### Why
+- Single source of truth for shared data structures
+- Foundation for code generation (Go now, TypeScript next)
+- Type-safe union types using `oneof` patterns
+- Dynamic types handled via `google.protobuf.Struct`
+
+### What worked
+- Protobuf definitions compile successfully
+- Generated Go code builds without errors
+- Import paths work correctly (`plz_confirm/v1/widgets.proto` imported in `request.proto`)
+- Makefile target simplifies code generation
+
+### What didn't work
+- Initial attempt to use `buf lint` failed because proto directory is inside the module (buf expects workspace/module root)
+- Forward declarations in `request.proto` were incorrect — fixed by using proper import statement
+
+### What I learned
+- Protobuf `oneof` provides type-safe union types (better than `any`)
+- `google.protobuf.Struct` is the right choice for dynamic JSON data (JSON Schema, form/table data)
+- Import paths in protobuf are relative to `--proto_path` flags
+- `buf` requires workspace-level configuration (can use `protoc` directly for now)
+
+### What was tricky to build
+- Ensuring import paths work correctly (`plz_confirm/v1/widgets.proto` vs relative paths)
+- Setting up `go_package` option correctly for Go module paths
+- Understanding that `buf` lint requires workspace-level setup (not just proto directory)
+
+### What warrants a second pair of eyes
+- Verify protobuf message field numbers are optimal (no gaps, future-proof)
+- Review `oneof` patterns for union types (SelectOutput, ImageOutput, TableOutput)
+- Confirm `google.protobuf.Struct` is the right choice for JSON Schema (vs `bytes` or schema registry)
+
+### What should be done in the future
+- Set up TypeScript code generation (`protoc --ts_out` or `@bufbuild/protoc-gen-es`)
+- Integrate proto generation into CI/CD pipeline
+- Add `buf` workspace configuration if we want to use `buf lint` / `buf breaking`
+- Consider versioning strategy (`plz_confirm.v1`, `plz_confirm.v2`)
+
+### Code review instructions
+- Start with `proto/plz_confirm/v1/request.proto` — verify UIRequest structure matches design doc
+- Review `proto/plz_confirm/v1/widgets.proto` — check all widget types match Go/TypeScript definitions
+- Run `make proto` and verify generated code compiles
+- Check `Makefile` proto target is correct
+
+### Technical details
+
+**Files created:**
+- `proto/plz_confirm/v1/request.proto` — UIRequest, RequestStatus, WidgetType
+- `proto/plz_confirm/v1/widgets.proto` — All widget Input/Output types
+- `proto/plz_confirm/v1/image.proto` — UploadImageResponse
+- `buf.yaml` — buf configuration (linting, breaking changes)
+
+**Build pipeline:**
+```bash
+make proto  # Generates Go code to proto/generated/go/plz_confirm/v1/
+```
+
+**Generated code location:**
+- `proto/generated/go/plz_confirm/v1/*.pb.go`
+
+**Dependencies added:**
+- `google.golang.org/protobuf v1.36.11`
+
+### What I'd do differently next time
+- Set up `buf` workspace configuration from the start (if using buf for linting)
+- Consider using `buf generate` instead of raw `protoc` commands (more consistent)
+
+## Step 6: Migrate the in-memory store to protobuf UIRequest
+
+This step switches the in-memory request store from the manually duplicated `internal/types.UIRequest` struct to the generated protobuf `plz_confirm.v1.UIRequest`. The goal is to make the store the first “protobuf-native” layer so the server/CLI/frontend can migrate on top without carrying `any`-typed request state internally.
+
+**Commit (code):** 6217b159d11fc423047c847951ce1131a08378eb — "Migrate store to use protobuf types"
+
+### What I did
+- Replaced `internal/types` usage in `internal/store/store.go` with `proto/generated/go/plz_confirm/v1`
+- Updated store API to return/store `*v1.UIRequest` (`Create`, `Get`, `Pending`, `Complete`, `Wait`)
+- Added conversion helpers in `internal/store/proto_convert.go` (still WIP / may be removed later)
+
+### Why
+- The store is the canonical source of truth for request state; moving it first reduces the surface area of the migration.
+
+### What worked
+- `go test ./...` still passed after the store migration.
+
+### What was tricky to build
+- Preserving the existing timeout semantics while moving from `timeoutS int` params to the protobuf `expiresAt` string.
+
+### What warrants a second pair of eyes
+- The store’s `ExpiresAt` handling: it currently treats `req.ExpiresAt` as an absolute RFC3339Nano timestamp and derives a timeout from it.
+
+### What should be done in the future
+- Decide whether `internal/store/proto_convert.go` is actually needed, or whether conversions should live only at the HTTP/WS edges.
+
+### Code review instructions
+- Start in `internal/store/store.go`, skim the new `*v1.UIRequest` flow, then check `Complete` + `Wait` semantics.
+
+## Step 7: Takeover + migrate server to protobuf types with protojson (REST + WS)
+
+I took over mid-migration: the server compilation was broken and the WebSocket path was about to accidentally change the JSON contract (protobuf structs encoded with `encoding/json` will use `snake_case` field names). This step fixes the build and makes the server consistently emit the original camelCase JSON over both REST and WebSocket by using `protojson` everywhere that protobuf messages cross the wire.
+
+**Commit (code):** e335e58b94c84fb85c955cace292a1595a635f1f — "Server: use protobuf UIRequest + protojson for REST/WS"
+
+### What I did
+- Updated `internal/server/server.go` REST handlers to use the protobuf-backed store and respond using `protojson` (camelCase JSON)
+- Fixed `protojson` usage (it returns `([]byte, error)`; it does not stream to an `io.Writer`)
+- Added `internal/server/ws_events.go` to build WS envelopes as `{type, request}` where `request` is a `json.RawMessage` produced by `protojson`
+- Updated `internal/server/ws.go` to broadcast WS events as raw JSON bytes (`WriteMessage(TextMessage, ...)`) so we don’t accidentally snake_case protobuf fields
+- Fixed `errInvalidType` issues in `internal/server/proto_convert.go` (duplicate var + invalid `json.SyntaxError` construction)
+- Wired `timeout` seconds into `ExpiresAt` so store expiry semantics remain consistent
+
+### Why
+- Preserve the existing REST/WS JSON contract while making the backend protobuf-native.
+- Avoid “silent” key-shape drift (`session_id` vs `sessionId`) on the frontend.
+
+### What didn't work
+- Initial build failures (before this commit):
+  - `errInvalidType redeclared`
+  - incorrect call to `protojson.MarshalOptions.Marshal` as if it wrote to `http.ResponseWriter`
+
+### What was tricky to build
+- WebSocket envelopes: `protojson` can serialize the protobuf request correctly, but the outer `{type, request}` wrapper still needs standard JSON encoding with the inner request embedded as raw JSON.
+
+### What warrants a second pair of eyes
+- Confirm that `EmitUnpopulated: true` is acceptable for frontend expectations (may add fields that were previously absent/`undefined`).
+- Confirm that WS broadcasting order/behavior is unchanged (especially initial “pending” send).
+
+### What should be done in the future
+- Once CLI/frontend migrate, remove the remaining JSON→proto conversion glue (and ideally delete `internal/types/types.go`).
+
+### Code review instructions
+- Start in `internal/server/server.go` and verify each handler returns protojson output and still matches previous endpoint shapes.
+- Review `internal/server/ws_events.go` + `internal/server/ws.go` together to confirm camelCase WS payloads.
+
+## Step 8: Preserve legacy enum strings in protojson + fix proto generation target
+
+After the server switched to `protojson`, I realized protobuf enums serialize to JSON as their **enum value names**. With conventional names like `WIDGET_TYPE_CONFIRM` / `REQUEST_STATUS_PENDING`, the server would emit `"type": "WIDGET_TYPE_CONFIRM"` and `"status": "REQUEST_STATUS_PENDING"` which breaks the existing frontend/CLI that expect `"confirm"` and `"pending"`. This step changes enum *value names* to match the legacy JSON strings while keeping protobuf enums internally.
+
+**Commit (code):** 6cf1da0e9b08aea2d8b9c644a257a5ccf02f0c2c — "Proto: preserve JSON enum strings + fix make proto"
+
+### What I did
+- Updated `proto/plz_confirm/v1/request.proto` enum value names so `protojson` emits legacy strings:
+  - `WidgetType`: `confirm`, `select`, `form`, `upload`, `table`, `image`
+  - `RequestStatus`: `pending`, `completed`, `timeout`, `error`
+- Avoided the enum zero-value name collision (proto C++ scoping) by using distinct zero value names:
+  - `request_status_unspecified`, `widget_type_unspecified`
+- Regenerated Go code and updated all Go call sites to the new generated constant names (e.g. `v1.WidgetType_confirm`)
+- Fixed `make proto` by marking `proto` as phony (directory named `proto/` was causing “up to date” skips)
+- Updated `buf.yaml` to treat `proto/` as the module root and to explicitly ignore enum naming rules that conflict with this JSON-compat choice
+
+### Why
+- Keep the external JSON API stable while moving internals to protobuf types.
+
+### What was tricky to build
+- Protobuf enum scoping: enum values are siblings in the package scope, so zero values couldn’t both be named `unspecified`.
+
+### What warrants a second pair of eyes
+- Confirm that using non-standard enum value naming (for JSON compatibility) is an acceptable project tradeoff.
+
+### Code review instructions
+- Start in `proto/plz_confirm/v1/request.proto`, then check the regenerated `proto/generated/go/plz_confirm/v1/request.pb.go` enum value names.
+
+## Step 9: Migrate CLI + Go HTTP client to protobuf types
+
+This step updates the CLI and its HTTP client to stop depending on `internal/types` and to stop doing the “double marshal/unmarshal” dance for outputs. The server still accepts the legacy create/response request bodies, so the client keeps sending `{type, sessionId, input, timeout}` but now builds `input` by protojson-marshaling protobuf widget inputs into the legacy JSON payload.
+
+**Commit (code):** d4af4b9dbe7aeafc08d468f05a6d2b5533d7359f — "CLI+client: switch to protobuf types (no double JSON marshal)"
+
+### What I did
+- Updated `internal/client/client.go`:
+  - `CreateRequest` now accepts protobuf widget inputs and marshals them via `protojson` into the legacy create-request JSON shape
+  - `WaitRequest` now decodes the server response directly into `*v1.UIRequest` via `protojson`
+- Updated all CLI commands in `internal/cli/*.go` to:
+  - construct `v1.*Input` messages
+  - read `v1.*Output` via `UIRequest.Get*Output()` helpers (no re-marshal/unmarshal)
+  - keep “selected/data” outputs as `*_json` strings for glazed row output
+- Updated `internal/client/client_test.go` to return protojson `v1.UIRequest` from the test server
+
+### Why
+- Remove manual type duplication from CLI/client and eliminate brittle runtime decoding.
+
+### What was tricky to build
+- We must not use `encoding/json` directly on protobuf messages because it will emit `snake_case` keys; using `protojson` keeps camelCase JSON names consistent.
+
+### What warrants a second pair of eyes
+- Confirm the client-side create payload still matches what the server expects for every widget.
+
+### Code review instructions
+- Start in `internal/client/client.go` (`CreateRequest`, `WaitRequest`) and then skim one CLI command (e.g. `internal/cli/confirm.go`) to see the new pattern.
+
+## Step 10: Migrate frontend to protobuf-generated types (delete schemas.ts)
+
+This step updates the React frontend to consume the server’s protobuf-shaped JSON (`confirmInput`, `selectOutput`, etc) and removes the manually duplicated TypeScript definitions in `client/src/types/schemas.ts`. To keep the frontend strongly typed, we generate TypeScript interfaces from the same `.proto` files the Go backend uses.
+
+**Commit (code):** e5125fcdef770607ebe191ff0159af329891e718 — "Frontend: switch to protobuf-generated types (remove schemas.ts)"
+
+### What I did
+- Generated TS types into `agent-ui-system/client/src/proto/generated/` using `ts-proto`
+- Added `agent-ui-system/client/src/proto/normalize.ts` to coerce incoming JSON enum strings into the generated enum values
+- Updated Redux store + WS client + widget renderer to use the new `UIRequest` shape and enums
+- Updated widgets to submit outputs in protobuf oneof JSON shape:
+  - `SelectOutput`: `selectedSingle` or `selectedMulti`
+  - `TableOutput`: `selectedSingle` or `selectedMulti`
+  - `ImageOutput`: `selectedBool` / `selectedNumber` / `selectedNumbers` / `selectedString` / `selectedStrings`
+- Deleted `agent-ui-system/client/src/types/schemas.ts` and replaced Notification type with `client/src/types/notifications.ts`
+
+### Why
+- Eliminate backend/frontend type drift by generating frontend types from protobuf.
+
+### What was tricky to build
+- Enums: protojson emits enum names as strings; the generated TS enums are numeric, so we added a small normalization step.
+
+### What warrants a second pair of eyes
+- Confirm widget output JSON shapes match what `protojson.Unmarshal` expects server-side for each oneof.
+
+### Code review instructions
+- Start in `agent-ui-system/client/src/services/websocket.ts` and `agent-ui-system/client/src/components/WidgetRenderer.tsx`, then review one widget like `SelectDialog` for the output shape change.
+
+## Step 11: Cleanup legacy types + refresh docs
+
+With server, CLI, and frontend migrated, the old manually duplicated Go types are no longer needed. This step removes the legacy Go type file and updates developer docs to point at protobuf as the source of truth.
+
+**Commit (code):** 9f00cadc1fc5404b7260012b652f023d69eff3f1 — "Cleanup: remove legacy internal/types and update docs"
+
+### What I did
+- Deleted `internal/types/types.go`
+- Updated `pkg/doc/adding-widgets.md` to describe protobuf-first schema changes and codegen locations
+- Verified `go test ./...`, `buf lint .`, and `pnpm -C agent-ui-system check` all pass
+
+### Why
+- Remove dead code and prevent future contributors from accidentally extending the wrong schema source.
+
+### What warrants a second pair of eyes
+- Confirm there are no remaining references (in code) to `internal/types` and that documentation now consistently points at protobuf.

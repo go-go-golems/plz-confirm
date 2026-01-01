@@ -1,6 +1,7 @@
 import { store, setConnected, setError, setActiveRequest, completeRequest, addToHistory } from '@/store/store';
-import { UIRequest } from '@/types/schemas';
 import { browserNotificationService } from './notifications';
+import { UIRequest, WidgetType } from '@/proto/generated/plz_confirm/v1/request';
+import { normalizeUIRequest } from '@/proto/normalize';
 
 let ws: WebSocket | null = null;
 let reconnectTimeout: NodeJS.Timeout | null = null;
@@ -35,19 +36,28 @@ export const connectWebSocket = () => {
       console.log('WS Message:', data);
 
       if (data.type === 'new_request') {
-        const request: UIRequest = data.request;
+        const request: UIRequest = normalizeUIRequest(data.request);
         store.dispatch(setActiveRequest(request));
         
         // Show browser notification for new request
-        const requestTitle = request.input?.title || 'New Request';
-        browserNotificationService.showRequestNotification(requestTitle, request.type);
+        const requestTitle =
+          request.confirmInput?.title ||
+          request.selectInput?.title ||
+          request.formInput?.title ||
+          request.uploadInput?.title ||
+          request.tableInput?.title ||
+          request.imageInput?.title ||
+          'New Request';
+        const requestTypeLabel = (WidgetType as any)[request.type] ?? 'unknown';
+        browserNotificationService.showRequestNotification(requestTitle, String(requestTypeLabel));
       } else if (data.type === 'request_completed') {
         // If another client completed it, or just to sync history
+        const completedReq: UIRequest = normalizeUIRequest(data.request);
         const currentActive = store.getState().request.active;
-        if (currentActive && currentActive.id === data.request.id) {
-            store.dispatch(completeRequest({ id: data.request.id, output: data.request.output }));
+        if (currentActive && currentActive.id === completedReq.id) {
+            store.dispatch(completeRequest(completedReq));
         } else {
-            store.dispatch(addToHistory(data.request));
+            store.dispatch(addToHistory(completedReq));
         }
       }
     } catch (e) {
@@ -89,7 +99,8 @@ export const submitResponse = async (requestId: string, output: any) => {
       throw new Error('Failed to submit response');
     }
 
-    return await response.json();
+    const json = await response.json();
+    return normalizeUIRequest(json);
   } catch (error) {
     console.error('Error submitting response:', error);
     throw error;

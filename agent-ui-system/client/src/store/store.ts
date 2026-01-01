@@ -1,6 +1,6 @@
 import { configureStore, createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { UIRequest, Notification } from '@/types/schemas';
-import { MOCK_REQUESTS } from '@/services/mockData';
+import { UIRequest } from '@/proto/generated/plz_confirm/v1/request';
+import { Notification } from '@/types/notifications';
 
 // Session Slice
 interface SessionState {
@@ -53,17 +53,12 @@ const requestSlice = createSlice({
     setActiveRequest: (state: RequestState, action: PayloadAction<UIRequest | null>) => {
       state.active = action.payload;
     },
-    completeRequest: (state: RequestState, action: PayloadAction<{ id: string, output: any }>) => {
-      if (state.active && state.active.id === action.payload.id) {
-        const completedReq: UIRequest = {
-          ...state.active,
-          status: 'completed',
-          output: action.payload.output,
-          completedAt: new Date().toISOString()
-        };
-        state.history.unshift(completedReq);
+    completeRequest: (state: RequestState, action: PayloadAction<UIRequest>) => {
+      const completedReq = action.payload;
+      if (state.active && state.active.id === completedReq.id) {
         state.active = null;
       }
+      state.history.unshift(completedReq);
     },
     addToHistory: (state: RequestState, action: PayloadAction<UIRequest>) => {
       state.history.unshift(action.payload);
