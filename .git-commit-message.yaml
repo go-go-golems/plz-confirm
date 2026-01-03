@@ -1,6 +1,7 @@
-title: "📝 docs: link validation commits"
+title: "🧹 ui: suppress duplicate completion actions"
 description: |
-  Link ticket `001-QOL-HISTORY-TUI` diary/changelog entries to the docs commit hash.
+  Prevent duplicate Redux completion actions by correlating completion events by
+  request id: local submit and WS echo both funnel through a single dispatch path.
 
   Tests:
-  - N/A (docs only)
+  - pnpm -C agent-ui-system run check

@@ -15,6 +15,21 @@ import { normalizeUIRequest } from "@/proto/normalize";
 let ws: WebSocket | null = null;
 let reconnectTimeout: NodeJS.Timeout | null = null;
 
+const MAX_KNOWN_COMPLETIONS = 512;
+const completedIds = new Set<string>();
+const completedOrder: string[] = [];
+
+const markCompleted = (requestId: string) => {
+  if (completedIds.has(requestId)) return;
+  completedIds.add(requestId);
+  completedOrder.push(requestId);
+  while (completedOrder.length > MAX_KNOWN_COMPLETIONS) {
+    const oldest = completedOrder.shift();
+    if (!oldest) continue;
+    completedIds.delete(oldest);
+  }
+};
+
 export const connectWebSocket = () => {
   const state = store.getState();
   const sessionId = state.session.id;
@@ -64,6 +79,8 @@ export const connectWebSocket = () => {
         );
       } else if (data.type === "request_completed") {
         const completedReq: UIRequest = normalizeUIRequest(data.request);
+        if (completedIds.has(completedReq.id)) return;
+        markCompleted(completedReq.id);
         store.dispatch(completeRequest(completedReq));
       }
     } catch (e) {
@@ -133,7 +150,12 @@ export const submitResponse = async (
     }
 
     const json = await response.json();
-    return normalizeUIRequest(json);
+    const completedReq = normalizeUIRequest(json);
+    if (!completedIds.has(requestId)) {
+      markCompleted(requestId);
+      store.dispatch(completeRequest(completedReq));
+    }
+    return completedReq;
   } catch (error) {
     console.error("Error submitting response:", error);
     throw error;
