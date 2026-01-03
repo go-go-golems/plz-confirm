@@ -145,3 +145,34 @@ This step closed the ticket now that the fix, tests, and documentation are in pl
 
 ### Code review instructions
 - N/A
+
+## Step 4: Add prescribe PR playbook to the ticket
+
+This step captured a copy/pasteable PR workflow using `prescribe`, since we used it to open the PR for this ticket and ran into a few practical gotchas (token count, filtering, and avoiding committing `.pr-builder/`). The impact is faster and more consistent PR creation going forward.
+
+### What I did
+- Added a playbook document under the ticket playbooks folder describing a CLI-first workflow and common filters.
+
+### Why
+- Reduce “how do I use prescribe again?” friction and avoid repeating the same setup steps.
+
+### What worked
+- The playbook includes a dry-run step and uses `PINOCCHIO_PROFILE=gemini-2.5-pro`.
+
+### What didn't work
+- N/A
+
+### What I learned
+- Filtering out `ttmp/**` and lockfiles keeps token counts sane for big branches.
+
+### What was tricky to build
+- N/A
+
+### What warrants a second pair of eyes
+- N/A
+
+### What should be done in the future
+- If we standardize a repo-wide preset/prompt for PRs, link it from this playbook.
+
+### Code review instructions
+- Start with `ttmp/2026/01/03/004-BUG-LANDING-PAGE--bug-returns-404-instead-of-react-app/playbooks/01-create-a-pr-with-prescribe.md`.
