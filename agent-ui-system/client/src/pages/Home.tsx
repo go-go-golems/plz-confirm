@@ -6,7 +6,7 @@ import { RootState, enqueueRequest } from "@/store/store";
 import { MOCK_REQUESTS } from "@/services/mockData";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Clock, CheckCircle, XCircle, Terminal } from "lucide-react";
+import { Clock, CheckCircle, XCircle, Terminal, TimerOff } from "lucide-react";
 import { nanoid } from "nanoid";
 import {
   RequestStatus,
@@ -207,6 +207,11 @@ export default function Home() {
                           <div className="flex items-center text-[10px] text-green-500">
                             <CheckCircle className="h-3 w-3 mr-1" />
                             COMPLETED
+                          </div>
+                        ) : req.status === RequestStatus.timeout ? (
+                          <div className="flex items-center text-[10px] text-yellow-500">
+                            <TimerOff className="h-3 w-3 mr-1" />
+                            TIMEOUT
                           </div>
                         ) : (
                           <div className="flex items-center text-[10px] text-red-500">

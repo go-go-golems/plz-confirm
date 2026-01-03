@@ -1,7 +1,9 @@
-title: "📝 docs: record sessionId scoping"
+title: "⏱️  server: enforce request expiresAt"
 description: |
-  Update ticket `002-REMOVE-LEGACY-REST-JSON` docs to record that the Go server
-  now scopes WebSocket connections and broadcasts by `sessionId`.
+  Add an authoritative server-side expiry loop: pending requests transition to
+  `status=timeout` once `expiresAt` passes, are unblocked for waiters, and the
+  update is broadcast to the session WebSocket clients.
 
   Tests:
-  - N/A (docs only)
+  - go test ./... -count=1
+  - pnpm -C agent-ui-system run check

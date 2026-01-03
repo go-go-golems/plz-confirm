@@ -124,6 +124,38 @@ func (s *Store) PendingForSession(_ context.Context, sessionID string) []*v1.UIR
 	return out
 }
 
+func (s *Store) Expire(now time.Time) []*v1.UIRequest {
+	now = now.UTC()
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	var expired []*v1.UIRequest
+	for _, e := range s.requests {
+		if e.req.Status != v1.RequestStatus_pending {
+			continue
+		}
+		expAt, err := time.Parse(time.RFC3339Nano, e.req.ExpiresAt)
+		if err != nil {
+			continue
+		}
+		if now.Before(expAt) {
+			continue
+		}
+
+		e.req.Status = v1.RequestStatus_timeout
+		completedAt := now.Format(time.RFC3339Nano)
+		e.req.CompletedAt = &completedAt
+		errMsg := "request timed out"
+		e.req.Error = &errMsg
+
+		e.doneOnce.Do(func() { close(e.done) })
+		expired = append(expired, e.req)
+	}
+
+	return expired
+}
+
 func (s *Store) Complete(_ context.Context, id string, output *v1.UIRequest) (*v1.UIRequest, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -155,7 +187,7 @@ func (s *Store) Wait(ctx context.Context, id string) (*v1.UIRequest, error) {
 	if !ok {
 		return nil, ErrNotFound
 	}
-	if e.req.Status == v1.RequestStatus_completed {
+	if e.req.Status == v1.RequestStatus_completed || e.req.Status == v1.RequestStatus_timeout || e.req.Status == v1.RequestStatus_error {
 		return e.req, nil
 	}
 
