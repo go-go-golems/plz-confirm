@@ -44,3 +44,8 @@ Locked initial implementation choices (C2/D1/E1/F2/no-session/H2) and deferred s
 - /home/manuel/workspaces/2025-12-15/package-llm-notification-tool/plz-confirm/ttmp/2025/12/15/DESIGN-PLZ-CONFIRM-001--port-agent-ui-system-cli-backend-to-go-using-glazed-framework/reference/01-diary.md — Added planning step for locked choices
 - /home/manuel/workspaces/2025-12-15/package-llm-notification-tool/plz-confirm/ttmp/2025/12/15/DESIGN-PLZ-CONFIRM-001--port-agent-ui-system-cli-backend-to-go-using-glazed-framework/tasks.md — Detailed checklist plan
 
+
+## 2026-01-03
+
+Bulk close (pre-2026-01-03 cleanup).
+

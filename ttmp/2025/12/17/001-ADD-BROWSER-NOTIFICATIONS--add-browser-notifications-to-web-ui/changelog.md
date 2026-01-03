@@ -25,3 +25,13 @@ Tested browser notifications by starting servers via tmux and sending a test con
 
 Added comprehensive guide on removing binary artifacts from git history, including finding large files, rewriting history with git filter-branch, and preventing future binary commits
 
+
+## 2026-01-03
+
+Closed: all tasks complete; feature implemented and validated.
+
+
+## 2026-01-03
+
+Bulk close (pre-2026-01-03 cleanup).
+

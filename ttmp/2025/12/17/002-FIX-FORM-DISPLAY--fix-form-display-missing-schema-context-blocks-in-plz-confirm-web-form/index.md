@@ -1,7 +1,7 @@
 ---
 Title: 'Fix form display: missing schema/context blocks in plz-confirm web form'
 Ticket: 002-FIX-FORM-DISPLAY
-Status: active
+Status: closed
 Topics:
     - plz-confirm
     - frontend
@@ -31,9 +31,12 @@ RelatedFiles:
     - Path: plz-confirm/internal/types/types.go
       Note: Backend wire types; FormInput has Title+Schema only
 ExternalSources: []
-Summary: "Form widget currently omits schema-provided context (instructions, field titles/descriptions) and labels fields by raw property keys."
-LastUpdated: 2025-12-17T16:23:02.477849842-05:00
+Summary: Form widget currently omits schema-provided context (instructions, field titles/descriptions) and labels fields by raw property keys.
+LastUpdated: 2026-01-03T15:18:26.65822016-05:00
+WhatFor: ""
+WhenToUse: ""
 ---
+
 
 
 # Fix form display: missing schema/context blocks in plz-confirm web form

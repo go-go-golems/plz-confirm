@@ -236,12 +236,12 @@ make build
 go generate ./internal/server
 
 # 2. Build the Go binary
-go build -o plz-confirm ./cmd/plz-confirm
+go build -tags embed -o plz-confirm ./cmd/plz-confirm
 ```
 
 The `make build` command:
 1. Runs `go generate ./...` which builds the frontend with Vite and copies it to `internal/server/embed/public/`
-2. Runs `go build ./...` which compiles the Go code with embedded frontend assets
+2. Runs `go build -tags embed ./...` which embeds whatever is in `internal/server/embed/public/` into the Go binary
 
 The embedded frontend will be served automatically when running `plz-confirm serve`.
 

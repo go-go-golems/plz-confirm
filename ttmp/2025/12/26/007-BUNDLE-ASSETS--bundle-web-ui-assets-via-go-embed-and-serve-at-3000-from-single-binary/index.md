@@ -1,7 +1,7 @@
 ---
 Title: Bundle Web UI assets via go:embed and serve at :3000 from single binary
 Ticket: 007-BUNDLE-ASSETS
-Status: active
+Status: closed
 Topics:
     - backend
     - build
@@ -27,10 +27,11 @@ RelatedFiles:
       Note: Static + SPA serving handler (current behavior)
 ExternalSources: []
 Summary: ""
-LastUpdated: 2025-12-26T13:27:00.962290785-05:00
+LastUpdated: 2026-01-03T15:18:26.368076519-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 
 # Bundle Web UI assets via go:embed and serve at :3000 from single binary

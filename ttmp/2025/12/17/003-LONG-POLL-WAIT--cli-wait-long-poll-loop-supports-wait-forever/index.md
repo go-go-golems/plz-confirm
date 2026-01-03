@@ -1,7 +1,7 @@
 ---
 Title: 'CLI wait: long-poll loop (supports wait forever)'
 Ticket: 003-LONG-POLL-WAIT
-Status: active
+Status: closed
 Topics:
     - cli
     - backend
@@ -28,8 +28,11 @@ RelatedFiles:
       Note: /wait handler returns 408 on poll timeout
 ExternalSources: []
 Summary: Switch CLI waiting to a long-poll loop so waits >30s are reliable and `--wait-timeout 0` can wait forever.
-LastUpdated: 2025-12-17T17:01:08.843994048-05:00
+LastUpdated: 2026-01-03T15:18:26.601437568-05:00
+WhatFor: ""
+WhenToUse: ""
 ---
+
 
 
 # CLI wait: long-poll loop (supports wait forever)

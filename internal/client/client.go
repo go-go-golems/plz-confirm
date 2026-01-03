@@ -47,16 +47,7 @@ type CreateRequestParams struct {
 	Input    proto.Message
 	TimeoutS int
 
-	// Compatibility with the Node server shape. The Go server ignores sessions,
-	// but we keep the field so old clients remain valid.
 	SessionID string
-}
-
-type createRequestBody struct {
-	Type      string `json:"type"`
-	Input     any    `json:"input"`
-	TimeoutS  int    `json:"timeout,omitempty"`
-	SessionID string `json:"sessionId,omitempty"`
 }
 
 func (c *Client) CreateRequest(ctx context.Context, p CreateRequestParams) (*v1.UIRequest, error) {
@@ -69,30 +60,62 @@ func (c *Client) CreateRequest(ctx context.Context, p CreateRequestParams) (*v1.
 		return nil, errors.New("input is required")
 	}
 
-	// Marshal protobuf input to JSON (camelCase) then decode to `any` so it embeds
-	// as the legacy create-request shape.
-	inputJSONBytes, err := protojson.MarshalOptions{
-		EmitUnpopulated: true,
-		UseProtoNames:   false,
-	}.Marshal(p.Input)
-	if err != nil {
-		return nil, errors.Wrap(err, "marshal input protojson")
+	reqProto := &v1.UIRequest{
+		Type:      p.Type,
+		SessionId: p.SessionID,
 	}
-	var inputAny any
-	if err := json.Unmarshal(inputJSONBytes, &inputAny); err != nil {
-		return nil, errors.Wrap(err, "unmarshal input into any")
+	if p.TimeoutS > 0 {
+		reqProto.ExpiresAt = time.Now().UTC().Add(time.Duration(p.TimeoutS) * time.Second).Format(time.RFC3339Nano)
 	}
 
-	body := createRequestBody{
-		Type:      p.Type.String(),
-		Input:     inputAny,
-		TimeoutS:  p.TimeoutS,
-		SessionID: p.SessionID,
+	switch p.Type {
+	case v1.WidgetType_widget_type_unspecified:
+		return nil, errors.New("invalid widget type")
+	case v1.WidgetType_confirm:
+		in, ok := p.Input.(*v1.ConfirmInput)
+		if !ok {
+			return nil, errors.New("input must be *v1.ConfirmInput for type=confirm")
+		}
+		reqProto.Input = &v1.UIRequest_ConfirmInput{ConfirmInput: in}
+	case v1.WidgetType_select:
+		in, ok := p.Input.(*v1.SelectInput)
+		if !ok {
+			return nil, errors.New("input must be *v1.SelectInput for type=select")
+		}
+		reqProto.Input = &v1.UIRequest_SelectInput{SelectInput: in}
+	case v1.WidgetType_form:
+		in, ok := p.Input.(*v1.FormInput)
+		if !ok {
+			return nil, errors.New("input must be *v1.FormInput for type=form")
+		}
+		reqProto.Input = &v1.UIRequest_FormInput{FormInput: in}
+	case v1.WidgetType_upload:
+		in, ok := p.Input.(*v1.UploadInput)
+		if !ok {
+			return nil, errors.New("input must be *v1.UploadInput for type=upload")
+		}
+		reqProto.Input = &v1.UIRequest_UploadInput{UploadInput: in}
+	case v1.WidgetType_table:
+		in, ok := p.Input.(*v1.TableInput)
+		if !ok {
+			return nil, errors.New("input must be *v1.TableInput for type=table")
+		}
+		reqProto.Input = &v1.UIRequest_TableInput{TableInput: in}
+	case v1.WidgetType_image:
+		in, ok := p.Input.(*v1.ImageInput)
+		if !ok {
+			return nil, errors.New("input must be *v1.ImageInput for type=image")
+		}
+		reqProto.Input = &v1.UIRequest_ImageInput{ImageInput: in}
+	default:
+		return nil, errors.New("invalid widget type")
 	}
 
-	bodyBytes, err := json.Marshal(body)
+	bodyBytes, err := protojson.MarshalOptions{
+		UseProtoNames: false,
+	}.Marshal(reqProto)
 	if err != nil {
-		return nil, errors.Wrap(err, "marshal create request")
+		return nil, errors.Wrap(err, "marshal protojson UIRequest")
 	}
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, u.String(), bytes.NewReader(bodyBytes))

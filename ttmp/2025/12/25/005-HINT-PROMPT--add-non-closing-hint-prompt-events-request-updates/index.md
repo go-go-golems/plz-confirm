@@ -1,7 +1,7 @@
 ---
 Title: Add non-closing hint prompt events + request updates
 Ticket: 005-HINT-PROMPT
-Status: active
+Status: closed
 Topics:
     - cli
     - frontend
@@ -15,10 +15,11 @@ Owners: []
 RelatedFiles: []
 ExternalSources: []
 Summary: ""
-LastUpdated: 2025-12-25T22:28:31.566945569-05:00
+LastUpdated: 2026-01-03T15:18:26.426411939-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 # Add non-closing hint prompt events + request updates
 

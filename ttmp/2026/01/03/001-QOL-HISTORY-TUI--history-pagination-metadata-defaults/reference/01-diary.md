@@ -1,0 +1,269 @@
+# Diary
+
+## Goal
+
+Capture the research trail for implementing bounded/paginated history, request metadata, long-term storage, and widget-level default+timeout auto-completion in `plz-confirm`.
+
+## Step 1: Read the doc workflows and locate the system’s core contracts
+
+I started by reading the local workflow docs for documentation management and diaries, because this ticket is primarily a research deliverable (with a lot of cross-file linking). Then I did a quick repo scan to identify the minimum set of files that define “how a request flows” through CLI → server → WS → UI.
+
+The immediate outcome is a short list of “source of truth” files for contracts: the protobuf schemas (`proto/...`), the Go server handlers (`internal/server/...`), the in-memory store (`internal/store/...`), and the UI’s WebSocket + Redux state wiring (`agent-ui-system/client/src/...`).
+
+### What I did
+- Read `~/.cursor/commands/docmgr.md` and `~/.cursor/commands/diary.md` (workflow expectations).
+- Skimmed `pkg/doc/adding-widgets.md` to confirm the intended contract boundaries.
+- Located key files for request creation, completion, and WS broadcasting.
+
+### Why
+- This work spans CLI, backend, and UI. Without the correct map of contracts, it’s easy to propose changes that don’t fit the system’s shape (especially because there is both a Go backend and a legacy Node backend).
+
+### What worked
+- `pkg/doc/adding-widgets.md` already provides an accurate “mental model” diagram for the request lifecycle and points to the core handlers.
+
+### What didn't work
+- N/A
+
+### What I learned
+- The repo already treats `/api/requests` and `/ws` as the “stable” contracts; most new features should be layered by extending the protobuf envelope and keeping the REST/WS shapes consistent.
+
+### What was tricky to build
+- N/A (research only)
+
+### What warrants a second pair of eyes
+- N/A (research only)
+
+### What should be done in the future
+- N/A
+
+### Code review instructions
+- Start with `pkg/doc/adding-widgets.md`, then follow the file links in the ticket `index.md` frontmatter.
+
+### Technical details
+- Core contract doc: `pkg/doc/adding-widgets.md`
+- Envelope schema: `proto/plz_confirm/v1/request.proto`
+- Widget schemas: `proto/plz_confirm/v1/widgets.proto`
+
+## Step 2: Identify how history currently exists (and where it does not)
+
+Next I traced “history” in the web UI to see what is actually stored and rendered today. The frontend maintains a `history: UIRequest[]` array in Redux and renders it in a right-hand “REQUEST_HISTORY” panel using a scroll container. History is populated only by events observed while the browser is connected: a request is pushed into history when it completes (either locally or via a `request_completed` WS broadcast).
+
+The key discovery is that, in the Go backend path, the server store is explicitly in-memory and currently has no API for listing completed requests, no paging, and no persistence. So “long term storage” is not present in the Go server today; achieving it requires a persistence layer and list endpoints.
+
+### What I did
+- Read `agent-ui-system/client/src/store/store.ts` (history state structure).
+- Read `agent-ui-system/client/src/pages/Home.tsx` (history UI rendering).
+- Read `agent-ui-system/client/src/services/websocket.ts` (how history is populated).
+- Read `internal/store/store.go` (server-side request lifecycle state).
+- Checked `agent-ui-system/server/index.ts` (legacy Node server) for comparison.
+
+### Why
+- Before designing bounded/paginated history, it’s critical to know whether history is already persisted server-side (so UI pagination could just page over an API), or whether we need to add persistence first.
+
+### What worked
+- The UI is already visually scrollable (`ScrollArea`), so the “scrollable” piece is largely a state/size management + pagination problem rather than pure CSS.
+
+### What didn't work
+- N/A (research only)
+
+### What I learned
+- Current Go store: in-memory only; only *pending* requests are replayed on WS connect.
+- Current UI history: unbounded in-memory array; no fetch of older history exists.
+
+### What was tricky to build
+- N/A (research only)
+
+### What warrants a second pair of eyes
+- Confirm which backend is actually used in your deployments (Go server vs legacy Node server), because “history persistence” needs to land in the authoritative backend.
+
+### What should be done in the future
+- Add explicit “history list/paging” endpoints in the chosen backend, otherwise UI pagination can only ever be local/in-memory.
+
+### Code review instructions
+- Start in `agent-ui-system/client/src/services/websocket.ts` and follow the Redux actions into `agent-ui-system/client/src/store/store.ts`.
+- Then read `internal/server/ws.go` and `internal/store/store.go` for server-side behavior.
+
+## Step 3: Trace the JSON↔protobuf “glue layer” to find the right extension points for metadata and defaults
+
+I then traced the exact code paths that turn incoming REST JSON bodies into `UIRequest` protobuf messages, and the reverse path that serializes `UIRequest` back into JSON for REST responses and WebSocket events. This is the “choke point” for extending the request envelope: anything we add (metadata, completion reasons, auto-default policies) needs to survive (a) JSON decode on create/response, (b) protobuf conversion, (c) persistence/storage, and (d) protojson serialization back out to the browser and CLI.
+
+The key insight is that the server intentionally preserves a *legacy REST shape* (separate `type`, `input`, and `timeout` fields) even though it stores and emits a protobuf `UIRequest`. That means envelope-level features should be added as *extra top-level JSON fields* on `POST /api/requests` (e.g. `meta`, `autoComplete`) and then explicitly mapped into the protobuf in `internal/server/proto_convert.go`.
+
+### What I did
+- Read `internal/server/server.go` request handlers:
+  - `handleCreateRequest`
+  - `handleSubmitResponse`
+  - `handleWait`
+- Read `internal/server/proto_convert.go`:
+  - `createUIRequestFromJSON` (create path)
+  - `createUIRequestWithOutput` (submit-response path)
+- Read `internal/server/ws_events.go` (WS payload serialization) to confirm the exact JSON shape emitted to the browser.
+
+### Why
+- Metadata and auto-default behavior are “envelope features”. The safest and most maintainable place for them is the `UIRequest` envelope rather than widget-specific inputs (which would duplicate logic across widgets and complicate history rendering).
+
+### What worked
+- The repo already centralizes JSON→protobuf translation in a single file (`internal/server/proto_convert.go`), which makes it straightforward to extend the envelope in one place.
+
+### What didn't work
+- N/A (research only)
+
+### What I learned
+- REST create currently accepts `{ type, sessionId, input, timeout }` and converts `input` via `protojson.Unmarshal` into a widget-specific `*Input` message.
+- REST submit-response accepts `{ output }` and uses the stored request’s `.Type` to unmarshal the widget-specific output message.
+- WebSocket payload is `{ type: string, request: <protojson(UIRequest)> }`, where `request` is a raw JSON blob produced by `protojson` (camelCase field names).
+
+### What was tricky to build
+- N/A (research only)
+
+### What warrants a second pair of eyes
+- Decide whether envelope features should be introduced by extending the legacy REST JSON shape or by adding a new “v2” endpoint that accepts a full protojson `UIRequest` (both are valid; the former is less disruptive).
+
+### What should be done in the future
+- Explicitly document the create-request JSON shape in `pkg/doc/adding-widgets.md` once metadata/default fields are added so future widget work doesn’t accidentally drop them.
+
+### Code review instructions
+- Start at `internal/server/server.go` for REST+WS wiring, then read `internal/server/proto_convert.go` for the JSON↔protobuf mapping rules.
+
+### Technical details
+- WS serialization uses:
+  - `protojson.MarshalOptions{EmitUnpopulated:true, UseProtoNames:false}`
+- This means:
+  - field names are camelCase (`sessionId`, `createdAt`, `expiresAt`, …)
+  - enums are emitted as their *value names* (e.g. `"confirm"`, `"completed"`), not numeric values.
+
+## Step 4: Confirm what “timeouts” mean today (and why default-on-timeout needs new semantics)
+
+I specifically looked for existing timeout enforcement and “default response” semantics, because the CLI already exposes two flags that look timeout-ish (`--timeout` and `--wait-timeout`). The goal was to avoid accidentally reinterpreting a field that already has a meaning in the system (which would create confusing behavior for both agent authors and UI users).
+
+The result: the only timeout that currently “does anything” is the long-poll timeout in `GET /api/requests/{id}/wait?timeout=...` (it bounds a *single poll*). The request expiration time (`expiresAt`) is currently set but not enforced. This means “default result after N seconds” is a new behavior that must be implemented explicitly server-side (scheduler + completion info), and cannot be achieved by tweaking existing flags alone.
+
+### What I did
+- Read `internal/store/store.go` to see what it does with `expiresAt`.
+- Read `internal/server/server.go:handleWait` to understand the long-poll timeout behavior.
+- Read `internal/client/client.go:WaitRequest` to see how the CLI’s overall wait timeout interacts with server polling.
+- Checked `proto/plz_confirm/v1/request.proto` and saw `RequestStatus` already contains `timeout` and `error`, but no code currently sets those statuses.
+
+### Why
+- If we implement “auto default” by silently reusing `expiresAt`, we’ll end up with:
+  - ambiguous semantics (“timeout” could mean TTL or auto-default)
+  - hard-to-debug behavior (UI never sees a completion event unless server broadcasts it)
+
+### What worked
+- The CLI’s long-poll loop is already well structured: it distinguishes “poll timeout” from “overall wait timeout” and keeps retrying on 408.
+
+### What didn't work
+- There is no server-side expiration loop or cleanup: `expiresAt` is currently a passive timestamp.
+
+### What I learned
+- Existing time-related fields:
+  - `expiresAt`: set at create time; not enforced today
+  - `/wait?timeout=`: per-poll long-poll bound (server returns 408)
+  - CLI `--wait-timeout`: overall deadline for the agent waiting locally
+- Therefore “default after N seconds” needs:
+  - new input/policy fields (so server knows the default)
+  - new completion info fields (so UI can display “default was used”)
+  - new server scheduler (so the state transition actually happens)
+
+### What was tricky to build
+- N/A (research only)
+
+### What warrants a second pair of eyes
+- Clarify whether “default after N seconds” should:
+  - complete the request (status=completed, output=default), or
+  - mark it as timeout (status=timeout) but also attach the default output for convenience.
+  The former is closer to “default selection chosen”; the latter is closer to “user did not respond”.
+
+### What should be done in the future
+- Decide whether `expiresAt` should remain a “TTL / retention” marker (cleanup) while a new `autoCompleteAt` drives defaulting behavior.
+
+### Code review instructions
+- Start at `internal/client/client.go:WaitRequest` and `internal/server/server.go:handleWait` to understand long-poll semantics.
+- Then read `internal/store/store.go:Create` to see how `expiresAt` is computed and stored.
+
+## Step 5: Evaluate “long-term history” feasibility and identify the missing backend primitives
+
+With the current behavior mapped, I focused on the question “does long-term history already exist?”. I checked both the Go backend and the legacy Node backend, because the repo contains both. In both cases, the answer is no: requests live in memory (Go: `internal/store/store.go`, Node: `agent-ui-system/server/index.ts`) and there is no disk persistence or listing endpoint for completed requests.
+
+That means UI pagination cannot be “real pagination” until the backend grows a list endpoint and a persistence layer. Any UI-only paging is necessarily just a bounded local cache.
+
+### What I did
+- Verified Go server instantiates an in-memory store on `serve`:
+  - `cmd/plz-confirm/main.go` creates `store.New()` (fresh on each run)
+- Verified legacy Node server also uses in-memory `Map`:
+  - `agent-ui-system/server/index.ts` uses `const requests = new Map<string, UIRequest>()`
+- Searched for persistence-related dependencies and found SQLite driver is already present indirectly:
+  - `go.mod` includes `github.com/mattn/go-sqlite3` as indirect
+- Checked existing docs/tickets that already call out missing persistence/history:
+  - `ttmp/2025/12/15/.../analysis/01-code-structure-analysis-agent-ui-system.md`
+
+### Why
+- “Pagination” and “long-term storage” are really the same problem: once you can page in the UI, you need a canonical source of truth to page from.
+
+### What worked
+- The system already centralizes request serialization via protobuf+protojson; persisting `protojson(UIRequest)` as a blob is viable even before building a normalized DB schema.
+
+### What didn't work
+- There is no existing endpoint to fetch history pages; the only request endpoints are create, get-by-id, wait, and submit response.
+
+### What I learned
+- The minimum backend additions for pagination are:
+  - store-level `List` primitive (or equivalent)
+  - HTTP `GET /api/requests?...` endpoint that uses it
+  - a stable cursor strategy (opaque cursor recommended)
+
+### What was tricky to build
+- N/A (research only)
+
+### What warrants a second pair of eyes
+- Decide whether SQLite via CGO is acceptable for your distribution model (single-binary release, cross-compilation). If not, pick a pure-Go persistence alternative early.
+
+### What should be done in the future
+- Add a small “storage decision record” doc once you pick the persistence backend (SQLite vs JSONL vs KV store) so future contributors don’t re-litigate it.
+
+### Code review instructions
+- Start at `cmd/plz-confirm/main.go` to see how the server wires the store.
+- Then read `internal/store/store.go` for current capabilities/limitations.
+
+## Step 6: Identify the minimal frontend changes needed for bounded history and future paging
+
+Finally, I mapped exactly how the frontend builds and renders history so we can decide what can be improved immediately (bounded history) versus what requires backend work (pagination over durable history). The key point is that history is currently a single array in Redux and the view simply maps it into a scroll container. There is no fetch layer for history.
+
+This is good news: the bounded-history fix is a tiny, low-risk change (truncate after unshift). And the paging feature can be built cleanly by adding a small “history loader” state machine (cursor + loading + error) without disrupting the active-request widget flow.
+
+### What I did
+- Read the WS client handler:
+  - `agent-ui-system/client/src/services/websocket.ts`
+- Read the request slice:
+  - `agent-ui-system/client/src/store/store.ts`
+- Read the history UI:
+  - `agent-ui-system/client/src/pages/Home.tsx` (history panel + `ScrollArea`)
+
+### Why
+- The UI is where the user experiences “history”. If we add metadata and defaulting semantics but never render them, we miss the value.
+
+### What worked
+- The history panel is already a scroll container; adding paging controls is a UI/state problem, not a layout problem.
+
+### What didn't work
+- N/A (research only)
+
+### What I learned
+- History is only updated by:
+  - `completeRequest` (for the active request)
+  - `addToHistory` (when another client completed it)
+  Both just `unshift` into an unbounded array.
+
+### What was tricky to build
+- N/A (research only)
+
+### What warrants a second pair of eyes
+- When adding server-side paging, be careful to avoid duplicates if:
+  - you loaded a history page that includes a request that later arrives via WS, or
+  - you already saw a WS completion and then fetch a page that overlaps.
+
+### What should be done in the future
+- Add a lightweight dedup strategy (e.g. `Set` of seen IDs) once paging is introduced.
+
+### Code review instructions
+- Start at `agent-ui-system/client/src/pages/Home.tsx` for rendering, then trace back into Redux actions and WS message handler.

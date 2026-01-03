@@ -1,0 +1,6 @@
+title: "👷 ci: remove nancy scan"
+description: |
+  Remove the Nancy vulnerability scan job from GitHub Actions dependency scanning.
+
+  Tests:
+  - N/A (workflow change only)

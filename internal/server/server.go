@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/go-go-golems/plz-confirm/internal/store"
+	"github.com/go-go-golems/plz-confirm/proto/generated/go/plz_confirm/v1"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 )
@@ -52,7 +53,7 @@ func (s *Server) Handler() http.Handler {
 
 	// Serve embedded static files (production mode)
 	// In dev, Vite serves UI on :3000 and proxies /api and /ws to backend (typically :3001).
-	// In production, this server serves everything (API, WS, and static files) on :3000 by default.
+	// This server can also serve everything (API, WS, and static files) on :3000 by default.
 	s.handleStaticFiles(mux)
 
 	return withCORS(mux)
@@ -163,13 +164,6 @@ func (s *Server) ListenAndServe(ctx context.Context, opts Options) error {
 
 // --- REST handlers ---
 
-type createRequestBody struct {
-	Type      string `json:"type"`
-	SessionID string `json:"sessionId"`
-	Input     any    `json:"input"`
-	Timeout   int    `json:"timeout"` // seconds
-}
-
 func (s *Server) handleRequestsCollection(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodPost:
@@ -182,20 +176,19 @@ func (s *Server) handleRequestsCollection(w http.ResponseWriter, r *http.Request
 }
 
 func (s *Server) handleCreateRequest(w http.ResponseWriter, r *http.Request) {
-	var body createRequestBody
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		http.Error(w, "invalid json body", http.StatusBadRequest)
-		return
-	}
-	if body.Type == "" || body.Input == nil {
-		http.Error(w, "missing required fields", http.StatusBadRequest)
+	bodyBytes, err := io.ReadAll(io.LimitReader(r.Body, 1<<20))
+	if err != nil {
+		http.Error(w, "failed to read request body", http.StatusBadRequest)
 		return
 	}
 
-	// Convert JSON to protobuf
-	reqProto, err := createUIRequestFromJSON(body.Type, body.SessionID, body.Input, body.Timeout)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+	reqProto := &v1.UIRequest{}
+	if err := protojson.Unmarshal(bodyBytes, reqProto); err != nil {
+		http.Error(w, "invalid protojson UIRequest: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+	if reqProto.Type == v1.WidgetType_widget_type_unspecified || reqProto.Input == nil {
+		http.Error(w, "missing required fields (type + widget input oneof)", http.StatusBadRequest)
 		return
 	}
 
@@ -274,17 +267,7 @@ func (s *Server) handleRequestsItem(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-type submitResponseBody struct {
-	Output any `json:"output"`
-}
-
 func (s *Server) handleSubmitResponse(w http.ResponseWriter, r *http.Request, id string) {
-	var body submitResponseBody
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		http.Error(w, "invalid json body", http.StatusBadRequest)
-		return
-	}
-
 	// Get the request to determine widget type
 	existingReq, err := s.store.Get(r.Context(), id)
 	if err != nil {
@@ -296,11 +279,34 @@ func (s *Server) handleSubmitResponse(w http.ResponseWriter, r *http.Request, id
 		return
 	}
 
-	// Convert JSON output to protobuf
-	outputReq, err := createUIRequestWithOutput(existingReq.Type, body.Output)
+	bodyBytes, err := io.ReadAll(io.LimitReader(r.Body, 1<<20))
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, "failed to read request body", http.StatusBadRequest)
 		return
+	}
+	incoming := &v1.UIRequest{}
+	if err := protojson.Unmarshal(bodyBytes, incoming); err != nil {
+		http.Error(w, "invalid protojson UIRequest: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+	if incoming.Output == nil {
+		http.Error(w, "missing required fields (widget output oneof)", http.StatusBadRequest)
+		return
+	}
+
+	outputType, ok := widgetTypeFromOutputOneof(incoming)
+	if !ok {
+		http.Error(w, "invalid output oneof for UIRequest", http.StatusBadRequest)
+		return
+	}
+	if outputType != existingReq.Type {
+		http.Error(w, "output widget type does not match request type", http.StatusBadRequest)
+		return
+	}
+
+	outputReq := &v1.UIRequest{
+		Type:   existingReq.Type,
+		Output: incoming.Output,
 	}
 
 	req, err := s.store.Complete(r.Context(), id, outputReq)
@@ -326,6 +332,25 @@ func (s *Server) handleSubmitResponse(w http.ResponseWriter, r *http.Request, id
 
 	log.Printf("[API] Request %s completed", req.Id)
 	writeProtoJSON(w, http.StatusOK, req)
+}
+
+func widgetTypeFromOutputOneof(req *v1.UIRequest) (v1.WidgetType, bool) {
+	switch req.Output.(type) {
+	case *v1.UIRequest_ConfirmOutput:
+		return v1.WidgetType_confirm, true
+	case *v1.UIRequest_SelectOutput:
+		return v1.WidgetType_select, true
+	case *v1.UIRequest_FormOutput:
+		return v1.WidgetType_form, true
+	case *v1.UIRequest_UploadOutput:
+		return v1.WidgetType_upload, true
+	case *v1.UIRequest_TableOutput:
+		return v1.WidgetType_table, true
+	case *v1.UIRequest_ImageOutput:
+		return v1.WidgetType_image, true
+	default:
+		return v1.WidgetType_widget_type_unspecified, false
+	}
 }
 
 func (s *Server) handleWait(w http.ResponseWriter, r *http.Request, id string) {

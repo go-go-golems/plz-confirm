@@ -32,3 +32,8 @@ Validated comment field end-to-end: manual confirm in browser and automated smok
 
 Ticket closed: optional folded comment field added to all widgets; CLI returns comment; validated via tmux + API smoke script.
 
+
+## 2026-01-03
+
+Bulk close (pre-2026-01-03 cleanup).
+

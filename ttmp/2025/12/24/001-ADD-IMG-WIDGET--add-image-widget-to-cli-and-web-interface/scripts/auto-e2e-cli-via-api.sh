@@ -110,9 +110,24 @@ run_and_answer() {
 
   echo "Request ID: $id"
 
+  local output_field=""
+  case "$widget_type" in
+    confirm) output_field="confirmOutput" ;;
+    select) output_field="selectOutput" ;;
+    form) output_field="formOutput" ;;
+    upload) output_field="uploadOutput" ;;
+    table) output_field="tableOutput" ;;
+    image) output_field="imageOutput" ;;
+    *)
+      echo "ERROR: unknown widget type for output wrapper: $widget_type" >&2
+      kill "$pid" 2>/dev/null || true
+      exit 1
+      ;;
+  esac
+
   curl -sS -X POST "${API_BASE_URL}/api/requests/${id}/response" \
     -H 'Content-Type: application/json' \
-    -d "{\"output\": ${output_json}}" > "$submit_out"
+    -d "{\"type\":\"${widget_type}\",\"sessionId\":\"global\",\"${output_field}\": ${output_json}}" > "$submit_out"
 
   wait "$pid"
 
@@ -169,5 +184,4 @@ run_and_answer image_confirm image '{"selectedBool":true,"timestamp":"2025-12-25
 echo "== Done =="
 echo "Recent server log lines:"
 tail -n 40 "$SERVER_LOG"
-
 

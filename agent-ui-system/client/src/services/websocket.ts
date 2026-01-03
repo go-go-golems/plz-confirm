@@ -1,7 +1,17 @@
-import { store, setConnected, setError, setActiveRequest, completeRequest, addToHistory } from '@/store/store';
-import { browserNotificationService } from './notifications';
-import { UIRequest, WidgetType } from '@/proto/generated/plz_confirm/v1/request';
-import { normalizeUIRequest } from '@/proto/normalize';
+import {
+  store,
+  setConnected,
+  setError,
+  setActiveRequest,
+  completeRequest,
+  addToHistory,
+} from "@/store/store";
+import { browserNotificationService } from "./notifications";
+import {
+  UIRequest,
+  WidgetType,
+} from "@/proto/generated/plz_confirm/v1/request";
+import { normalizeUIRequest } from "@/proto/normalize";
 
 let ws: WebSocket | null = null;
 let reconnectTimeout: NodeJS.Timeout | null = null;
@@ -12,7 +22,7 @@ export const connectWebSocket = () => {
 
   if (!sessionId) return;
 
-  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+  const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
   const host = window.location.host; // Includes port if present
   const wsUrl = `${protocol}//${host}/ws?sessionId=${sessionId}`;
 
@@ -21,7 +31,7 @@ export const connectWebSocket = () => {
   ws = new WebSocket(wsUrl);
 
   ws.onopen = () => {
-    console.log('WebSocket connected');
+    console.log("WebSocket connected");
     store.dispatch(setConnected(true));
     store.dispatch(setError(null));
     if (reconnectTimeout) {
@@ -30,15 +40,15 @@ export const connectWebSocket = () => {
     }
   };
 
-  ws.onmessage = (event) => {
+  ws.onmessage = event => {
     try {
       const data = JSON.parse(event.data);
-      console.log('WS Message:', data);
+      console.log("WS Message:", data);
 
-      if (data.type === 'new_request') {
+      if (data.type === "new_request") {
         const request: UIRequest = normalizeUIRequest(data.request);
         store.dispatch(setActiveRequest(request));
-        
+
         // Show browser notification for new request
         const requestTitle =
           request.confirmInput?.title ||
@@ -47,62 +57,92 @@ export const connectWebSocket = () => {
           request.uploadInput?.title ||
           request.tableInput?.title ||
           request.imageInput?.title ||
-          'New Request';
-        const requestTypeLabel = (WidgetType as any)[request.type] ?? 'unknown';
-        browserNotificationService.showRequestNotification(requestTitle, String(requestTypeLabel));
-      } else if (data.type === 'request_completed') {
+          "New Request";
+        const requestTypeLabel = (WidgetType as any)[request.type] ?? "unknown";
+        browserNotificationService.showRequestNotification(
+          requestTitle,
+          String(requestTypeLabel)
+        );
+      } else if (data.type === "request_completed") {
         // If another client completed it, or just to sync history
         const completedReq: UIRequest = normalizeUIRequest(data.request);
         const currentActive = store.getState().request.active;
         if (currentActive && currentActive.id === completedReq.id) {
-            store.dispatch(completeRequest(completedReq));
+          store.dispatch(completeRequest(completedReq));
         } else {
-            store.dispatch(addToHistory(completedReq));
+          store.dispatch(addToHistory(completedReq));
         }
       }
     } catch (e) {
-      console.error('Failed to parse WS message', e);
+      console.error("Failed to parse WS message", e);
     }
   };
 
   ws.onclose = () => {
-    console.log('WebSocket disconnected');
+    console.log("WebSocket disconnected");
     store.dispatch(setConnected(false));
     ws = null;
-    
+
     // Try to reconnect
     if (!reconnectTimeout) {
       reconnectTimeout = setTimeout(() => {
-        console.log('Attempting reconnect...');
+        console.log("Attempting reconnect...");
         connectWebSocket();
       }, 3000);
     }
   };
 
-  ws.onerror = (error) => {
-    console.error('WebSocket error', error);
-    store.dispatch(setError('Connection error'));
+  ws.onerror = error => {
+    console.error("WebSocket error", error);
+    store.dispatch(setError("Connection error"));
   };
 };
 
-export const submitResponse = async (requestId: string, output: any) => {
+function buildSubmitResponseBody(requestType: WidgetType, output: any): any {
+  const typeLabel =
+    (WidgetType as any)[requestType] ?? "widget_type_unspecified";
+  const sessionId = store.getState().session.id ?? "global";
+
+  switch (requestType) {
+    case WidgetType.confirm:
+      return { type: String(typeLabel), sessionId, confirmOutput: output };
+    case WidgetType.select:
+      return { type: String(typeLabel), sessionId, selectOutput: output };
+    case WidgetType.form:
+      return { type: String(typeLabel), sessionId, formOutput: output };
+    case WidgetType.upload:
+      return { type: String(typeLabel), sessionId, uploadOutput: output };
+    case WidgetType.table:
+      return { type: String(typeLabel), sessionId, tableOutput: output };
+    case WidgetType.image:
+      return { type: String(typeLabel), sessionId, imageOutput: output };
+    default:
+      return { type: String(typeLabel), sessionId };
+  }
+}
+
+export const submitResponse = async (
+  requestId: string,
+  requestType: WidgetType,
+  output: any
+) => {
   try {
     const response = await fetch(`/api/requests/${requestId}/response`, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json'
+        "Content-Type": "application/json",
       },
-      body: JSON.stringify({ output })
+      body: JSON.stringify(buildSubmitResponseBody(requestType, output)),
     });
 
     if (!response.ok) {
-      throw new Error('Failed to submit response');
+      throw new Error("Failed to submit response");
     }
 
     const json = await response.json();
     return normalizeUIRequest(json);
   } catch (error) {
-    console.error('Error submitting response:', error);
+    console.error("Error submitting response:", error);
     throw error;
   }
 };
