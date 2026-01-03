@@ -367,3 +367,18 @@ I also refactored the scheduler goroutine ownership to be tied to `ListenAndServ
 
 ### What warrants a second pair of eyes
 - Whether timeout should use `request_completed` or a dedicated WS event type (`request_timed_out`) once the UI grows more nuanced timeout UX.
+
+## Step 11: Add a CLI WebSocket watcher for debugging timeouts
+
+To make timeout behavior testable without relying on the browser UI, I added a small CLI command that connects to the server’s WebSocket endpoint and prints events. This lets us confirm that a request transitions to `status=timeout` and that the server broadcasts a completion event when `expiresAt` passes.
+
+**Commit (code):** 29ef3b0 — "✨ cli: add ws event watcher command"
+
+### What I did
+- Added `plz-confirm ws` as a Cobra subcommand (not Glazed) under `cmd/plz-confirm/ws.go`.
+- The command connects to `/ws?sessionId=...` (derived from `--base-url`) and prints each event as a JSON line (optional `--pretty`).
+
+### How to use
+- Watch events:
+  - `go run ./cmd/plz-confirm ws --base-url http://localhost:3001 --session-id global --pretty`
+- Create a request with a short timeout, then observe a `request_completed` event with `status=timeout`.

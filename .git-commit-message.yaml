@@ -1,7 +1,7 @@
-title: "✨ cli: add ws event watcher command"
+title: "📝 docs: add ws watcher usage"
 description: |
-  Add `plz-confirm ws` to connect to `/ws?sessionId=...` and print events, so
-  we can test timeout behavior over WebSocket from the CLI.
+  Record the new `plz-confirm ws` command in the ticket diary, including how
+  to use it to observe timeout events over WebSocket.
 
   Tests:
-  - go test ./... -count=1
+  - N/A (docs only)
