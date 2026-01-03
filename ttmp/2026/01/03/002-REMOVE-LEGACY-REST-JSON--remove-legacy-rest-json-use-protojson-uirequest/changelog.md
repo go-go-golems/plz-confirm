@@ -28,7 +28,7 @@ Breaking cutover: REST endpoints now accept protojson(UIRequest) bodies (no lega
 
 ## 2026-01-03
 
-Honor sessionId in Go server (scope WS connections, pending replay, and broadcasts by sessionId) (code: TBD)
+Honor sessionId in Go server (scope WS connections, pending replay, and broadcasts by sessionId) (code: 74b9aa0)
 
 ### Related Files
 

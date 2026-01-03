@@ -124,7 +124,7 @@ This step implements “sessionId is real” in the Go server. Previously, the s
 
 Now, each WS connection subscribes to a specific `sessionId` (`/ws?sessionId=...`), pending replay is filtered by that sessionId, and broadcasts are sent only to clients subscribed to the request’s session.
 
-**Commit (code):** TBD
+**Commit (code):** 74b9aa0 — "✨ server: scope WS by sessionId"
 
 ### What I did
 - Updated `internal/server/ws.go` to group WS clients by `sessionId` and to replay only pending requests for that session.

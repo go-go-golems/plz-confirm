@@ -1,8 +1,7 @@
-title: "✨ server: scope WS by sessionId"
+title: "📝 docs: record sessionId scoping"
 description: |
-  Implement real session handling on the Go server: WebSocket connections
-  subscribe to a `sessionId`, pending replay is filtered by sessionId, and
-  request events are broadcast only to that session.
+  Update ticket `002-REMOVE-LEGACY-REST-JSON` docs to record that the Go server
+  now scopes WebSocket connections and broadcasts by `sessionId`.
 
   Tests:
-  - go test ./... -count=1
+  - N/A (docs only)
