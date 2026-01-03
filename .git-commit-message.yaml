@@ -1,6 +1,8 @@
-title: "🧹 chore: ignore prescribe session files"
+title: "👷 ci: run go generate before golangci-lint"
 description: |
-  Add `.pr-builder/` to `.gitignore` so local prescribe sessions and generated PR context aren’t accidentally committed.
+  The Go server embeds frontend assets via `go:embed`, which requires generated files to exist at typecheck time.
+  Update the `golangci-lint` GitHub Actions workflow to install pnpm deps and run `go generate ./internal/server`
+  before `golangci-lint-action@v7` runs.
 
   Tests:
-  - N/A
+  - go test ./... -count=1 (pass)
