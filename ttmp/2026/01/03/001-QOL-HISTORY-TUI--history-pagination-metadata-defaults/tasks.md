@@ -2,6 +2,18 @@
 
 ## TODO
 
+- [x] Fix UI request history duplicate entries
+  - [x] Make completion/history updates idempotent by request id
+  - [x] Stop WS completion handler from double-appending already-completed items
+
+- [x] Add a pending queue for multiple incoming requests
+  - [x] Enqueue `new_request` events when another request is already active
+  - [x] Pop next pending request when the active one completes
+
+- [x] Add dev helpers for reproducing history/queue behavior
+  - [x] Add Makefile dev targets for Go backend + Vite frontend
+  - [x] Add ticket-local seed script to create multiple pending requests via CLI
+
 - [x] Remove Node legacy server (agent-ui-system/server)
   - [x] Remove `agent-ui-system/server/index.ts`
   - [x] Update `agent-ui-system/package.json` scripts to drop Node server build/start

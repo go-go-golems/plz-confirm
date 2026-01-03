@@ -1,8 +1,7 @@
-title: "🐛 fix: dedupe UI history + queue requests"
+title: "📝 docs: update ticket 001 history fix"
 description: |
-  Fix duplicate entries in the web UI request history by making completion updates
-  idempotent by request id and by routing WS `request_completed` through the same
-  completion reducer.
+  Update ticket `001-QOL-HISTORY-TUI` docs (index/tasks/changelog/diary) to record
+  the history de-dupe + pending queue fix and how to reproduce it.
 
   Tests:
-  - make ci
+  - N/A (docs only)

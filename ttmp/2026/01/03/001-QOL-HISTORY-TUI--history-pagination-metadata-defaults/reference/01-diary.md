@@ -267,3 +267,50 @@ This is good news: the bounded-history fix is a tiny, low-risk change (truncate 
 
 ### Code review instructions
 - Start at `agent-ui-system/client/src/pages/Home.tsx` for rendering, then trace back into Redux actions and WS message handler.
+
+## Step 7: Fix duplicate history entries and queue multiple pending requests
+
+This step addressed a concrete UX bug: completing a request in the browser could create duplicate entries in the history panel. The root cause was that the UI both updates history locally after submitting a response and also reacts to the server’s `request_completed` WebSocket echo; the WebSocket path appended to history again once the active request had already been cleared.
+
+While fixing that, I also added a simple pending queue so multiple `new_request` events don’t overwrite the current active request. This makes it possible to “drain” a burst of requests in a predictable order.
+
+**Commit (code):** 9f32913 — "🐛 fix: dedupe UI history + queue requests"
+
+### What I did
+- Made history updates idempotent by request id (upsert semantics).
+- Changed WebSocket handling to always dispatch completion via a single path.
+- Added a `pending` queue in the request slice and enqueued `new_request` events when another request is active.
+- Added `make dev-backend`, `make dev-frontend`, and `make dev-tmux` dev targets.
+- Added a ticket-local seed script to create multiple pending requests via the CLI:
+  - `ttmp/2026/01/03/001-QOL-HISTORY-TUI--history-pagination-metadata-defaults/scripts/seed-requests-with-metadata.sh`
+
+### Why
+- The UI should never show the same request twice in history.
+- A queue is the simplest way to avoid losing requests when multiple arrive before the user responds.
+
+### What worked
+- The completion reducer is now idempotent, so “local completion + WS echo” no longer produces duplicates.
+- The queue ensures incoming requests don’t overwrite `active`.
+
+### What didn't work
+- N/A (straightforward change)
+
+### What I learned
+- Any client-side flow that can “optimistically” update state and also receive authoritative echoes needs idempotent reducers (or acks) to avoid duplicates.
+
+### What was tricky to build
+- Making completion logic safe for all cases:
+  - completed request is active
+  - completed request is pending
+  - completed request is already in history (upsert)
+
+### What warrants a second pair of eyes
+- Confirm that the new queue behavior matches the intended UX (FIFO vs LIFO, and whether users should see “N pending” anywhere).
+
+### What should be done in the future
+- If/when server-side history paging is added, ensure the client keeps an id-set to avoid duplicates across “paged fetch” and WS events.
+
+### Code review instructions
+- Start in `agent-ui-system/client/src/store/store.ts` and review `enqueueRequest` + `completeRequest`.
+- Then check `agent-ui-system/client/src/services/websocket.ts` message handling changes.
+- For repro, run `make dev-tmux` and then `API_BASE_URL=http://localhost:3001 bash ttmp/2026/01/03/001-QOL-HISTORY-TUI--history-pagination-metadata-defaults/scripts/seed-requests-with-metadata.sh`.
