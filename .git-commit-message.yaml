@@ -1,7 +1,7 @@
-title: "🧹 ui: suppress duplicate completion actions"
+title: "📝 docs: record completion action suppression"
 description: |
-  Prevent duplicate Redux completion actions by correlating completion events by
-  request id: local submit and WS echo both funnel through a single dispatch path.
+  Update ticket `001-QOL-HISTORY-TUI` diary/changelog with the id-based completion
+  correlation change (so DevTools doesn’t show duplicate completion actions).
 
   Tests:
-  - pnpm -C agent-ui-system run check
+  - N/A (docs only)

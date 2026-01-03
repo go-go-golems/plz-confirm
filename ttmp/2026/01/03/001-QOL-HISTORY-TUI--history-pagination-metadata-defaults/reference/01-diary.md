@@ -328,3 +328,22 @@ I validated the change by running the Vite frontend on `:3000` and the Go backen
 
 ### What warrants a second pair of eyes
 - In Redux DevTools you may still observe two “completion” *events* (local submit + WS echo). The reducer is now idempotent by request id, so it should not result in duplicated history entries.
+
+## Step 9: Suppress duplicate completion actions (local submit vs WS echo)
+
+Even though state was idempotent, Redux DevTools still showed two completion-related actions (local submit and WS `request_completed`), which is noisy when debugging. This step makes completion dispatch exactly once per request id by correlating completions in the WS/client layer using an in-memory bounded set keyed by request id (no timestamps).
+
+**Commit (code):** eb41c20 — "🧹 ui: suppress duplicate completion actions"
+
+### What I did
+- Added a bounded `completedIds` set in the WS client to ignore duplicate `request_completed` messages for ids that have already been processed.
+- Moved the `completeRequest` dispatch for local submissions into `submitResponse` so local submit and WS echo share the same “dispatch once” guard.
+- Updated `WidgetRenderer` to stop dispatching `completeRequest` directly.
+
+### Why
+- Avoid duplicate Redux actions in DevTools while keeping the system robust to race order (WS first vs HTTP response first).
+
+### What was tricky to build
+- Getting the ordering right without time-based correlation:
+  - if WS arrives first, the HTTP response path should not dispatch
+  - if HTTP response arrives first, the WS echo should not dispatch
