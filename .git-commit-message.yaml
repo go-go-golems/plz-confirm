@@ -1,7 +1,7 @@
-title: "📝 docs: update ticket 001 history fix"
+title: "📝 docs: record history fix validation"
 description: |
-  Update ticket `001-QOL-HISTORY-TUI` docs (index/tasks/changelog/diary) to record
-  the history de-dupe + pending queue fix and how to reproduce it.
+  Update ticket `001-QOL-HISTORY-TUI` docs (diary/changelog) with validation notes
+  from running the dev UI and confirming the history no longer duplicates.
 
   Tests:
   - N/A (docs only)

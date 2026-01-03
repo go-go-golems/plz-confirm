@@ -314,3 +314,17 @@ While fixing that, I also added a simple pending queue so multiple `new_request`
 - Start in `agent-ui-system/client/src/store/store.ts` and review `enqueueRequest` + `completeRequest`.
 - Then check `agent-ui-system/client/src/services/websocket.ts` message handling changes.
 - For repro, run `make dev-tmux` and then `API_BASE_URL=http://localhost:3001 bash ttmp/2026/01/03/001-QOL-HISTORY-TUI--history-pagination-metadata-defaults/scripts/seed-requests-with-metadata.sh`.
+
+## Step 8: Validate the history fix in the running UI
+
+I validated the change by running the Vite frontend on `:3000` and the Go backend on `:3001`, then creating and completing requests via the CLI. The history panel no longer shows duplicate entries for a single request id.
+
+**Commit (docs):** TBD
+
+### What I did
+- Started dev servers (`make dev-tmux`).
+- Triggered a request via CLI and completed it in the browser UI.
+- Confirmed the resulting history entry appears once per request id.
+
+### What warrants a second pair of eyes
+- In Redux DevTools you may still observe two “completion” *events* (local submit + WS echo). The reducer is now idempotent by request id, so it should not result in duplicated history entries.
