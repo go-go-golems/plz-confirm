@@ -118,6 +118,25 @@ The immediate outcome is a consistent contract across REST and WS: everything th
 ### What didn't work
 - Initially hit `bind: address already in use` when running e2e scripts because an old server process was still holding `:3001`; killed it and reran successfully.
 
+## Step 3: Keep sessionId and scope WebSocket traffic by it
+
+This step implements “sessionId is real” in the Go server. Previously, the server accepted `sessionId` for compatibility but ignored it (broadcasting all `new_request`/`request_completed` events to all connected WS clients, and replaying all pending requests on connect).
+
+Now, each WS connection subscribes to a specific `sessionId` (`/ws?sessionId=...`), pending replay is filtered by that sessionId, and broadcasts are sent only to clients subscribed to the request’s session.
+
+**Commit (code):** TBD
+
+### What I did
+- Updated `internal/server/ws.go` to group WS clients by `sessionId` and to replay only pending requests for that session.
+- Updated `internal/server/server.go` to broadcast `new_request` and `request_completed` only within the request’s session.
+- Added `internal/store/store.go:PendingForSession` to support session-scoped pending replay.
+
+### Why
+- Without session scoping, multiple open UIs (or multiple agents) leak requests across sessions, and the demo UI’s `sessionId` query param is effectively misleading.
+
+### What warrants a second pair of eyes
+- Confirm the intended default session behavior when `sessionId` is missing (currently defaults to `global`).
+
 ### What I learned
 - Even though the legacy “create” wrapper was CLI-only, the legacy “submit response” wrapper was used by the UI and by multiple repo scripts, so the cutover must remain coordinated.
 

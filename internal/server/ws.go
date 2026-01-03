@@ -10,40 +10,69 @@ import (
 )
 
 type wsBroadcaster struct {
-	mu      sync.Mutex
-	clients map[*websocket.Conn]struct{}
+	mu               sync.Mutex
+	clientsBySession map[string]map[*websocket.Conn]struct{}
+	sessionByConn    map[*websocket.Conn]string
 }
 
 func newWSBroadcaster() *wsBroadcaster {
 	return &wsBroadcaster{
-		clients: make(map[*websocket.Conn]struct{}),
+		clientsBySession: make(map[string]map[*websocket.Conn]struct{}),
+		sessionByConn:    make(map[*websocket.Conn]string),
 	}
 }
 
-func (b *wsBroadcaster) add(conn *websocket.Conn) {
+func (b *wsBroadcaster) add(sessionID string, conn *websocket.Conn) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
-	b.clients[conn] = struct{}{}
+	if sessionID == "" {
+		sessionID = "global"
+	}
+	if _, ok := b.clientsBySession[sessionID]; !ok {
+		b.clientsBySession[sessionID] = make(map[*websocket.Conn]struct{})
+	}
+	b.clientsBySession[sessionID][conn] = struct{}{}
+	b.sessionByConn[conn] = sessionID
 }
 
 func (b *wsBroadcaster) remove(conn *websocket.Conn) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
-	delete(b.clients, conn)
+	sessionID, ok := b.sessionByConn[conn]
+	if ok {
+		if m, ok := b.clientsBySession[sessionID]; ok {
+			delete(m, conn)
+			if len(m) == 0 {
+				delete(b.clientsBySession, sessionID)
+			}
+		}
+		delete(b.sessionByConn, conn)
+		return
+	}
+	for sid, m := range b.clientsBySession {
+		delete(m, conn)
+		if len(m) == 0 {
+			delete(b.clientsBySession, sid)
+		}
+	}
 }
 
-func (b *wsBroadcaster) snapshot() []*websocket.Conn {
+func (b *wsBroadcaster) snapshot(sessionID string) []*websocket.Conn {
 	b.mu.Lock()
 	defer b.mu.Unlock()
-	out := make([]*websocket.Conn, 0, len(b.clients))
-	for c := range b.clients {
+	if sessionID == "" {
+		sessionID = "global"
+	}
+	m := b.clientsBySession[sessionID]
+	out := make([]*websocket.Conn, 0, len(m))
+	for c := range m {
 		out = append(out, c)
 	}
 	return out
 }
 
-func (b *wsBroadcaster) BroadcastJSON(msg any) {
-	conns := b.snapshot()
+func (b *wsBroadcaster) BroadcastJSON(sessionID string, msg any) {
+	conns := b.snapshot(sessionID)
 	for _, c := range conns {
 		_ = c.SetWriteDeadline(time.Now().Add(5 * time.Second))
 		if err := c.WriteJSON(msg); err != nil {
@@ -54,8 +83,8 @@ func (b *wsBroadcaster) BroadcastJSON(msg any) {
 	}
 }
 
-func (b *wsBroadcaster) BroadcastRawJSON(msg []byte) {
-	conns := b.snapshot()
+func (b *wsBroadcaster) BroadcastRawJSON(sessionID string, msg []byte) {
+	conns := b.snapshot(sessionID)
 	for _, c := range conns {
 		_ = c.SetWriteDeadline(time.Now().Add(5 * time.Second))
 		if err := c.WriteMessage(websocket.TextMessage, msg); err != nil {
@@ -76,20 +105,21 @@ var wsUpgrader = websocket.Upgrader{
 }
 
 func (s *Server) handleWS(w http.ResponseWriter, r *http.Request) {
-	// Compatibility: accept sessionId but ignore it (G=no-session).
-	// Frontend builds `/ws?sessionId=<id>`; we just tolerate it.
-	_ = r.URL.Query().Get("sessionId")
+	sessionID := r.URL.Query().Get("sessionId")
+	if sessionID == "" {
+		sessionID = "global"
+	}
 
 	conn, err := wsUpgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Printf("[WS] upgrade error: %v", err)
 		return
 	}
-	s.ws.add(conn)
-	log.Printf("[WS] client connected")
+	s.ws.add(sessionID, conn)
+	log.Printf("[WS] client connected (sessionId=%s)", sessionID)
 
 	// On connect, send all currently pending requests.
-	pending := s.store.Pending(r.Context())
+	pending := s.store.PendingForSession(r.Context(), sessionID)
 	for _, req := range pending {
 		_ = conn.SetWriteDeadline(time.Now().Add(5 * time.Second))
 		msg, err := marshalWSEvent("new_request", req)

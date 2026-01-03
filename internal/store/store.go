@@ -41,8 +41,7 @@ func (s *Store) Create(_ context.Context, req *v1.UIRequest) (*v1.UIRequest, err
 		return nil, errors.New("input is required")
 	}
 	if req.SessionId == "" {
-		// Compatibility: React/old server expect a string sessionId field.
-		// We intentionally ignore sessions (G=no-session), but keep a non-empty value.
+		// Compatibility: clients expect a string sessionId field.
 		req.SessionId = "global"
 	}
 
@@ -102,6 +101,23 @@ func (s *Store) Pending(_ context.Context) []*v1.UIRequest {
 	out := make([]*v1.UIRequest, 0, len(s.requests))
 	for _, e := range s.requests {
 		if e.req.Status == v1.RequestStatus_pending {
+			out = append(out, e.req)
+		}
+	}
+	return out
+}
+
+func (s *Store) PendingForSession(_ context.Context, sessionID string) []*v1.UIRequest {
+	if sessionID == "" {
+		sessionID = "global"
+	}
+
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	out := make([]*v1.UIRequest, 0, len(s.requests))
+	for _, e := range s.requests {
+		if e.req.Status == v1.RequestStatus_pending && e.req.SessionId == sessionID {
 			out = append(out, e.req)
 		}
 	}

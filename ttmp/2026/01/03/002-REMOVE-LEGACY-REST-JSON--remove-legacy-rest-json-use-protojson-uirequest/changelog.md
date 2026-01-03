@@ -26,3 +26,12 @@ Breaking cutover: REST endpoints now accept protojson(UIRequest) bodies (no lega
 - /home/manuel/workspaces/2026-01-03/plz-confirm-improvements/plz-confirm/internal/server/server.go — Decode protojson(UIRequest) for create/response
 - /home/manuel/workspaces/2026-01-03/plz-confirm-improvements/plz-confirm/scripts/curl-inspector-smoke.sh — Updated for new REST body shapes
 
+## 2026-01-03
+
+Honor sessionId in Go server (scope WS connections, pending replay, and broadcasts by sessionId) (code: TBD)
+
+### Related Files
+
+- /home/manuel/workspaces/2026-01-03/plz-confirm-improvements/plz-confirm/internal/server/ws.go — WS clients grouped by sessionId; replay pending per-session
+- /home/manuel/workspaces/2026-01-03/plz-confirm-improvements/plz-confirm/internal/server/server.go — new_request/request_completed broadcasts scoped to req.SessionId
+- /home/manuel/workspaces/2026-01-03/plz-confirm-improvements/plz-confirm/internal/store/store.go — Added PendingForSession helper

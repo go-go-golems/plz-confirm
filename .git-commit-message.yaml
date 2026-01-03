@@ -1,7 +1,8 @@
-title: "👷 ci: ignore generated files in gosec"
+title: "✨ server: scope WS by sessionId"
 description: |
-  Configure gosec to skip generated Go files (e.g. protobuf `*.pb.go`) so CI
-  doesn’t fail on generated unsafe usage.
+  Implement real session handling on the Go server: WebSocket connections
+  subscribe to a `sessionId`, pending replay is filtered by sessionId, and
+  request events are broadcast only to that session.
 
   Tests:
-  - make gosec
+  - go test ./... -count=1

@@ -7,7 +7,7 @@
   - [x] Submit response: `POST /api/requests/{id}/response` body is `protojson(UIRequest)` with output oneof set
   - [x] Define timeout semantics:
     - [x] Client may set `expiresAt` directly (RFC3339Nano); server defaults if omitted
-    - [x] `sessionId` is still accepted but ignored (unchanged semantics)
+    - [x] `sessionId` remains part of the contract (server scopes WS per sessionId)
   - [x] Update `pkg/doc/adding-widgets.md` and scripts with new payload shapes
 
 - [x] Remove legacy REST JSON adapters (server-side)
@@ -34,4 +34,4 @@
 
 - [x] Remove compatibility mentions
   - [x] Remove “compatibility with Node server shape” mentions in `internal/client/client.go`
-  - [ ] Only if we remove `sessionId` from the protobuf contract: remove WS/session compatibility notes (not done; sessionId still present/ignored)
+  - [x] Keep `sessionId` in protobuf and make the Go server honor it for WS scoping
