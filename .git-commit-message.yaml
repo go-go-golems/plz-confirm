@@ -1,7 +1,7 @@
-title: "📝 docs: record expiresAt enforcement"
+title: "✨ cli: add ws event watcher command"
 description: |
-  Update ticket `001-QOL-HISTORY-TUI` docs to record the server-side `expiresAt`
-  enforcement and how it’s broadcast/displayed.
+  Add `plz-confirm ws` to connect to `/ws?sessionId=...` and print events, so
+  we can test timeout behavior over WebSocket from the CLI.
 
   Tests:
-  - N/A (docs only)
+  - go test ./... -count=1
