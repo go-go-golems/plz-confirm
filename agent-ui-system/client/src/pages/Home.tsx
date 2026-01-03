@@ -2,7 +2,7 @@ import React, { useEffect } from "react";
 import { Layout } from "@/components/Layout";
 import { WidgetRenderer } from "@/components/WidgetRenderer";
 import { useDispatch, useSelector } from "react-redux";
-import { RootState, setActiveRequest, addToHistory } from "@/store/store";
+import { RootState, setActiveRequest } from "@/store/store";
 import { MOCK_REQUESTS } from "@/services/mockData";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -19,8 +19,6 @@ export default function Home() {
 
   // Simulate receiving a new request if none is active
   const simulateNewRequest = (type: WidgetType) => {
-    if (active) return;
-
     const template = MOCK_REQUESTS.find(r => r.type === type);
     if (template) {
       dispatch(
@@ -54,7 +52,6 @@ export default function Home() {
                 size="sm"
                 className="cyber-button text-xs"
                 onClick={() => simulateNewRequest(WidgetType.confirm)}
-                disabled={!!active}
               >
                 CONFIRM_REQ
               </Button>
@@ -63,7 +60,6 @@ export default function Home() {
                 size="sm"
                 className="cyber-button text-xs"
                 onClick={() => simulateNewRequest(WidgetType.select)}
-                disabled={!!active}
               >
                 SELECT_REQ
               </Button>
@@ -72,7 +68,6 @@ export default function Home() {
                 size="sm"
                 className="cyber-button text-xs"
                 onClick={() => simulateNewRequest(WidgetType.table)}
-                disabled={!!active}
               >
                 TABLE_REQ
               </Button>
@@ -81,7 +76,6 @@ export default function Home() {
                 size="sm"
                 className="cyber-button text-xs"
                 onClick={() => {
-                  if (active) return;
                   dispatch(
                     setActiveRequest({
                       id: nanoid(),
@@ -110,7 +104,6 @@ export default function Home() {
                     })
                   );
                 }}
-                disabled={!!active}
               >
                 FORM_REQ
               </Button>
@@ -119,7 +112,6 @@ export default function Home() {
                 size="sm"
                 className="cyber-button text-xs"
                 onClick={() => {
-                  if (active) return;
                   dispatch(
                     setActiveRequest({
                       id: nanoid(),
@@ -137,7 +129,6 @@ export default function Home() {
                     })
                   );
                 }}
-                disabled={!!active}
               >
                 UPLOAD_REQ
               </Button>
