@@ -1,11 +1,3 @@
-title: "🐛 server: serve embedded SPA on / for go run"
+title: "📝 docs: record ticket 004 bugfix"
 description: |
-  Fixes the default dev workflow where `go run ./cmd/plz-confirm serve` returned `404 page not found` on `/`.
-
-  Changes:
-  - Always embed `internal/server/embed/public/**` so static serving is available without `-tags embed`
-  - Add regression test asserting `GET /` returns the SPA index.html
-  - Update `Makefile`, `README.md`, and `pkg/doc/adding-widgets.md` to match the new embedding contract
-
-  Tests:
-  - go test ./... -count=1 (pass)
+  Record the investigation + fix for `004-BUG-LANDING-PAGE`, including analysis, tasks, related files, and diary updates (with the code commit hash).
