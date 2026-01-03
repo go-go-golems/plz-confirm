@@ -347,3 +347,23 @@ Even though state was idempotent, Redux DevTools still showed two completion-rel
 - Getting the ordering right without time-based correlation:
   - if WS arrives first, the HTTP response path should not dispatch
   - if HTTP response arrives first, the WS echo should not dispatch
+
+## Step 10: Enforce `expiresAt` server-side (authoritative timeouts)
+
+This step makes timeouts real: the server now transitions pending requests to `status=timeout` when `expiresAt` passes, unblocks any long-poll waiters, and broadcasts the updated request via WebSocket. This is deliberately “authoritative”: it does not rely on the browser being open to enforce expiry.
+
+I also refactored the scheduler goroutine ownership to be tied to `ListenAndServe` via an `errgroup`, so time-based background work stops reliably when the server context is canceled.
+
+**Commit (code):** b7fd7b5 — "⏱️  server: enforce request expiresAt"
+
+### What I did
+- Added `internal/store/store.go:Expire(now)` to transition pending requests to `timeout`, set `completedAt` and a simple `error` string, and close the request `done` channel.
+- Updated `internal/store/store.go:Wait` to return for `timeout`/`error` status (not only `completed`).
+- Added a server-side ticker in `internal/server/server.go:ListenAndServe` that calls `Expire` and broadcasts a `request_completed` event for timed-out requests (scoped to the request’s `sessionId`).
+- Updated `agent-ui-system/client/src/pages/Home.tsx` to render a distinct TIMEOUT label in history.
+
+### Why
+- Without server-side enforcement, `expiresAt` is just a TTL hint and “timeouts” are not observable/consistent across clients.
+
+### What warrants a second pair of eyes
+- Whether timeout should use `request_completed` or a dedicated WS event type (`request_timed_out`) once the UI grows more nuanced timeout UX.

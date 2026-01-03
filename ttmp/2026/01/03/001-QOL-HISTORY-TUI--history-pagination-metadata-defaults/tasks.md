@@ -30,9 +30,9 @@
     - [ ] When `now >= expiresAt`, server transitions request to `timeout` (or completes with default output; decide)
     - [ ] “Interaction stops timeout”: is it a permanent disable, or does it extend/refresh `expiresAt`?
     - [ ] What counts as interaction (any click/keydown anywhere in widget vs only input changes)?
-  - [ ] Add server-side expiry scheduler (authoritative, not browser-only)
-    - [ ] Periodically scan pending requests and expire those past `expiresAt`, or maintain a deadline heap
-    - [ ] On expire: persist state + broadcast WS event (reuse `request_completed` or add `request_timed_out`)
+  - [x] Add server-side expiry scheduler (authoritative, not browser-only)
+    - [x] Periodically scan pending requests and expire those past `expiresAt`
+    - [x] On expire: broadcast WS event (`request_completed` with `status=timeout`)
   - [ ] Add an “activity/touch” API so the UI can pause/disable expiry
     - [ ] `POST /api/requests/{id}/touch` (or similar) marks request as “touched/active” and disables expiry enforcement
     - [ ] Decide idempotency and rate-limiting (to avoid spam from keypress handlers)

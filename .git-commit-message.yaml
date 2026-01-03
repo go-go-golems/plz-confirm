@@ -1,9 +1,7 @@
-title: "⏱️  server: enforce request expiresAt"
+title: "📝 docs: record expiresAt enforcement"
 description: |
-  Add an authoritative server-side expiry loop: pending requests transition to
-  `status=timeout` once `expiresAt` passes, are unblocked for waiters, and the
-  update is broadcast to the session WebSocket clients.
+  Update ticket `001-QOL-HISTORY-TUI` docs to record the server-side `expiresAt`
+  enforcement and how it’s broadcast/displayed.
 
   Tests:
-  - go test ./... -count=1
-  - pnpm -C agent-ui-system run check
+  - N/A (docs only)
