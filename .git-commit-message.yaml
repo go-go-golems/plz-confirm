@@ -1,6 +1,8 @@
-title: "🧹 cleanup: delete legacy Node server entry"
+title: "📝 docs: add WS/REST protocol analysis and expiresAt tasks"
 description: |
-  Removed the legacy `agent-ui-system/server/index.ts` Node/Express backend entry point from git (the UI now only ships as a Vite build and is served/embedded by the Go server).
+  Added a protocol analysis document covering WebSocket vs REST and how the CLI and UI interact with the backend.
+
+  Added ticket tasks for making `expiresAt` an enforceable UI timeout (countdown + stop-on-interaction) and for a default timeout response.
 
   Tests:
-  - Not rerun (already passing in previous commit)
+  - Not run (docs-only change)
