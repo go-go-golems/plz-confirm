@@ -1,7 +1,7 @@
 ---
 Title: Port agent-ui-system CLI + backend to Go using Glazed framework
 Ticket: DESIGN-PLZ-CONFIRM-001
-Status: completed
+Status: closed
 Topics:
     - go
     - glazed
@@ -76,8 +76,11 @@ RelatedFiles:
       Note: tmux harness entrypoint (control/server/vite)
 ExternalSources: []
 Summary: ""
-LastUpdated: 2025-12-15T15:35:20.981402078-05:00
+LastUpdated: 2026-01-03T15:18:26.717021222-05:00
+WhatFor: ""
+WhenToUse: ""
 ---
+
 
 
 

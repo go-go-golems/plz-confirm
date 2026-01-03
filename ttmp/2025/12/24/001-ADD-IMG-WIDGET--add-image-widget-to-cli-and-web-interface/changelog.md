@@ -188,3 +188,8 @@ PR polish: fixed multipart upload temp-file cleanup (defer r.MultipartForm.Remov
 
 Ticket closed: image widget implemented end-to-end (CLI+server+UI), docs+tests added, lint clean.
 
+
+## 2026-01-03
+
+Bulk close (pre-2026-01-03 cleanup).
+

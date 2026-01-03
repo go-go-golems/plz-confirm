@@ -30,3 +30,8 @@ Added comprehensive guide on removing binary artifacts from git history, includi
 
 Closed: all tasks complete; feature implemented and validated.
 
+
+## 2026-01-03
+
+Bulk close (pre-2026-01-03 cleanup).
+

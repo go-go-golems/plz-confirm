@@ -1,7 +1,7 @@
 ---
 Title: Add Image Widget to CLI and Web Interface
 Ticket: 001-ADD-IMG-WIDGET
-Status: complete
+Status: closed
 Topics:
     - cli
     - backend
@@ -30,10 +30,11 @@ RelatedFiles:
       Note: Defines widget types and Input/Output structs - need to add WidgetImage
 ExternalSources: []
 Summary: ""
-LastUpdated: 2025-12-24T22:21:40.325038249-05:00
+LastUpdated: 2026-01-03T15:18:26.543272066-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 
 
