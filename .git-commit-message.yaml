@@ -1,7 +1,7 @@
-title: "📝 docs: record completion action suppression"
+title: "👷 ci: ignore generated files in gosec"
 description: |
-  Update ticket `001-QOL-HISTORY-TUI` diary/changelog with the id-based completion
-  correlation change (so DevTools doesn’t show duplicate completion actions).
+  Configure gosec to skip generated Go files (e.g. protobuf `*.pb.go`) so CI
+  doesn’t fail on generated unsafe usage.
 
   Tests:
-  - N/A (docs only)
+  - make gosec
