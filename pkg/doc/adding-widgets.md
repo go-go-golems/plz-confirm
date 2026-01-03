@@ -266,6 +266,18 @@ Be careful with broad patterns like `plz-confirm` which can accidentally ignore 
 
 If a widget accepts a local path and the UI needs the bytes, you must convert it into a URL the browser can fetch (server-side upload + serve).
 
+## Request metadata
+
+Requests can carry best-effort provenance metadata in `UIRequest.metadata`, intended for debugging/observability and for improving history UX.
+
+Capture points:
+- **CLI/client-side**: populate `metadata.cwd`, `metadata.self`, and (Linux-only) `metadata.parents` on create.
+- **Server-side** (optional enrichment): populate `metadata.remoteAddr` and `metadata.userAgent` if missing.
+
+Guidelines:
+- Metadata must never be required for request creation (failures should be ignored).
+- Treat fields as optional: UIs should degrade gracefully when absent.
+
 ## Where to go next
 
 - For end-user usage, run:

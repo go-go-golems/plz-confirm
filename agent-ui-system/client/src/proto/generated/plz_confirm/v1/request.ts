@@ -52,6 +52,21 @@ export enum WidgetType {
   UNRECOGNIZED = -1,
 }
 
+export interface ProcessInfo {
+  pid: number;
+  ppid?: number | undefined;
+  comm?: string | undefined;
+  argv: string[];
+}
+
+export interface RequestMetadata {
+  cwd?: string | undefined;
+  self?: ProcessInfo | undefined;
+  parents: ProcessInfo[];
+  remoteAddr?: string | undefined;
+  userAgent?: string | undefined;
+}
+
 /** UIRequest - main request/response envelope */
 export interface UIRequest {
   id: string;
@@ -78,4 +93,5 @@ export interface UIRequest {
   /** RFC3339Nano timestamp */
   expiresAt: string;
   error?: string | undefined;
+  metadata?: RequestMetadata | undefined;
 }

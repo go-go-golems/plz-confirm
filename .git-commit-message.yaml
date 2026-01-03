@@ -1,6 +1,9 @@
-title: "👷 ci: remove nancy scan"
+title: "✨ metadata: attach request provenance to UIRequest"
 description: |
-  Remove the Nancy vulnerability scan job from GitHub Actions dependency scanning.
+  Add `UIRequest.metadata` (proto) and populate it on request creation with best-effort
+  provenance data (cwd + process info + Linux parent chain). Preserve it through the
+  store, enrich on the server with `remoteAddr`/`userAgent`, and surface a compact
+  label in the UI history.
 
   Tests:
-  - N/A (workflow change only)
+  - make ci (pass)

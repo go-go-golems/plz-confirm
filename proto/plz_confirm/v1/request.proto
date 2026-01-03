@@ -6,6 +6,21 @@ option go_package = "github.com/go-go-golems/plz-confirm/proto/generated/go/plz_
 
 import "plz_confirm/v1/widgets.proto";
 
+message ProcessInfo {
+  int64 pid = 1;
+  optional int64 ppid = 2;
+  optional string comm = 3;
+  repeated string argv = 4;
+}
+
+message RequestMetadata {
+  optional string cwd = 1;
+  optional ProcessInfo self = 2;
+  repeated ProcessInfo parents = 3;
+  optional string remote_addr = 4;
+  optional string user_agent = 5;
+}
+
 // RequestStatus enum
 enum RequestStatus {
   // NOTE: Enum value NAMES are chosen to preserve the existing JSON wire contract
@@ -61,5 +76,5 @@ message UIRequest {
   optional string completed_at = 18;
   string expires_at = 19;       // RFC3339Nano timestamp
   optional string error = 20;
+  optional RequestMetadata metadata = 21;
 }
-

@@ -186,6 +186,31 @@ export default function Home() {
                           req.imageInput?.title ||
                           "UNKNOWN_REQUEST"}
                       </div>
+                      {(req.metadata?.cwd || req.metadata?.self?.comm) && (
+                        <div className="text-[10px] text-muted-foreground font-mono mb-2 line-clamp-1">
+                          <span
+                            title={[
+                              req.metadata?.cwd ? `cwd: ${req.metadata.cwd}` : "",
+                              req.metadata?.self?.comm
+                                ? `self: ${req.metadata.self.comm}`
+                                : "",
+                              req.metadata?.parents?.length
+                                ? `parents: ${req.metadata.parents
+                                    .map(p => p.comm ?? (p.pid ? String(p.pid) : ""))
+                                    .filter(Boolean)
+                                    .join(" <- ")}`
+                                : "",
+                            ]
+                              .filter(Boolean)
+                              .join("\n")}
+                          >
+                            {(req.metadata?.self?.comm ?? "proc") +
+                              (req.metadata?.cwd
+                                ? ` @ ${req.metadata.cwd}`
+                                : "")}
+                          </span>
+                        </div>
+                      )}
                       <div className="flex items-center gap-2">
                         {req.status === RequestStatus.completed ? (
                           <div className="flex items-center text-[10px] text-green-500">

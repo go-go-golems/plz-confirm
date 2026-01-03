@@ -55,6 +55,7 @@ func (s *Store) Create(_ context.Context, req *v1.UIRequest) (*v1.UIRequest, err
 		Type:      req.Type,
 		SessionId: req.SessionId,
 		Input:     req.Input, // Copy the oneof field
+		Metadata:  req.Metadata,
 		Status:    v1.RequestStatus_pending,
 		CreatedAt: now.Format(time.RFC3339Nano),
 		ExpiresAt: now.Format(time.RFC3339Nano), // Will be set below

@@ -191,6 +191,19 @@ func (s *Server) handleCreateRequest(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "missing required fields (type + widget input oneof)", http.StatusBadRequest)
 		return
 	}
+	if reqProto.Metadata != nil || r.RemoteAddr != "" || r.UserAgent() != "" {
+		if reqProto.Metadata == nil {
+			reqProto.Metadata = &v1.RequestMetadata{}
+		}
+		if reqProto.Metadata.RemoteAddr == nil && r.RemoteAddr != "" {
+			ra := r.RemoteAddr
+			reqProto.Metadata.RemoteAddr = &ra
+		}
+		if reqProto.Metadata.UserAgent == nil && r.UserAgent() != "" {
+			ua := r.UserAgent()
+			reqProto.Metadata.UserAgent = &ua
+		}
+	}
 
 	// Create in store
 	req, err := s.store.Create(r.Context(), reqProto)

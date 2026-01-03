@@ -64,9 +64,14 @@ create_request() {
   local input_oneof_field="$2"
   local input_json="$3"
   local timeout="${4:-60}"
+  local metadata_json="${5:-}"
   local expires_at
   expires_at="$(date -u -d "+${timeout} seconds" +"%Y-%m-%dT%H:%M:%S.%NZ")"
-  post_json "${API_BASE_URL}/api/requests" "{\"type\":\"${type}\",\"sessionId\":\"global\",\"${input_oneof_field}\":${input_json},\"expiresAt\":\"${expires_at}\"}"
+  local md_part=""
+  if [ -n "$metadata_json" ]; then
+    md_part=",\"metadata\":${metadata_json}"
+  fi
+  post_json "${API_BASE_URL}/api/requests" "{\"type\":\"${type}\",\"sessionId\":\"global\",\"${input_oneof_field}\":${input_json},\"expiresAt\":\"${expires_at}\"${md_part}}"
 }
 
 submit_response() {
@@ -98,10 +103,21 @@ IMG_URL="$(echo "$UP" | jq -r '.url')"
 curl -sS -I "${API_BASE_URL}${IMG_URL}" | head -n 5
 
 say "confirm: create -> submit -> wait"
-REQ="$(create_request "confirm" "confirmInput" '{"title":"INSPECTOR confirm","message":"approve via API"}')"
+MD="$(jq -nc \
+  --arg cwd "$PWD" \
+  --arg comm "bash" \
+  --arg ua "curl-inspector-smoke" \
+  --argjson pid "$$" \
+  --argjson ppid "$PPID" \
+  '{cwd:$cwd,self:{pid:$pid,ppid:$ppid,comm:$comm,argv:["bash","scripts/curl-inspector-smoke.sh"]},userAgent:$ua}')"
+REQ="$(create_request "confirm" "confirmInput" '{"title":"INSPECTOR confirm","message":"approve via API"}' 60 "$MD")"
 ID="$(echo "$REQ" | jq -r '.id')"
 assert_eq "$(echo "$REQ" | jq -r '.type')" "confirm" "confirm.type"
 assert_eq "$(echo "$REQ" | jq -r '.status')" "pending" "confirm.status"
+assert_eq "$(echo "$REQ" | jq -r '.metadata.cwd')" "$PWD" "confirm.metadata.cwd"
+echo "$REQ" | jq -e '(.metadata.self.pid|tonumber) > 0' >/dev/null
+echo "$REQ" | jq -e '(.metadata.remoteAddr // "") | length > 0' >/dev/null
+echo "$REQ" | jq -e '(.metadata.userAgent // "") | length > 0' >/dev/null
 submit_response "$ID" "confirm" "confirmOutput" "{\"approved\":true,\"timestamp\":\"$(date -Is)\",\"comment\":\"CURL_OK\"}" >/dev/null
 DONE="$(wait_request "$ID" 10)"
 assert_eq "$(echo "$DONE" | jq -r '.status')" "completed" "confirm.completed.status"

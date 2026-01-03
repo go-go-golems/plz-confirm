@@ -18,6 +18,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/go-go-golems/plz-confirm/internal/metadata"
 	"github.com/go-go-golems/plz-confirm/proto/generated/go/plz_confirm/v1"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
@@ -48,6 +49,8 @@ type CreateRequestParams struct {
 	TimeoutS int
 
 	SessionID string
+
+	Metadata *v1.RequestMetadata
 }
 
 func (c *Client) CreateRequest(ctx context.Context, p CreateRequestParams) (*v1.UIRequest, error) {
@@ -63,6 +66,11 @@ func (c *Client) CreateRequest(ctx context.Context, p CreateRequestParams) (*v1.
 	reqProto := &v1.UIRequest{
 		Type:      p.Type,
 		SessionId: p.SessionID,
+	}
+	if p.Metadata != nil {
+		reqProto.Metadata = p.Metadata
+	} else {
+		reqProto.Metadata = metadata.Collect()
 	}
 	if p.TimeoutS > 0 {
 		reqProto.ExpiresAt = time.Now().UTC().Add(time.Duration(p.TimeoutS) * time.Second).Format(time.RFC3339Nano)
