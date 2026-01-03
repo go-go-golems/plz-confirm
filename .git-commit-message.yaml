@@ -1,0 +1,9 @@
+title: "🧹 cleanup: remove Node server; fix UI scroll"
+description: |
+  Removed the legacy Node/Express backend from agent-ui-system and adjusted build scripts to only build the Vite frontend (used by the Go embed pipeline).
+
+  Fixed the web UI layout so the history panel is bounded to the viewport and scrolling happens inside panels rather than the whole page (prevents the active request column from scrolling out of view).
+
+  Tests:
+  - go test ./... -count=1 (pass)
+  - pnpm -C agent-ui-system run check (pass)

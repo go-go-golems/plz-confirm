@@ -1,14 +1,17 @@
-import React, { useEffect } from 'react';
-import { Layout } from '@/components/Layout';
-import { WidgetRenderer } from '@/components/WidgetRenderer';
-import { useDispatch, useSelector } from 'react-redux';
-import { RootState, setActiveRequest, addToHistory } from '@/store/store';
-import { MOCK_REQUESTS } from '@/services/mockData';
-import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Clock, CheckCircle, XCircle, Terminal } from 'lucide-react';
-import { nanoid } from 'nanoid';
-import { RequestStatus, WidgetType } from '@/proto/generated/plz_confirm/v1/request';
+import React, { useEffect } from "react";
+import { Layout } from "@/components/Layout";
+import { WidgetRenderer } from "@/components/WidgetRenderer";
+import { useDispatch, useSelector } from "react-redux";
+import { RootState, setActiveRequest, addToHistory } from "@/store/store";
+import { MOCK_REQUESTS } from "@/services/mockData";
+import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Clock, CheckCircle, XCircle, Terminal } from "lucide-react";
+import { nanoid } from "nanoid";
+import {
+  RequestStatus,
+  WidgetType,
+} from "@/proto/generated/plz_confirm/v1/request";
 
 export default function Home() {
   const dispatch = useDispatch();
@@ -17,112 +20,122 @@ export default function Home() {
   // Simulate receiving a new request if none is active
   const simulateNewRequest = (type: WidgetType) => {
     if (active) return;
-    
+
     const template = MOCK_REQUESTS.find(r => r.type === type);
     if (template) {
-      dispatch(setActiveRequest({
-        ...template,
-        id: nanoid(),
-        status: RequestStatus.pending,
-        createdAt: new Date().toISOString()
-      }));
+      dispatch(
+        setActiveRequest({
+          ...template,
+          id: nanoid(),
+          status: RequestStatus.pending,
+          createdAt: new Date().toISOString(),
+        })
+      );
     }
   };
 
   return (
     <Layout>
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 h-full">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 flex-1 min-h-0 overflow-hidden">
         {/* Left Column: Active Request */}
-        <div className="lg:col-span-8 flex flex-col">
-          <div className="flex-1 flex flex-col justify-center">
+        <div className="lg:col-span-8 flex flex-col min-h-0 overflow-hidden">
+          <div className="flex-1 min-h-0 flex flex-col justify-center overflow-auto">
             <WidgetRenderer />
           </div>
-          
+
           {/* Debug Controls */}
-          <div className="mt-8 p-4 border border-border bg-black/20">
+          <div className="mt-8 p-4 border border-border bg-black/20 shrink-0 max-h-56 overflow-auto">
             <div className="text-xs font-mono text-muted-foreground mb-4 uppercase tracking-wider">
               DEV_CONTROLS // SIMULATE_INCOMING_REQUESTS
             </div>
             <div className="flex flex-wrap gap-2">
-              <Button 
-                variant="outline" 
-                size="sm" 
+              <Button
+                variant="outline"
+                size="sm"
                 className="cyber-button text-xs"
                 onClick={() => simulateNewRequest(WidgetType.confirm)}
                 disabled={!!active}
               >
                 CONFIRM_REQ
               </Button>
-              <Button 
-                variant="outline" 
-                size="sm" 
+              <Button
+                variant="outline"
+                size="sm"
                 className="cyber-button text-xs"
                 onClick={() => simulateNewRequest(WidgetType.select)}
                 disabled={!!active}
               >
                 SELECT_REQ
               </Button>
-              <Button 
-                variant="outline" 
-                size="sm" 
+              <Button
+                variant="outline"
+                size="sm"
                 className="cyber-button text-xs"
                 onClick={() => simulateNewRequest(WidgetType.table)}
                 disabled={!!active}
               >
                 TABLE_REQ
               </Button>
-              <Button 
-                variant="outline" 
-                size="sm" 
+              <Button
+                variant="outline"
+                size="sm"
                 className="cyber-button text-xs"
                 onClick={() => {
                   if (active) return;
-                  dispatch(setActiveRequest({
-                    id: nanoid(),
-                    type: WidgetType.form,
-                    sessionId: 'mock',
-                    status: RequestStatus.pending,
-                    createdAt: new Date().toISOString(),
-                    expiresAt: new Date(Date.now() + 300000).toISOString(),
-                    formInput: {
-                      title: "CONFIGURE_DATABASE",
-                      schema: {
-                        properties: {
-                          host: { type: "string" },
-                          port: { type: "number", minimum: 1, maximum: 65535 },
-                          username: { type: "string" },
-                          password: { type: "string", format: "password" },
-                          ssl: { type: "boolean" }
+                  dispatch(
+                    setActiveRequest({
+                      id: nanoid(),
+                      type: WidgetType.form,
+                      sessionId: "mock",
+                      status: RequestStatus.pending,
+                      createdAt: new Date().toISOString(),
+                      expiresAt: new Date(Date.now() + 300000).toISOString(),
+                      formInput: {
+                        title: "CONFIGURE_DATABASE",
+                        schema: {
+                          properties: {
+                            host: { type: "string" },
+                            port: {
+                              type: "number",
+                              minimum: 1,
+                              maximum: 65535,
+                            },
+                            username: { type: "string" },
+                            password: { type: "string", format: "password" },
+                            ssl: { type: "boolean" },
+                          },
+                          required: ["host", "port", "username", "password"],
                         },
-                        required: ["host", "port", "username", "password"]
-                      }
-                    }
-                  }));
+                      },
+                    })
+                  );
                 }}
                 disabled={!!active}
               >
                 FORM_REQ
               </Button>
-              <Button 
-                variant="outline" 
-                size="sm" 
+              <Button
+                variant="outline"
+                size="sm"
                 className="cyber-button text-xs"
                 onClick={() => {
                   if (active) return;
-                  dispatch(setActiveRequest({
-                    id: nanoid(),
-                    type: WidgetType.upload,
-                    sessionId: 'mock',
-                    status: RequestStatus.pending,
-                    createdAt: new Date().toISOString(),
-                    expiresAt: new Date(Date.now() + 300000).toISOString(),
-                    uploadInput: {
-                      title: "UPLOAD_LOGS",
-                      accept: [".log", ".txt"],
-                      multiple: true,
-                      maxSize: 5 * 1024 * 1024
-                    }
-                  }));
+                  dispatch(
+                    setActiveRequest({
+                      id: nanoid(),
+                      type: WidgetType.upload,
+                      sessionId: "mock",
+                      status: RequestStatus.pending,
+                      createdAt: new Date().toISOString(),
+                      expiresAt: new Date(Date.now() + 300000).toISOString(),
+                      uploadInput: {
+                        title: "UPLOAD_LOGS",
+                        accept: [".log", ".txt"],
+                        multiple: true,
+                        maxSize: 5 * 1024 * 1024,
+                      },
+                    })
+                  );
                 }}
                 disabled={!!active}
               >
@@ -133,11 +146,13 @@ export default function Home() {
         </div>
 
         {/* Right Column: History & Logs */}
-        <div className="lg:col-span-4 flex flex-col gap-6">
+        <div className="lg:col-span-4 flex flex-col gap-6 min-h-0 overflow-hidden">
           {/* History Panel */}
-          <div className="cyber-card flex-1 flex flex-col min-h-[300px]">
+          <div className="cyber-card flex-1 flex flex-col min-h-0">
             <div className="p-3 border-b border-border bg-muted/20 flex items-center justify-between">
-              <span className="font-display font-bold text-sm tracking-wider">REQUEST_HISTORY</span>
+              <span className="font-display font-bold text-sm tracking-wider">
+                REQUEST_HISTORY
+              </span>
               <Clock className="h-4 w-4 text-muted-foreground" />
             </div>
             <ScrollArea className="flex-1 p-0">
@@ -147,14 +162,19 @@ export default function Home() {
                 </div>
               ) : (
                 <div className="divide-y divide-border/50">
-                  {history.map((req) => (
-                    <div key={req.id} className="p-4 hover:bg-primary/5 transition-colors group">
+                  {history.map(req => (
+                    <div
+                      key={req.id}
+                      className="p-4 hover:bg-primary/5 transition-colors group"
+                    >
                       <div className="flex items-start justify-between mb-1">
                         <span className="font-mono text-xs text-primary font-bold uppercase">
                           {String((WidgetType as any)[req.type] ?? req.type)}
                         </span>
                         <span className="font-mono text-[10px] text-muted-foreground">
-                          {new Date(req.completedAt || req.createdAt).toLocaleTimeString()}
+                          {new Date(
+                            req.completedAt || req.createdAt
+                          ).toLocaleTimeString()}
                         </span>
                       </div>
                       <div className="text-sm font-mono mb-2 line-clamp-1">
@@ -190,21 +210,27 @@ export default function Home() {
           </div>
 
           {/* System Status Panel */}
-          <div className="cyber-card h-[200px] flex flex-col">
+          <div className="cyber-card h-[200px] shrink-0 flex flex-col">
             <div className="p-3 border-b border-border bg-muted/20 flex items-center justify-between">
-              <span className="font-display font-bold text-sm tracking-wider">SYSTEM_LOGS</span>
+              <span className="font-display font-bold text-sm tracking-wider">
+                SYSTEM_LOGS
+              </span>
               <Terminal className="h-4 w-4 text-muted-foreground" />
             </div>
             <div className="flex-1 p-4 font-mono text-[10px] text-muted-foreground overflow-hidden relative">
               <div className="absolute inset-0 p-4 overflow-auto space-y-1">
-                <div className="text-primary">system_init: initializing core modules...</div>
+                <div className="text-primary">
+                  system_init: initializing core modules...
+                </div>
                 <div>network: websocket connection established</div>
                 <div>auth: session verified [id:550e...55]</div>
                 <div>renderer: widget_registry loaded (5 widgets)</div>
                 <div className="text-primary">system: ready for input</div>
                 {active && (
                   <div className="text-yellow-500">
-                    incoming: new request [{String((WidgetType as any)[active.type] ?? active.type)}] received
+                    incoming: new request [
+                    {String((WidgetType as any)[active.type] ?? active.type)}]
+                    received
                   </div>
                 )}
               </div>
