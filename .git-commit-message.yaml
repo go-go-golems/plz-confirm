@@ -1,6 +1,6 @@
-title: "📝 docs: close pre-2026 tickets"
+title: "🧹 chore: ignore prescribe session files"
 description: |
-  Close (set status to `closed`) all tickets with paths before `2026/01/03`, even if they still have open tasks, as part of ticket hygiene.
+  Add `.pr-builder/` to `.gitignore` so local prescribe sessions and generated PR context aren’t accidentally committed.
 
   Tests:
-  - N/A (docmgr bookkeeping only)
+  - N/A
