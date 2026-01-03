@@ -1,7 +1,6 @@
-title: "📝 docs: record history fix validation"
+title: "📝 docs: link validation commits"
 description: |
-  Update ticket `001-QOL-HISTORY-TUI` docs (diary/changelog) with validation notes
-  from running the dev UI and confirming the history no longer duplicates.
+  Link ticket `001-QOL-HISTORY-TUI` diary/changelog entries to the docs commit hash.
 
   Tests:
   - N/A (docs only)

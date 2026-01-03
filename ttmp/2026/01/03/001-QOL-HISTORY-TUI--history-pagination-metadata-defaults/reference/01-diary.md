@@ -319,7 +319,7 @@ While fixing that, I also added a simple pending queue so multiple `new_request`
 
 I validated the change by running the Vite frontend on `:3000` and the Go backend on `:3001`, then creating and completing requests via the CLI. The history panel no longer shows duplicate entries for a single request id.
 
-**Commit (docs):** TBD
+**Commit (docs):** c924478 — "📝 docs: record history fix validation"
 
 ### What I did
 - Started dev servers (`make dev-tmux`).
