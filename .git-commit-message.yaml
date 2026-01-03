@@ -1,20 +1,11 @@
-title: "💥 api: switch REST bodies to protojson(UIRequest)"
+title: "🐛 server: serve embedded SPA on / for go run"
 description: |
-  Breaking change: removed the legacy REST wrapper JSON shapes.
-  - POST /api/requests now expects protojson(UIRequest) with an input oneof (confirmInput/selectInput/...)
-  - POST /api/requests/{id}/response now expects protojson(UIRequest) with an output oneof (confirmOutput/selectOutput/...)
+  Fixes the default dev workflow where `go run ./cmd/plz-confirm serve` returned `404 page not found` on `/`.
 
-  Updated all in-repo callers:
-  - Go CLI client now sends protojson(UIRequest) on create
-  - Web UI now wraps outputs as UIRequest oneof fields on submit
-  - Smoke scripts updated to new payloads
-  - adding-widgets docs updated to match
-
-  Removed server-side legacy conversion layer: internal/server/proto_convert.go
+  Changes:
+  - Always embed `internal/server/embed/public/**` so static serving is available without `-tags embed`
+  - Add regression test asserting `GET /` returns the SPA index.html
+  - Update `Makefile`, `README.md`, and `pkg/doc/adding-widgets.md` to match the new embedding contract
 
   Tests:
   - go test ./... -count=1 (pass)
-  - pnpm -C agent-ui-system run check (pass)
-  - API_BASE_URL=http://localhost:3001 bash scripts/curl-inspector-smoke.sh (pass)
-  - UI_BASE_URL=http://localhost:3001 API_BASE_URL=http://localhost:3001 bash ttmp/2025/12/24/001-ADD-IMG-WIDGET--add-image-widget-to-cli-and-web-interface/scripts/auto-e2e-cli-via-api.sh (pass)
-  - UI_BASE_URL=http://localhost:3001 API_BASE_URL=http://localhost:3001 bash ttmp/2025/12/24/004-ADD-WIDGET-COMMENT--add-freeform-comment-field-to-all-widgets/scripts/auto-e2e-comment-via-api.sh (pass)

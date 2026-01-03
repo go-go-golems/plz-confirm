@@ -53,7 +53,7 @@ func (s *Server) Handler() http.Handler {
 
 	// Serve embedded static files (production mode)
 	// In dev, Vite serves UI on :3000 and proxies /api and /ws to backend (typically :3001).
-	// In production, this server serves everything (API, WS, and static files) on :3000 by default.
+	// This server can also serve everything (API, WS, and static files) on :3000 by default.
 	s.handleStaticFiles(mux)
 
 	return withCORS(mux)

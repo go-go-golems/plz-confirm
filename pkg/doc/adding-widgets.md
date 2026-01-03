@@ -250,9 +250,11 @@ If you want to inspect behavior, tail the logs. For example, server logs include
 
 ### 1) Frontend assets embedding can break `go test` in fresh clones
 
-If embedding expects generated files that aren’t present, compilation fails early. The fix pattern we use is:
-- gate embedding behind a build tag
-- provide a `!embed` stub that sets `embeddedPublicFS = nil`
+The backend embeds frontend assets from `internal/server/embed/public/`. If the UI looks stale or you’re missing expected files, regenerate the embedded assets:
+
+```bash
+go generate ./internal/server
+```
 
 ### 2) `.gitignore` patterns can hide whole directories
 

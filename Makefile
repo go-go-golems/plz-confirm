@@ -45,7 +45,7 @@ proto:
 codegen: proto ts-proto
 
 build: codegen
-	go generate ./... && go build -tags embed ./...
+	go generate ./... && go build ./...
 
 ci: buf-lint test frontend-check
 
@@ -72,5 +72,5 @@ bump-glazed:
 
 PLZ_CONFIRM_BINARY=$(shell which plz-confirm)
 install:
-	go generate ./... && go build -tags embed -o ./dist/plz-confirm ./cmd/plz-confirm && \
+	go generate ./... && go build -o ./dist/plz-confirm ./cmd/plz-confirm && \
 		cp ./dist/plz-confirm $(PLZ_CONFIRM_BINARY)
