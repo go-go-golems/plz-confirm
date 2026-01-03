@@ -1,8 +1,8 @@
-import React, { useEffect } from "react";
+import React from "react";
 import { Layout } from "@/components/Layout";
 import { WidgetRenderer } from "@/components/WidgetRenderer";
 import { useDispatch, useSelector } from "react-redux";
-import { RootState, setActiveRequest, addToHistory } from "@/store/store";
+import { RootState, enqueueRequest } from "@/store/store";
 import { MOCK_REQUESTS } from "@/services/mockData";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -19,12 +19,10 @@ export default function Home() {
 
   // Simulate receiving a new request if none is active
   const simulateNewRequest = (type: WidgetType) => {
-    if (active) return;
-
     const template = MOCK_REQUESTS.find(r => r.type === type);
     if (template) {
       dispatch(
-        setActiveRequest({
+        enqueueRequest({
           ...template,
           id: nanoid(),
           status: RequestStatus.pending,
@@ -54,7 +52,6 @@ export default function Home() {
                 size="sm"
                 className="cyber-button text-xs"
                 onClick={() => simulateNewRequest(WidgetType.confirm)}
-                disabled={!!active}
               >
                 CONFIRM_REQ
               </Button>
@@ -63,7 +60,6 @@ export default function Home() {
                 size="sm"
                 className="cyber-button text-xs"
                 onClick={() => simulateNewRequest(WidgetType.select)}
-                disabled={!!active}
               >
                 SELECT_REQ
               </Button>
@@ -72,7 +68,6 @@ export default function Home() {
                 size="sm"
                 className="cyber-button text-xs"
                 onClick={() => simulateNewRequest(WidgetType.table)}
-                disabled={!!active}
               >
                 TABLE_REQ
               </Button>
@@ -81,9 +76,8 @@ export default function Home() {
                 size="sm"
                 className="cyber-button text-xs"
                 onClick={() => {
-                  if (active) return;
                   dispatch(
-                    setActiveRequest({
+                    enqueueRequest({
                       id: nanoid(),
                       type: WidgetType.form,
                       sessionId: "mock",
@@ -110,7 +104,6 @@ export default function Home() {
                     })
                   );
                 }}
-                disabled={!!active}
               >
                 FORM_REQ
               </Button>
@@ -119,9 +112,8 @@ export default function Home() {
                 size="sm"
                 className="cyber-button text-xs"
                 onClick={() => {
-                  if (active) return;
                   dispatch(
-                    setActiveRequest({
+                    enqueueRequest({
                       id: nanoid(),
                       type: WidgetType.upload,
                       sessionId: "mock",
@@ -137,7 +129,6 @@ export default function Home() {
                     })
                   );
                 }}
-                disabled={!!active}
               >
                 UPLOAD_REQ
               </Button>
@@ -186,6 +177,31 @@ export default function Home() {
                           req.imageInput?.title ||
                           "UNKNOWN_REQUEST"}
                       </div>
+                      {(req.metadata?.cwd || req.metadata?.self?.comm) && (
+                        <div className="text-[10px] text-muted-foreground font-mono mb-2 line-clamp-1">
+                          <span
+                            title={[
+                              req.metadata?.cwd ? `cwd: ${req.metadata.cwd}` : "",
+                              req.metadata?.self?.comm
+                                ? `self: ${req.metadata.self.comm}`
+                                : "",
+                              req.metadata?.parents?.length
+                                ? `parents: ${req.metadata.parents
+                                    .map(p => p.comm ?? (p.pid ? String(p.pid) : ""))
+                                    .filter(Boolean)
+                                    .join(" <- ")}`
+                                : "",
+                            ]
+                              .filter(Boolean)
+                              .join("\n")}
+                          >
+                            {(req.metadata?.self?.comm ?? "proc") +
+                              (req.metadata?.cwd
+                                ? ` @ ${req.metadata.cwd}`
+                                : "")}
+                          </span>
+                        </div>
+                      )}
                       <div className="flex items-center gap-2">
                         {req.status === RequestStatus.completed ? (
                           <div className="flex items-center text-[10px] text-green-500">

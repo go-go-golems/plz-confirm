@@ -2,9 +2,8 @@ import {
   store,
   setConnected,
   setError,
-  setActiveRequest,
+  enqueueRequest,
   completeRequest,
-  addToHistory,
 } from "@/store/store";
 import { browserNotificationService } from "./notifications";
 import {
@@ -15,6 +14,21 @@ import { normalizeUIRequest } from "@/proto/normalize";
 
 let ws: WebSocket | null = null;
 let reconnectTimeout: NodeJS.Timeout | null = null;
+
+const MAX_KNOWN_COMPLETIONS = 512;
+const completedIds = new Set<string>();
+const completedOrder: string[] = [];
+
+const markCompleted = (requestId: string) => {
+  if (completedIds.has(requestId)) return;
+  completedIds.add(requestId);
+  completedOrder.push(requestId);
+  while (completedOrder.length > MAX_KNOWN_COMPLETIONS) {
+    const oldest = completedOrder.shift();
+    if (!oldest) continue;
+    completedIds.delete(oldest);
+  }
+};
 
 export const connectWebSocket = () => {
   const state = store.getState();
@@ -47,7 +61,7 @@ export const connectWebSocket = () => {
 
       if (data.type === "new_request") {
         const request: UIRequest = normalizeUIRequest(data.request);
-        store.dispatch(setActiveRequest(request));
+        store.dispatch(enqueueRequest(request));
 
         // Show browser notification for new request
         const requestTitle =
@@ -64,14 +78,10 @@ export const connectWebSocket = () => {
           String(requestTypeLabel)
         );
       } else if (data.type === "request_completed") {
-        // If another client completed it, or just to sync history
         const completedReq: UIRequest = normalizeUIRequest(data.request);
-        const currentActive = store.getState().request.active;
-        if (currentActive && currentActive.id === completedReq.id) {
-          store.dispatch(completeRequest(completedReq));
-        } else {
-          store.dispatch(addToHistory(completedReq));
-        }
+        if (completedIds.has(completedReq.id)) return;
+        markCompleted(completedReq.id);
+        store.dispatch(completeRequest(completedReq));
       }
     } catch (e) {
       console.error("Failed to parse WS message", e);
@@ -140,7 +150,12 @@ export const submitResponse = async (
     }
 
     const json = await response.json();
-    return normalizeUIRequest(json);
+    const completedReq = normalizeUIRequest(json);
+    if (!completedIds.has(requestId)) {
+      markCompleted(requestId);
+      store.dispatch(completeRequest(completedReq));
+    }
+    return completedReq;
   } catch (error) {
     console.error("Error submitting response:", error);
     throw error;

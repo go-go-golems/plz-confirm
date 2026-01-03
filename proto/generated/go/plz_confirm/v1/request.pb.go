@@ -143,6 +143,150 @@ func (WidgetType) EnumDescriptor() ([]byte, []int) {
 	return file_plz_confirm_v1_request_proto_rawDescGZIP(), []int{1}
 }
 
+type ProcessInfo struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Pid           int64                  `protobuf:"varint,1,opt,name=pid,proto3" json:"pid,omitempty"`
+	Ppid          *int64                 `protobuf:"varint,2,opt,name=ppid,proto3,oneof" json:"ppid,omitempty"`
+	Comm          *string                `protobuf:"bytes,3,opt,name=comm,proto3,oneof" json:"comm,omitempty"`
+	Argv          []string               `protobuf:"bytes,4,rep,name=argv,proto3" json:"argv,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ProcessInfo) Reset() {
+	*x = ProcessInfo{}
+	mi := &file_plz_confirm_v1_request_proto_msgTypes[0]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ProcessInfo) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ProcessInfo) ProtoMessage() {}
+
+func (x *ProcessInfo) ProtoReflect() protoreflect.Message {
+	mi := &file_plz_confirm_v1_request_proto_msgTypes[0]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ProcessInfo.ProtoReflect.Descriptor instead.
+func (*ProcessInfo) Descriptor() ([]byte, []int) {
+	return file_plz_confirm_v1_request_proto_rawDescGZIP(), []int{0}
+}
+
+func (x *ProcessInfo) GetPid() int64 {
+	if x != nil {
+		return x.Pid
+	}
+	return 0
+}
+
+func (x *ProcessInfo) GetPpid() int64 {
+	if x != nil && x.Ppid != nil {
+		return *x.Ppid
+	}
+	return 0
+}
+
+func (x *ProcessInfo) GetComm() string {
+	if x != nil && x.Comm != nil {
+		return *x.Comm
+	}
+	return ""
+}
+
+func (x *ProcessInfo) GetArgv() []string {
+	if x != nil {
+		return x.Argv
+	}
+	return nil
+}
+
+type RequestMetadata struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Cwd           *string                `protobuf:"bytes,1,opt,name=cwd,proto3,oneof" json:"cwd,omitempty"`
+	Self          *ProcessInfo           `protobuf:"bytes,2,opt,name=self,proto3,oneof" json:"self,omitempty"`
+	Parents       []*ProcessInfo         `protobuf:"bytes,3,rep,name=parents,proto3" json:"parents,omitempty"`
+	RemoteAddr    *string                `protobuf:"bytes,4,opt,name=remote_addr,json=remoteAddr,proto3,oneof" json:"remote_addr,omitempty"`
+	UserAgent     *string                `protobuf:"bytes,5,opt,name=user_agent,json=userAgent,proto3,oneof" json:"user_agent,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RequestMetadata) Reset() {
+	*x = RequestMetadata{}
+	mi := &file_plz_confirm_v1_request_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RequestMetadata) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RequestMetadata) ProtoMessage() {}
+
+func (x *RequestMetadata) ProtoReflect() protoreflect.Message {
+	mi := &file_plz_confirm_v1_request_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RequestMetadata.ProtoReflect.Descriptor instead.
+func (*RequestMetadata) Descriptor() ([]byte, []int) {
+	return file_plz_confirm_v1_request_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *RequestMetadata) GetCwd() string {
+	if x != nil && x.Cwd != nil {
+		return *x.Cwd
+	}
+	return ""
+}
+
+func (x *RequestMetadata) GetSelf() *ProcessInfo {
+	if x != nil {
+		return x.Self
+	}
+	return nil
+}
+
+func (x *RequestMetadata) GetParents() []*ProcessInfo {
+	if x != nil {
+		return x.Parents
+	}
+	return nil
+}
+
+func (x *RequestMetadata) GetRemoteAddr() string {
+	if x != nil && x.RemoteAddr != nil {
+		return *x.RemoteAddr
+	}
+	return ""
+}
+
+func (x *RequestMetadata) GetUserAgent() string {
+	if x != nil && x.UserAgent != nil {
+		return *x.UserAgent
+	}
+	return ""
+}
+
 // UIRequest - main request/response envelope
 type UIRequest struct {
 	state     protoimpl.MessageState `protogen:"open.v1"`
@@ -176,13 +320,14 @@ type UIRequest struct {
 	CompletedAt   *string            `protobuf:"bytes,18,opt,name=completed_at,json=completedAt,proto3,oneof" json:"completed_at,omitempty"`
 	ExpiresAt     string             `protobuf:"bytes,19,opt,name=expires_at,json=expiresAt,proto3" json:"expires_at,omitempty"` // RFC3339Nano timestamp
 	Error         *string            `protobuf:"bytes,20,opt,name=error,proto3,oneof" json:"error,omitempty"`
+	Metadata      *RequestMetadata   `protobuf:"bytes,21,opt,name=metadata,proto3,oneof" json:"metadata,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *UIRequest) Reset() {
 	*x = UIRequest{}
-	mi := &file_plz_confirm_v1_request_proto_msgTypes[0]
+	mi := &file_plz_confirm_v1_request_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -194,7 +339,7 @@ func (x *UIRequest) String() string {
 func (*UIRequest) ProtoMessage() {}
 
 func (x *UIRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_plz_confirm_v1_request_proto_msgTypes[0]
+	mi := &file_plz_confirm_v1_request_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -207,7 +352,7 @@ func (x *UIRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UIRequest.ProtoReflect.Descriptor instead.
 func (*UIRequest) Descriptor() ([]byte, []int) {
-	return file_plz_confirm_v1_request_proto_rawDescGZIP(), []int{0}
+	return file_plz_confirm_v1_request_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *UIRequest) GetId() string {
@@ -388,6 +533,13 @@ func (x *UIRequest) GetError() string {
 	return ""
 }
 
+func (x *UIRequest) GetMetadata() *RequestMetadata {
+	if x != nil {
+		return x.Metadata
+	}
+	return nil
+}
+
 type isUIRequest_Input interface {
 	isUIRequest_Input()
 }
@@ -472,7 +624,26 @@ var File_plz_confirm_v1_request_proto protoreflect.FileDescriptor
 
 const file_plz_confirm_v1_request_proto_rawDesc = "" +
 	"\n" +
-	"\x1cplz_confirm/v1/request.proto\x12\x0eplz_confirm.v1\x1a\x1cplz_confirm/v1/widgets.proto\"\xe8\b\n" +
+	"\x1cplz_confirm/v1/request.proto\x12\x0eplz_confirm.v1\x1a\x1cplz_confirm/v1/widgets.proto\"w\n" +
+	"\vProcessInfo\x12\x10\n" +
+	"\x03pid\x18\x01 \x01(\x03R\x03pid\x12\x17\n" +
+	"\x04ppid\x18\x02 \x01(\x03H\x00R\x04ppid\x88\x01\x01\x12\x17\n" +
+	"\x04comm\x18\x03 \x01(\tH\x01R\x04comm\x88\x01\x01\x12\x12\n" +
+	"\x04argv\x18\x04 \x03(\tR\x04argvB\a\n" +
+	"\x05_ppidB\a\n" +
+	"\x05_comm\"\x8f\x02\n" +
+	"\x0fRequestMetadata\x12\x15\n" +
+	"\x03cwd\x18\x01 \x01(\tH\x00R\x03cwd\x88\x01\x01\x124\n" +
+	"\x04self\x18\x02 \x01(\v2\x1b.plz_confirm.v1.ProcessInfoH\x01R\x04self\x88\x01\x01\x125\n" +
+	"\aparents\x18\x03 \x03(\v2\x1b.plz_confirm.v1.ProcessInfoR\aparents\x12$\n" +
+	"\vremote_addr\x18\x04 \x01(\tH\x02R\n" +
+	"remoteAddr\x88\x01\x01\x12\"\n" +
+	"\n" +
+	"user_agent\x18\x05 \x01(\tH\x03R\tuserAgent\x88\x01\x01B\x06\n" +
+	"\x04_cwdB\a\n" +
+	"\x05_selfB\x0e\n" +
+	"\f_remote_addrB\r\n" +
+	"\v_user_agent\"\xb7\t\n" +
 	"\tUIRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12.\n" +
 	"\x04type\x18\x02 \x01(\x0e2\x1a.plz_confirm.v1.WidgetTypeR\x04type\x12\x1d\n" +
@@ -501,11 +672,13 @@ const file_plz_confirm_v1_request_proto_rawDesc = "" +
 	"\fcompleted_at\x18\x12 \x01(\tH\x02R\vcompletedAt\x88\x01\x01\x12\x1d\n" +
 	"\n" +
 	"expires_at\x18\x13 \x01(\tR\texpiresAt\x12\x19\n" +
-	"\x05error\x18\x14 \x01(\tH\x03R\x05error\x88\x01\x01B\a\n" +
+	"\x05error\x18\x14 \x01(\tH\x03R\x05error\x88\x01\x01\x12@\n" +
+	"\bmetadata\x18\x15 \x01(\v2\x1f.plz_confirm.v1.RequestMetadataH\x04R\bmetadata\x88\x01\x01B\a\n" +
 	"\x05inputB\b\n" +
 	"\x06outputB\x0f\n" +
 	"\r_completed_atB\b\n" +
-	"\x06_error*c\n" +
+	"\x06_errorB\v\n" +
+	"\t_metadata*c\n" +
 	"\rRequestStatus\x12\x1e\n" +
 	"\x1arequest_status_unspecified\x10\x00\x12\v\n" +
 	"\apending\x10\x01\x12\r\n" +
@@ -537,44 +710,49 @@ func file_plz_confirm_v1_request_proto_rawDescGZIP() []byte {
 }
 
 var file_plz_confirm_v1_request_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_plz_confirm_v1_request_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
+var file_plz_confirm_v1_request_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
 var file_plz_confirm_v1_request_proto_goTypes = []any{
-	(RequestStatus)(0),    // 0: plz_confirm.v1.RequestStatus
-	(WidgetType)(0),       // 1: plz_confirm.v1.WidgetType
-	(*UIRequest)(nil),     // 2: plz_confirm.v1.UIRequest
-	(*ConfirmInput)(nil),  // 3: plz_confirm.v1.ConfirmInput
-	(*SelectInput)(nil),   // 4: plz_confirm.v1.SelectInput
-	(*FormInput)(nil),     // 5: plz_confirm.v1.FormInput
-	(*UploadInput)(nil),   // 6: plz_confirm.v1.UploadInput
-	(*TableInput)(nil),    // 7: plz_confirm.v1.TableInput
-	(*ImageInput)(nil),    // 8: plz_confirm.v1.ImageInput
-	(*ConfirmOutput)(nil), // 9: plz_confirm.v1.ConfirmOutput
-	(*SelectOutput)(nil),  // 10: plz_confirm.v1.SelectOutput
-	(*FormOutput)(nil),    // 11: plz_confirm.v1.FormOutput
-	(*UploadOutput)(nil),  // 12: plz_confirm.v1.UploadOutput
-	(*TableOutput)(nil),   // 13: plz_confirm.v1.TableOutput
-	(*ImageOutput)(nil),   // 14: plz_confirm.v1.ImageOutput
+	(RequestStatus)(0),      // 0: plz_confirm.v1.RequestStatus
+	(WidgetType)(0),         // 1: plz_confirm.v1.WidgetType
+	(*ProcessInfo)(nil),     // 2: plz_confirm.v1.ProcessInfo
+	(*RequestMetadata)(nil), // 3: plz_confirm.v1.RequestMetadata
+	(*UIRequest)(nil),       // 4: plz_confirm.v1.UIRequest
+	(*ConfirmInput)(nil),    // 5: plz_confirm.v1.ConfirmInput
+	(*SelectInput)(nil),     // 6: plz_confirm.v1.SelectInput
+	(*FormInput)(nil),       // 7: plz_confirm.v1.FormInput
+	(*UploadInput)(nil),     // 8: plz_confirm.v1.UploadInput
+	(*TableInput)(nil),      // 9: plz_confirm.v1.TableInput
+	(*ImageInput)(nil),      // 10: plz_confirm.v1.ImageInput
+	(*ConfirmOutput)(nil),   // 11: plz_confirm.v1.ConfirmOutput
+	(*SelectOutput)(nil),    // 12: plz_confirm.v1.SelectOutput
+	(*FormOutput)(nil),      // 13: plz_confirm.v1.FormOutput
+	(*UploadOutput)(nil),    // 14: plz_confirm.v1.UploadOutput
+	(*TableOutput)(nil),     // 15: plz_confirm.v1.TableOutput
+	(*ImageOutput)(nil),     // 16: plz_confirm.v1.ImageOutput
 }
 var file_plz_confirm_v1_request_proto_depIdxs = []int32{
-	1,  // 0: plz_confirm.v1.UIRequest.type:type_name -> plz_confirm.v1.WidgetType
-	3,  // 1: plz_confirm.v1.UIRequest.confirm_input:type_name -> plz_confirm.v1.ConfirmInput
-	4,  // 2: plz_confirm.v1.UIRequest.select_input:type_name -> plz_confirm.v1.SelectInput
-	5,  // 3: plz_confirm.v1.UIRequest.form_input:type_name -> plz_confirm.v1.FormInput
-	6,  // 4: plz_confirm.v1.UIRequest.upload_input:type_name -> plz_confirm.v1.UploadInput
-	7,  // 5: plz_confirm.v1.UIRequest.table_input:type_name -> plz_confirm.v1.TableInput
-	8,  // 6: plz_confirm.v1.UIRequest.image_input:type_name -> plz_confirm.v1.ImageInput
-	9,  // 7: plz_confirm.v1.UIRequest.confirm_output:type_name -> plz_confirm.v1.ConfirmOutput
-	10, // 8: plz_confirm.v1.UIRequest.select_output:type_name -> plz_confirm.v1.SelectOutput
-	11, // 9: plz_confirm.v1.UIRequest.form_output:type_name -> plz_confirm.v1.FormOutput
-	12, // 10: plz_confirm.v1.UIRequest.upload_output:type_name -> plz_confirm.v1.UploadOutput
-	13, // 11: plz_confirm.v1.UIRequest.table_output:type_name -> plz_confirm.v1.TableOutput
-	14, // 12: plz_confirm.v1.UIRequest.image_output:type_name -> plz_confirm.v1.ImageOutput
-	0,  // 13: plz_confirm.v1.UIRequest.status:type_name -> plz_confirm.v1.RequestStatus
-	14, // [14:14] is the sub-list for method output_type
-	14, // [14:14] is the sub-list for method input_type
-	14, // [14:14] is the sub-list for extension type_name
-	14, // [14:14] is the sub-list for extension extendee
-	0,  // [0:14] is the sub-list for field type_name
+	2,  // 0: plz_confirm.v1.RequestMetadata.self:type_name -> plz_confirm.v1.ProcessInfo
+	2,  // 1: plz_confirm.v1.RequestMetadata.parents:type_name -> plz_confirm.v1.ProcessInfo
+	1,  // 2: plz_confirm.v1.UIRequest.type:type_name -> plz_confirm.v1.WidgetType
+	5,  // 3: plz_confirm.v1.UIRequest.confirm_input:type_name -> plz_confirm.v1.ConfirmInput
+	6,  // 4: plz_confirm.v1.UIRequest.select_input:type_name -> plz_confirm.v1.SelectInput
+	7,  // 5: plz_confirm.v1.UIRequest.form_input:type_name -> plz_confirm.v1.FormInput
+	8,  // 6: plz_confirm.v1.UIRequest.upload_input:type_name -> plz_confirm.v1.UploadInput
+	9,  // 7: plz_confirm.v1.UIRequest.table_input:type_name -> plz_confirm.v1.TableInput
+	10, // 8: plz_confirm.v1.UIRequest.image_input:type_name -> plz_confirm.v1.ImageInput
+	11, // 9: plz_confirm.v1.UIRequest.confirm_output:type_name -> plz_confirm.v1.ConfirmOutput
+	12, // 10: plz_confirm.v1.UIRequest.select_output:type_name -> plz_confirm.v1.SelectOutput
+	13, // 11: plz_confirm.v1.UIRequest.form_output:type_name -> plz_confirm.v1.FormOutput
+	14, // 12: plz_confirm.v1.UIRequest.upload_output:type_name -> plz_confirm.v1.UploadOutput
+	15, // 13: plz_confirm.v1.UIRequest.table_output:type_name -> plz_confirm.v1.TableOutput
+	16, // 14: plz_confirm.v1.UIRequest.image_output:type_name -> plz_confirm.v1.ImageOutput
+	0,  // 15: plz_confirm.v1.UIRequest.status:type_name -> plz_confirm.v1.RequestStatus
+	3,  // 16: plz_confirm.v1.UIRequest.metadata:type_name -> plz_confirm.v1.RequestMetadata
+	17, // [17:17] is the sub-list for method output_type
+	17, // [17:17] is the sub-list for method input_type
+	17, // [17:17] is the sub-list for extension type_name
+	17, // [17:17] is the sub-list for extension extendee
+	0,  // [0:17] is the sub-list for field type_name
 }
 
 func init() { file_plz_confirm_v1_request_proto_init() }
@@ -583,7 +761,9 @@ func file_plz_confirm_v1_request_proto_init() {
 		return
 	}
 	file_plz_confirm_v1_widgets_proto_init()
-	file_plz_confirm_v1_request_proto_msgTypes[0].OneofWrappers = []any{
+	file_plz_confirm_v1_request_proto_msgTypes[0].OneofWrappers = []any{}
+	file_plz_confirm_v1_request_proto_msgTypes[1].OneofWrappers = []any{}
+	file_plz_confirm_v1_request_proto_msgTypes[2].OneofWrappers = []any{
 		(*UIRequest_ConfirmInput)(nil),
 		(*UIRequest_SelectInput)(nil),
 		(*UIRequest_FormInput)(nil),
@@ -603,7 +783,7 @@ func file_plz_confirm_v1_request_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_plz_confirm_v1_request_proto_rawDesc), len(file_plz_confirm_v1_request_proto_rawDesc)),
 			NumEnums:      2,
-			NumMessages:   1,
+			NumMessages:   3,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

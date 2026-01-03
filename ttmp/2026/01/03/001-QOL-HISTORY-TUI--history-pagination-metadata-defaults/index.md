@@ -34,6 +34,12 @@ RelatedFiles:
     Note: Redux history is unbounded; limit/pagination likely starts here
   - Path: agent-ui-system/client/src/pages/Home.tsx
     Note: History panel rendering (ScrollArea + full list)
+  - Path: Makefile
+    Note: Dev targets for running Go backend + Vite frontend
+  - Path: scripts/tmux-up.sh
+    Note: tmux session helper to run backend (:3001) and Vite (:3000)
+  - Path: ttmp/2026/01/03/001-QOL-HISTORY-TUI--history-pagination-metadata-defaults/scripts/seed-requests-with-metadata.sh
+    Note: Ticket-local script to seed multiple pending requests via CLI (for reproducing history/queue behavior)
 ExternalSources: []
 Summary: "Research + design notes to add bounded/paginated request history, per-request metadata, and widget-level defaults with timeouts."
 LastUpdated: 2026-01-03T00:00:00Z
@@ -55,4 +61,4 @@ This ticket is a codebase tour and implementation plan for:
 - See `analysis/01-history-and-metadata-architecture.md` for the deep dive.
 - See `reference/01-diary.md` for the research diary (frequent steps + commands run).
 - See `tasks.md` for an actionable checklist.
-
+ - For manual UI repro/verification, run `make dev-tmux` and then seed requests with `ttmp/2026/01/03/001-QOL-HISTORY-TUI--history-pagination-metadata-defaults/scripts/seed-requests-with-metadata.sh`.

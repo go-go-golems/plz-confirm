@@ -1,6 +1,7 @@
-title: "👷 ci: remove nancy scan"
+title: "👷 ci: ignore generated files in gosec"
 description: |
-  Remove the Nancy vulnerability scan job from GitHub Actions dependency scanning.
+  Configure gosec to skip generated Go files (e.g. protobuf `*.pb.go`) so CI
+  doesn’t fail on generated unsafe usage.
 
   Tests:
-  - N/A (workflow change only)
+  - make gosec

@@ -1,6 +1,6 @@
 import React from "react";
-import { useSelector, useDispatch } from "react-redux";
-import { RootState, completeRequest } from "@/store/store";
+import { useSelector } from "react-redux";
+import { RootState } from "@/store/store";
 import { submitResponse } from "@/services/websocket";
 import { ConfirmDialog } from "./widgets/ConfirmDialog";
 import { SelectDialog } from "./widgets/SelectDialog";
@@ -13,7 +13,6 @@ import { WidgetType } from "@/proto/generated/plz_confirm/v1/request";
 
 export const WidgetRenderer: React.FC = () => {
   const { active, loading } = useSelector((state: RootState) => state.request);
-  const dispatch = useDispatch();
 
   if (!active) {
     return (
@@ -34,8 +33,7 @@ export const WidgetRenderer: React.FC = () => {
 
   const handleSubmit = async (output: any) => {
     try {
-      const completedReq = await submitResponse(active.id, active.type, output);
-      dispatch(completeRequest(completedReq));
+      await submitResponse(active.id, active.type, output);
     } catch (error) {
       console.error("Failed to submit response", error);
       // Ideally show error toast here

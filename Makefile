@@ -1,4 +1,4 @@
-.PHONY: gifs proto ts-proto codegen frontend-check buf-lint test build install ci
+.PHONY: gifs proto ts-proto codegen frontend-check buf-lint test build install ci dev-backend dev-frontend dev-tmux
 
 all: gifs
 
@@ -23,7 +23,7 @@ lintmax:
 
 gosec:
 	go install github.com/securego/gosec/v2/cmd/gosec@latest
-	gosec -exclude=G101,G304,G301,G306 -exclude-dir=.history ./...
+	gosec -exclude-generated -exclude=G101,G304,G301,G306 -exclude-dir=.history ./...
 
 govulncheck:
 	go install golang.org/x/vuln/cmd/govulncheck@latest
@@ -56,6 +56,18 @@ build: codegen
 	go generate ./... && go build -tags embed ./...
 
 ci: buf-lint test frontend-check
+
+DEV_API_ADDR ?= :3001
+DEV_UI_PORT ?= 3000
+
+dev-backend:
+	go run ./cmd/plz-confirm serve --addr "$(DEV_API_ADDR)"
+
+dev-frontend: $(AGENT_UI_DIR)/node_modules/.bin/vite
+	pnpm -C $(AGENT_UI_DIR) dev --host --port "$(DEV_UI_PORT)"
+
+dev-tmux:
+	API_ADDR="$(DEV_API_ADDR)" UI_PORT="$(DEV_UI_PORT)" bash scripts/tmux-up.sh
 
 goreleaser:
 	goreleaser release --skip=sign --snapshot --clean
