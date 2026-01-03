@@ -29,24 +29,31 @@ Before touching code, internalize these two “shapes”. Almost everything in p
 
 ### 1) The request/response contract (`/api/requests`)
 
-The CLI creates a request with JSON:
+The CLI creates a request by sending `protojson(UIRequest)`:
 
 ```text
 POST /api/requests
 {
-  "type": "<widget-type>",
-  "sessionId": "global",
-  "input": { ...widget-specific... },
-  "timeout": 300
+  "type": "<widget-type>",     // enum name string, e.g. "form"
+  "sessionId": "global",       // optional; server currently ignores sessions
+
+  // EXACTLY ONE input oneof field must be set:
+  "formInput": { ...widget-specific... },
+
+  // Optional: hint for server-side expiration (RFC3339Nano). If omitted, server defaults.
+  "expiresAt": "2026-01-03T18:15:00Z"
 }
 ```
 
-The UI completes the request with JSON:
+The UI completes the request by sending `protojson(UIRequest)` with an output oneof:
 
 ```text
 POST /api/requests/{id}/response
 {
-  "output": { ...widget-specific... }
+  "type": "<widget-type>",     // optional (server validates output against stored request type)
+
+  // EXACTLY ONE output oneof field must be set:
+  "formOutput": { ...widget-specific... }
 }
 ```
 
@@ -113,7 +120,7 @@ Typed schemas prevent “shape drift”. In plz-confirm, the single source of tr
 
 ### Step 2: Add server endpoints (only if the widget needs them)
 
-Most widgets don’t need custom server logic: `/api/requests` already supports arbitrary JSON payloads.
+Most widgets don’t need custom server logic: `/api/requests` already supports all widget types via the shared `protojson(UIRequest)` contract.
 
 You add server endpoints when you need:
 - binary uploads (files, images)

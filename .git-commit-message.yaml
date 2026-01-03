@@ -1,8 +1,20 @@
-title: "📝 docs: add WS/REST protocol analysis and expiresAt tasks"
+title: "💥 api: switch REST bodies to protojson(UIRequest)"
 description: |
-  Added a protocol analysis document covering WebSocket vs REST and how the CLI and UI interact with the backend.
+  Breaking change: removed the legacy REST wrapper JSON shapes.
+  - POST /api/requests now expects protojson(UIRequest) with an input oneof (confirmInput/selectInput/...)
+  - POST /api/requests/{id}/response now expects protojson(UIRequest) with an output oneof (confirmOutput/selectOutput/...)
 
-  Added ticket tasks for making `expiresAt` an enforceable UI timeout (countdown + stop-on-interaction) and for a default timeout response.
+  Updated all in-repo callers:
+  - Go CLI client now sends protojson(UIRequest) on create
+  - Web UI now wraps outputs as UIRequest oneof fields on submit
+  - Smoke scripts updated to new payloads
+  - adding-widgets docs updated to match
+
+  Removed server-side legacy conversion layer: internal/server/proto_convert.go
 
   Tests:
-  - Not run (docs-only change)
+  - go test ./... -count=1 (pass)
+  - pnpm -C agent-ui-system run check (pass)
+  - API_BASE_URL=http://localhost:3001 bash scripts/curl-inspector-smoke.sh (pass)
+  - UI_BASE_URL=http://localhost:3001 API_BASE_URL=http://localhost:3001 bash ttmp/2025/12/24/001-ADD-IMG-WIDGET--add-image-widget-to-cli-and-web-interface/scripts/auto-e2e-cli-via-api.sh (pass)
+  - UI_BASE_URL=http://localhost:3001 API_BASE_URL=http://localhost:3001 bash ttmp/2025/12/24/004-ADD-WIDGET-COMMENT--add-freeform-comment-field-to-all-widgets/scripts/auto-e2e-comment-via-api.sh (pass)
