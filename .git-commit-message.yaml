@@ -1,8 +1,12 @@
-title: "👷 ci: run go generate before golangci-lint"
+title: "🐛 server: dev disk fallback for SPA assets"
 description: |
-  The Go server embeds frontend assets via `go:embed`, which requires generated files to exist at typecheck time.
-  Update the `golangci-lint` GitHub Actions workflow to install pnpm deps and run `go generate ./internal/server`
-  before `golangci-lint-action@v7` runs.
+  Fix CI/typecheck failures caused by `go:embed` when `internal/server/embed/public` is not present in fresh checkouts.
+
+  Changes:
+  - Restore `-tags embed` gated embedding for production builds
+  - In default builds, serve static assets from disk if `internal/server/embed/public/index.html` exists
+  - Make the static-serving test use an in-memory FS (no dependency on generated assets)
+  - Re-align `Makefile` and docs to use `-tags embed` for embedded builds
 
   Tests:
   - go test ./... -count=1 (pass)

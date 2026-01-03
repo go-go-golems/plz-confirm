@@ -250,7 +250,9 @@ If you want to inspect behavior, tail the logs. For example, server logs include
 
 ### 1) Frontend assets embedding can break `go test` in fresh clones
 
-The backend embeds frontend assets from `internal/server/embed/public/`. If the UI looks stale or you’re missing expected files, regenerate the embedded assets:
+The backend embeds frontend assets from `internal/server/embed/public/` when built with `-tags embed`. In default builds it will try a best-effort disk fallback to that same directory if it exists.
+
+If the UI looks stale or you’re missing expected files, regenerate the assets:
 
 ```bash
 go generate ./internal/server

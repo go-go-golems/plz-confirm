@@ -4,11 +4,24 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"testing/fstest"
 
 	"github.com/go-go-golems/plz-confirm/internal/store"
 )
 
 func TestStaticServing_Index(t *testing.T) {
+	oldFS := embeddedPublicFS
+	t.Cleanup(func() {
+		embeddedPublicFS = oldFS
+	})
+
+	embeddedPublicFS = fstest.MapFS{
+		"index.html": &fstest.MapFile{
+			Data: []byte(`<!doctype html><html><body><div id="root"></div></body></html>`),
+			Mode: 0o644,
+		},
+	}
+
 	srv := New(store.New())
 	h := srv.Handler()
 
