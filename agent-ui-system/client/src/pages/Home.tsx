@@ -1,8 +1,8 @@
-import React, { useEffect } from "react";
+import React from "react";
 import { Layout } from "@/components/Layout";
 import { WidgetRenderer } from "@/components/WidgetRenderer";
 import { useDispatch, useSelector } from "react-redux";
-import { RootState, setActiveRequest } from "@/store/store";
+import { RootState, enqueueRequest } from "@/store/store";
 import { MOCK_REQUESTS } from "@/services/mockData";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -22,7 +22,7 @@ export default function Home() {
     const template = MOCK_REQUESTS.find(r => r.type === type);
     if (template) {
       dispatch(
-        setActiveRequest({
+        enqueueRequest({
           ...template,
           id: nanoid(),
           status: RequestStatus.pending,
@@ -77,7 +77,7 @@ export default function Home() {
                 className="cyber-button text-xs"
                 onClick={() => {
                   dispatch(
-                    setActiveRequest({
+                    enqueueRequest({
                       id: nanoid(),
                       type: WidgetType.form,
                       sessionId: "mock",
@@ -113,7 +113,7 @@ export default function Home() {
                 className="cyber-button text-xs"
                 onClick={() => {
                   dispatch(
-                    setActiveRequest({
+                    enqueueRequest({
                       id: nanoid(),
                       type: WidgetType.upload,
                       sessionId: "mock",

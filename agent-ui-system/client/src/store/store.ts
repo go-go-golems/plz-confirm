@@ -36,12 +36,14 @@ const sessionSlice = createSlice({
 // Request Slice
 interface RequestState {
   active: UIRequest | null;
+  pending: UIRequest[];
   history: UIRequest[];
   loading: boolean;
 }
 
 const initialRequestState: RequestState = {
   active: null,
+  pending: [],
   history: [],
   loading: false
 };
@@ -53,15 +55,38 @@ const requestSlice = createSlice({
     setActiveRequest: (state: RequestState, action: PayloadAction<UIRequest | null>) => {
       state.active = action.payload;
     },
+    enqueueRequest: (state: RequestState, action: PayloadAction<UIRequest>) => {
+      const incoming = action.payload;
+
+      if (state.active?.id === incoming.id) return;
+      if (state.pending.some((r) => r.id === incoming.id)) return;
+      if (state.history.some((r) => r.id === incoming.id)) return;
+
+      if (!state.active) {
+        state.active = incoming;
+        return;
+      }
+      state.pending.push(incoming);
+    },
     completeRequest: (state: RequestState, action: PayloadAction<UIRequest>) => {
       const completedReq = action.payload;
-      if (state.active && state.active.id === completedReq.id) {
+      if (state.active?.id === completedReq.id) {
         state.active = null;
       }
+
+      state.pending = state.pending.filter((r) => r.id !== completedReq.id);
+
+      state.history = state.history.filter((r) => r.id !== completedReq.id);
       state.history.unshift(completedReq);
+
+      if (!state.active && state.pending.length > 0) {
+        state.active = state.pending.shift() ?? null;
+      }
     },
     addToHistory: (state: RequestState, action: PayloadAction<UIRequest>) => {
-      state.history.unshift(action.payload);
+      const req = action.payload;
+      state.history = state.history.filter((r) => r.id !== req.id);
+      state.history.unshift(req);
     }
   }
 });
@@ -100,5 +125,6 @@ export type RootState = ReturnType<typeof store.getState>;
 export type AppDispatch = typeof store.dispatch;
 
 export const { setConnected, setError } = sessionSlice.actions;
-export const { setActiveRequest, completeRequest, addToHistory } = requestSlice.actions;
+export const { setActiveRequest, enqueueRequest, completeRequest, addToHistory } =
+  requestSlice.actions;
 export const { addNotification, removeNotification } = notificationSlice.actions;

@@ -1,7 +1,8 @@
-title: "📝 docs: close request metadata ticket"
+title: "🐛 fix: dedupe UI history + queue requests"
 description: |
-  Update ticket `003-REQUEST-METADATA` docs (diary/index/changelog) to reflect the
-  completed implementation and close the ticket.
+  Fix duplicate entries in the web UI request history by making completion updates
+  idempotent by request id and by routing WS `request_completed` through the same
+  completion reducer.
 
   Tests:
-  - N/A (docs only)
+  - make ci

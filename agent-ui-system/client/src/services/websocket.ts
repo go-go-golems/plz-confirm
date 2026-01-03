@@ -2,9 +2,8 @@ import {
   store,
   setConnected,
   setError,
-  setActiveRequest,
+  enqueueRequest,
   completeRequest,
-  addToHistory,
 } from "@/store/store";
 import { browserNotificationService } from "./notifications";
 import {
@@ -47,7 +46,7 @@ export const connectWebSocket = () => {
 
       if (data.type === "new_request") {
         const request: UIRequest = normalizeUIRequest(data.request);
-        store.dispatch(setActiveRequest(request));
+        store.dispatch(enqueueRequest(request));
 
         // Show browser notification for new request
         const requestTitle =
@@ -64,14 +63,8 @@ export const connectWebSocket = () => {
           String(requestTypeLabel)
         );
       } else if (data.type === "request_completed") {
-        // If another client completed it, or just to sync history
         const completedReq: UIRequest = normalizeUIRequest(data.request);
-        const currentActive = store.getState().request.active;
-        if (currentActive && currentActive.id === completedReq.id) {
-          store.dispatch(completeRequest(completedReq));
-        } else {
-          store.dispatch(addToHistory(completedReq));
-        }
+        store.dispatch(completeRequest(completedReq));
       }
     } catch (e) {
       console.error("Failed to parse WS message", e);
