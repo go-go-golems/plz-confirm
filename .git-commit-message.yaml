@@ -1,7 +1,6 @@
-title: "📝 docs: add prescribe PR playbook"
+title: "👷 ci: remove nancy scan"
 description: |
-  Add a ticket-local playbook documenting how to create a PR using `prescribe`
-  (including recommended filters and `PINOCCHIO_PROFILE=gemini-2.5-pro`).
+  Remove the Nancy vulnerability scan job from GitHub Actions dependency scanning.
 
   Tests:
-  - N/A (docs only)
+  - N/A (workflow change only)
