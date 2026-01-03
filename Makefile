@@ -4,6 +4,10 @@ all: gifs
 
 VERSION=v0.1.14
 
+AGENT_UI_DIR=agent-ui-system
+AGENT_UI_TSC_BIN=$(AGENT_UI_DIR)/node_modules/.bin/tsc
+AGENT_UI_TS_PROTO_BIN=$(AGENT_UI_DIR)/node_modules/.bin/protoc-gen-ts_proto
+
 TAPES=$(wildcard doc/vhs/*tape)
 gifs: $(TAPES)
 	for i in $(TAPES); do vhs < $$i; done
@@ -28,14 +32,18 @@ govulncheck:
 test:
 	go test ./... -count=1
 
-frontend-check:
-	pnpm -C agent-ui-system run check
+frontend-check: $(AGENT_UI_TSC_BIN)
+	pnpm -C $(AGENT_UI_DIR) run check
 
 buf-lint:
 	buf lint .
 
-ts-proto:
-	pnpm -C agent-ui-system run proto
+$(AGENT_UI_DIR)/node_modules/.bin/%: $(AGENT_UI_DIR)/package.json $(AGENT_UI_DIR)/pnpm-lock.yaml
+	@command -v pnpm >/dev/null || (echo "pnpm is required (https://pnpm.io/installation)" && exit 1)
+	pnpm -C $(AGENT_UI_DIR) install --frozen-lockfile
+
+ts-proto: $(AGENT_UI_TS_PROTO_BIN)
+	pnpm -C $(AGENT_UI_DIR) run proto
 
 proto:
 	protoc --proto_path=proto --proto_path=/usr/include \
