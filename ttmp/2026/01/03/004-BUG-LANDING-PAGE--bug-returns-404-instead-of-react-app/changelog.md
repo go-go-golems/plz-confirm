@@ -14,3 +14,8 @@ Fix static serving: go run ./cmd/plz-confirm serve now serves the embedded React
 - /home/manuel/workspaces/2026-01-03/plz-confirm-improvements/plz-confirm/Makefile — Stop using -tags embed for build/install
 - /home/manuel/workspaces/2026-01-03/plz-confirm-improvements/plz-confirm/internal/server/embed.go — Removed build-tag gating so embeddedPublicFS is always available
 - /home/manuel/workspaces/2026-01-03/plz-confirm-improvements/plz-confirm/internal/server/server_static_test.go — Guard against regressions to 404 on /
+
+## 2026-01-03
+
+Closed: landing page fix implemented (code f83d67c41a04a5b4fb263379f6ba42900aea4af4, docs 96698bedf077ecc28ef1ba418a117b294c4b1131).
+

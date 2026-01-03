@@ -114,3 +114,34 @@ The impact is a smoother “single-process” workflow: running the backend dire
   - `go run ./cmd/plz-confirm serve --addr :3005`
   - `curl -i http://localhost:3005/`
   - `go test ./... -count=1`
+
+## Step 3: Close ticket 004
+
+This step closed the ticket now that the fix, tests, and documentation are in place and committed. The impact is simply bookkeeping: it makes it easier to see which workstreams are actually still open.
+
+### What I did
+- Closed the ticket with a changelog entry pointing at the code and docs commits.
+
+### Why
+- Avoid leaving completed bugfix tickets in an “active” state.
+
+### What worked
+- `docmgr ticket close --ticket 004-BUG-LANDING-PAGE` updated status to `complete` and refreshed `LastUpdated`.
+
+### What didn't work
+- N/A
+
+### What I learned
+- N/A
+
+### What was tricky to build
+- N/A
+
+### What warrants a second pair of eyes
+- N/A
+
+### What should be done in the future
+- N/A
+
+### Code review instructions
+- N/A

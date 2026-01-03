@@ -1,3 +1,6 @@
-title: "📝 docs: record ticket 004 bugfix"
+title: "📝 docs: close recent tickets"
 description: |
-  Record the investigation + fix for `004-BUG-LANDING-PAGE`, including analysis, tasks, related files, and diary updates (with the code commit hash).
+  Close `004-BUG-LANDING-PAGE` and `001-ADD-BROWSER-NOTIFICATIONS`, and clean up remaining open task bookkeeping for `004-ADD-WIDGET-COMMENT`.
+
+  Tests:
+  - N/A (docmgr bookkeeping only)

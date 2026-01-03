@@ -1,7 +1,7 @@
 ---
 Title: 'BUG: / returns 404 instead of React app'
 Ticket: 004-BUG-LANDING-PAGE
-Status: active
+Status: complete
 Topics:
     - web
     - backend
@@ -25,10 +25,11 @@ RelatedFiles:
       Note: Update dev docs to match embedding contract
 ExternalSources: []
 Summary: ""
-LastUpdated: 2026-01-03T14:54:28.739987847-05:00
+LastUpdated: 2026-01-03T15:09:27.595471513-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 
 # BUG: / returns 404 instead of React app

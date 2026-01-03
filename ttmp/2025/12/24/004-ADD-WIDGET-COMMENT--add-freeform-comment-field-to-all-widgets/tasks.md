@@ -51,6 +51,6 @@
 
 ### 5) Ticket hygiene
 
-- [ ] Update ticket changelog + diary/reference as needed
+- [x] Update ticket changelog + diary/reference as needed
 - [x] Mark all completed checkboxes in this `tasks.md`
 
