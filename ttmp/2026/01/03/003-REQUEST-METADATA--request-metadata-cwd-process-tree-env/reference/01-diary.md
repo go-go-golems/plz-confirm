@@ -11,13 +11,20 @@ Topics:
 DocType: reference
 Intent: long-term
 Owners: []
-RelatedFiles: []
+RelatedFiles:
+    - Path: internal/metadata/metadata_test.go
+      Note: Metadata collection regression test
+    - Path: internal/metadata/process_linux.go
+      Note: Linux /proc-based parent chain collector
+    - Path: internal/metadata/process_other.go
+      Note: Non-Linux stub collector
 ExternalSources: []
 Summary: ""
 LastUpdated: 2026-01-03T16:23:22.375016029-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 # Diary
 
@@ -47,7 +54,7 @@ This step adds a protobuf-backed metadata envelope to requests and populates it 
 
 The impact is better observability and a foundation for richer history UX without changing the core request/response flow.
 
-**Commit (code):** <pending>
+**Commit (code):** 865bcf1d4d7a1f862cce7dd3ce03a20c1ef1bd56 — "✨ metadata: attach request provenance to UIRequest"
 
 ### What I did
 - Extended `proto/plz_confirm/v1/request.proto` with `RequestMetadata` + `ProcessInfo` and added `UIRequest.metadata`.
@@ -86,3 +93,34 @@ The impact is better observability and a foundation for richer history UX withou
 ### Code review instructions
 - Start with `proto/plz_confirm/v1/request.proto`, then `internal/metadata/*`, then follow the wiring in `internal/client/client.go` and `internal/server/server.go`.
 - Validate by running `API_BASE_URL=http://localhost:3001 bash scripts/curl-inspector-smoke.sh`.
+
+## Step 2: Close ticket 003
+
+This step closed the ticket after all tasks were completed and the implementation was committed. The impact is ticket hygiene: it keeps the active ticket list meaningful.
+
+### What I did
+- Closed the ticket with a changelog entry referencing the implementation commit.
+
+### Why
+- Avoid leaving finished work in an “active” state.
+
+### What worked
+- `docmgr ticket close --ticket 003-REQUEST-METADATA` updated status to `complete`.
+
+### What didn't work
+- N/A
+
+### What I learned
+- N/A
+
+### What was tricky to build
+- N/A
+
+### What warrants a second pair of eyes
+- N/A
+
+### What should be done in the future
+- N/A
+
+### Code review instructions
+- N/A
