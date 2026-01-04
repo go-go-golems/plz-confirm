@@ -27,6 +27,7 @@ var _ cmds.GlazeCommand = &FormCommand{}
 
 type FormSettings struct {
 	BaseURL     string `glazed.parameter:"base-url"`
+	SessionID   string `glazed.parameter:"session-id"`
 	TimeoutS    int    `glazed.parameter:"timeout"`
 	WaitTimeout int    `glazed.parameter:"wait-timeout"`
 
@@ -45,6 +46,12 @@ func NewFormCommand(layersList ...layers.ParameterLayer) (*FormCommand, error) {
 				parameters.ParameterTypeString,
 				parameters.WithDefault("http://localhost:3000"),
 				parameters.WithHelp("Base URL (default: http://localhost:3000)"),
+			),
+			parameters.NewParameterDefinition(
+				"session-id",
+				parameters.ParameterTypeString,
+				parameters.WithDefault("global"),
+				parameters.WithHelp("Session ID (used for WebSocket scoping)"),
 			),
 			parameters.NewParameterDefinition(
 				"timeout",
@@ -124,7 +131,7 @@ func (c *FormCommand) RunIntoGlazeProcessor(
 	cl := client.New(settings.BaseURL)
 	created, err := cl.CreateRequest(ctx, client.CreateRequestParams{
 		Type:      v1.WidgetType_form,
-		SessionID: "global", // ignored by server; kept for compatibility
+		SessionID: settings.SessionID,
 		Input: &v1.FormInput{
 			Title:  settings.Title,
 			Schema: schemaPB,
@@ -138,6 +145,13 @@ func (c *FormCommand) RunIntoGlazeProcessor(
 	completed, err := cl.WaitRequest(ctx, created.Id, settings.WaitTimeout)
 	if err != nil {
 		return errors.Wrap(err, "wait for form response")
+	}
+
+	if completed.Status == v1.RequestStatus_timeout {
+		return errors.Errorf("request %s timed out: %s", created.Id, completed.GetError())
+	}
+	if completed.Status != v1.RequestStatus_completed {
+		return errors.Errorf("request %s ended with status=%s", created.Id, completed.Status.String())
 	}
 
 	out := completed.GetFormOutput()

@@ -10,11 +10,13 @@ interface SessionState {
   error: string | null;
 }
 
-// Use a fixed session ID for the demo to match the CLI script
-const DEMO_SESSION_ID = "550e8400-e29b-41d4-a716-446655440000";
+const DEFAULT_SESSION_ID = (() => {
+  if (typeof window === "undefined") return "global";
+  return new URLSearchParams(window.location.search).get("sessionId") ?? "global";
+})();
 
 const initialSessionState: SessionState = {
-  id: DEMO_SESSION_ID,
+  id: DEFAULT_SESSION_ID,
   connected: false,
   reconnecting: false,
   error: null

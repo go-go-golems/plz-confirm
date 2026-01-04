@@ -24,6 +24,7 @@ var _ cmds.GlazeCommand = &ImageCommand{}
 
 type ImageSettings struct {
 	BaseURL     string `glazed.parameter:"base-url"`
+	SessionID   string `glazed.parameter:"session-id"`
 	TimeoutS    int    `glazed.parameter:"timeout"`
 	WaitTimeout int    `glazed.parameter:"wait-timeout"`
 
@@ -110,6 +111,12 @@ func NewImageCommand(layersList ...layers.ParameterLayer) (*ImageCommand, error)
 				parameters.ParameterTypeString,
 				parameters.WithDefault("http://localhost:3000"),
 				parameters.WithHelp("Base URL (default: http://localhost:3000)"),
+			),
+			parameters.NewParameterDefinition(
+				"session-id",
+				parameters.ParameterTypeString,
+				parameters.WithDefault("global"),
+				parameters.WithHelp("Session ID (used for WebSocket scoping)"),
 			),
 			parameters.NewParameterDefinition(
 				"timeout",
@@ -252,7 +259,7 @@ func (c *ImageCommand) RunIntoGlazeProcessor(
 
 	created, err := cl.CreateRequest(ctx, client.CreateRequestParams{
 		Type:      v1.WidgetType_image,
-		SessionID: "global", // ignored by server; kept for compatibility
+		SessionID: settings.SessionID,
 		Input:     input,
 		TimeoutS:  settings.TimeoutS,
 	})
@@ -263,6 +270,13 @@ func (c *ImageCommand) RunIntoGlazeProcessor(
 	completed, err := cl.WaitRequest(ctx, created.Id, settings.WaitTimeout)
 	if err != nil {
 		return errors.Wrap(err, "wait for image response")
+	}
+
+	if completed.Status == v1.RequestStatus_timeout {
+		return errors.Errorf("request %s timed out: %s", created.Id, completed.GetError())
+	}
+	if completed.Status != v1.RequestStatus_completed {
+		return errors.Errorf("request %s ended with status=%s", created.Id, completed.Status.String())
 	}
 
 	out := completed.GetImageOutput()

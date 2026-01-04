@@ -1,7 +1,8 @@
-title: "📝 docs: add ws watcher usage"
+title: "⏱️  cli: handle timeout + session-id"
 description: |
-  Record the new `plz-confirm ws` command in the ticket diary, including how
-  to use it to observe timeout events over WebSocket.
+  Add `--session-id` to widget commands so they can target the right WebSocket
+  session, and handle server-side timeouts (`status=timeout`) without panicking.
 
   Tests:
-  - N/A (docs only)
+  - go test ./... -count=1
+  - pnpm -C agent-ui-system run check
