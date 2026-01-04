@@ -11,11 +11,21 @@ import { nanoid } from "nanoid";
 import {
   RequestStatus,
   WidgetType,
+  UIRequest,
 } from "@/proto/generated/plz_confirm/v1/request";
 
 export default function Home() {
   const dispatch = useDispatch();
   const { active, history } = useSelector((state: RootState) => state.request);
+
+  const AUTO_TIMEOUT_COMMENT = "AUTO_TIMEOUT";
+  const getOutputComment = (req: UIRequest): string | undefined =>
+    req.confirmOutput?.comment ??
+    req.selectOutput?.comment ??
+    req.formOutput?.comment ??
+    req.uploadOutput?.comment ??
+    req.tableOutput?.comment ??
+    req.imageOutput?.comment;
 
   // Simulate receiving a new request if none is active
   const simulateNewRequest = (type: WidgetType) => {
@@ -181,13 +191,18 @@ export default function Home() {
                         <div className="text-[10px] text-muted-foreground font-mono mb-2 line-clamp-1">
                           <span
                             title={[
-                              req.metadata?.cwd ? `cwd: ${req.metadata.cwd}` : "",
+                              req.metadata?.cwd
+                                ? `cwd: ${req.metadata.cwd}`
+                                : "",
                               req.metadata?.self?.comm
                                 ? `self: ${req.metadata.self.comm}`
                                 : "",
                               req.metadata?.parents?.length
                                 ? `parents: ${req.metadata.parents
-                                    .map(p => p.comm ?? (p.pid ? String(p.pid) : ""))
+                                    .map(
+                                      p =>
+                                        p.comm ?? (p.pid ? String(p.pid) : "")
+                                    )
                                     .filter(Boolean)
                                     .join(" <- ")}`
                                 : "",
@@ -203,7 +218,13 @@ export default function Home() {
                         </div>
                       )}
                       <div className="flex items-center gap-2">
-                        {req.status === RequestStatus.completed ? (
+                        {req.status === RequestStatus.completed &&
+                        getOutputComment(req) === AUTO_TIMEOUT_COMMENT ? (
+                          <div className="flex items-center text-[10px] text-yellow-500">
+                            <TimerOff className="h-3 w-3 mr-1" />
+                            TIMEOUT
+                          </div>
+                        ) : req.status === RequestStatus.completed ? (
                           <div className="flex items-center text-[10px] text-green-500">
                             <CheckCircle className="h-3 w-3 mr-1" />
                             COMPLETED

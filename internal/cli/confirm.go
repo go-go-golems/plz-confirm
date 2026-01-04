@@ -121,9 +121,6 @@ func (c *ConfirmCommand) RunIntoGlazeProcessor(
 		return errors.Wrap(err, "wait for confirm response")
 	}
 
-	if completed.Status == v1.RequestStatus_timeout {
-		return errors.Errorf("request %s timed out: %s", created.Id, completed.GetError())
-	}
 	if completed.Status != v1.RequestStatus_completed {
 		return errors.Errorf("request %s ended with status=%s", created.Id, completed.Status.String())
 	}

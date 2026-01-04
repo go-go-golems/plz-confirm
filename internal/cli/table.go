@@ -176,9 +176,6 @@ func (c *TableCommand) RunIntoGlazeProcessor(
 		return errors.Wrap(err, "wait for table response")
 	}
 
-	if completed.Status == v1.RequestStatus_timeout {
-		return errors.Errorf("request %s timed out: %s", created.Id, completed.GetError())
-	}
 	if completed.Status != v1.RequestStatus_completed {
 		return errors.Errorf("request %s ended with status=%s", created.Id, completed.Status.String())
 	}
