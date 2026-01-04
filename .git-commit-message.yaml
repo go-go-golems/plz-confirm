@@ -1,8 +1,7 @@
-title: "🐛 ui: fix WidgetRenderer hook order"
+title: "💄 ui: show expiry progress bar"
 description: |
-  Fix a Rules of Hooks violation in WidgetRenderer by ensuring useEffect is
-  called unconditionally, and increase the CLI default --wait-timeout to 300s.
+  Add a small progress bar under the EXPIRES_IN label so the expiry countdown
+  is easier to scan at a glance.
 
   Tests:
-  - go test ./... -count=1
   - pnpm -C agent-ui-system run check
