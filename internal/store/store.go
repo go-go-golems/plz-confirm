@@ -136,6 +136,9 @@ func (s *Store) Expire(now time.Time) []*v1.UIRequest {
 		if e.req.Status != v1.RequestStatus_pending {
 			continue
 		}
+		if e.req.ExpiryDisabled != nil && *e.req.ExpiryDisabled {
+			continue
+		}
 		expAt, err := time.Parse(time.RFC3339Nano, e.req.ExpiresAt)
 		if err != nil {
 			continue
@@ -156,6 +159,31 @@ func (s *Store) Expire(now time.Time) []*v1.UIRequest {
 	}
 
 	return expired
+}
+
+func (s *Store) Touch(_ context.Context, id string, now time.Time) (*v1.UIRequest, error) {
+	now = now.UTC()
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	e, ok := s.requests[id]
+	if !ok {
+		return nil, ErrNotFound
+	}
+	if e.req.Status != v1.RequestStatus_pending {
+		return nil, ErrAlreadyCompleted
+	}
+	if e.req.ExpiryDisabled != nil && *e.req.ExpiryDisabled {
+		return e.req, nil
+	}
+
+	t := true
+	e.req.ExpiryDisabled = &t
+	touchedAt := now.Format(time.RFC3339Nano)
+	e.req.TouchedAt = &touchedAt
+
+	return e.req, nil
 }
 
 func setDefaultOutputFor(req *v1.UIRequest, now time.Time, comment *string) {

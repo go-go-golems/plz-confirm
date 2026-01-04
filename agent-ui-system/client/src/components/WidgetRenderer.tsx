@@ -1,7 +1,7 @@
 import React from "react";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store/store";
-import { submitResponse } from "@/services/websocket";
+import { submitResponse, touchRequest } from "@/services/websocket";
 import { ConfirmDialog } from "./widgets/ConfirmDialog";
 import { SelectDialog } from "./widgets/SelectDialog";
 import { TableDialog } from "./widgets/TableDialog";
@@ -13,6 +13,7 @@ import { WidgetType } from "@/proto/generated/plz_confirm/v1/request";
 
 export const WidgetRenderer: React.FC = () => {
   const { active, loading } = useSelector((state: RootState) => state.request);
+  const lastTouchedId = React.useRef<string | null>(null);
 
   if (!active) {
     return (
@@ -30,6 +31,14 @@ export const WidgetRenderer: React.FC = () => {
       </div>
     );
   }
+
+  const handleFirstInteraction = () => {
+    if (!active) return;
+    if (active.expiryDisabled) return;
+    if (lastTouchedId.current === active.id) return;
+    lastTouchedId.current = active.id;
+    void touchRequest(active.id);
+  };
 
   const handleSubmit = async (output: any) => {
     try {
@@ -94,7 +103,13 @@ export const WidgetRenderer: React.FC = () => {
         </span>
       </div>
 
-      <div className="cyber-card p-1">{renderWidget()}</div>
+      <div
+        className="cyber-card p-1"
+        onPointerDownCapture={handleFirstInteraction}
+        onKeyDownCapture={handleFirstInteraction}
+      >
+        {renderWidget()}
+      </div>
 
       <div className="mt-2 flex justify-between text-[10px] text-muted-foreground/50 font-mono">
         <span>SECURE_CONNECTION</span>

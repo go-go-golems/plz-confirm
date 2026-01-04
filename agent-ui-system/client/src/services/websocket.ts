@@ -19,6 +19,10 @@ const MAX_KNOWN_COMPLETIONS = 512;
 const completedIds = new Set<string>();
 const completedOrder: string[] = [];
 
+const MAX_KNOWN_TOUCHES = 512;
+const touchedIds = new Set<string>();
+const touchedOrder: string[] = [];
+
 const markCompleted = (requestId: string) => {
   if (completedIds.has(requestId)) return;
   completedIds.add(requestId);
@@ -27,6 +31,17 @@ const markCompleted = (requestId: string) => {
     const oldest = completedOrder.shift();
     if (!oldest) continue;
     completedIds.delete(oldest);
+  }
+};
+
+const markTouched = (requestId: string) => {
+  if (touchedIds.has(requestId)) return;
+  touchedIds.add(requestId);
+  touchedOrder.push(requestId);
+  while (touchedOrder.length > MAX_KNOWN_TOUCHES) {
+    const oldest = touchedOrder.shift();
+    if (!oldest) continue;
+    touchedIds.delete(oldest);
   }
 };
 
@@ -106,6 +121,19 @@ export const connectWebSocket = () => {
     console.error("WebSocket error", error);
     store.dispatch(setError("Connection error"));
   };
+};
+
+export const touchRequest = async (requestId: string) => {
+  if (touchedIds.has(requestId)) return;
+  markTouched(requestId);
+
+  try {
+    // Best-effort: if the request already completed, this will 409.
+    // We still keep local "touched" state to avoid spamming.
+    await fetch(`/api/requests/${requestId}/touch`, { method: "POST" });
+  } catch (error) {
+    console.error("Error touching request:", error);
+  }
 };
 
 function buildSubmitResponseBody(requestType: WidgetType, output: any): any {

@@ -296,6 +296,13 @@ func (s *Server) handleRequestsItem(w http.ResponseWriter, r *http.Request) {
 		}
 		s.handleSubmitResponse(w, r, id)
 		return
+	case "touch":
+		if r.Method != http.MethodPost {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		s.handleTouch(w, r, id)
+		return
 	case "wait":
 		if r.Method != http.MethodGet {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
@@ -307,6 +314,24 @@ func (s *Server) handleRequestsItem(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "not found", http.StatusNotFound)
 		return
 	}
+}
+
+func (s *Server) handleTouch(w http.ResponseWriter, r *http.Request, id string) {
+	req, err := s.store.Touch(r.Context(), id, time.Now().UTC())
+	if err != nil {
+		if stderrors.Is(err, store.ErrNotFound) {
+			http.Error(w, "request not found", http.StatusNotFound)
+			return
+		}
+		if stderrors.Is(err, store.ErrAlreadyCompleted) {
+			http.Error(w, "request already completed", http.StatusConflict)
+			return
+		}
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+
+	writeProtoJSON(w, http.StatusOK, req)
 }
 
 func (s *Server) handleSubmitResponse(w http.ResponseWriter, r *http.Request, id string) {

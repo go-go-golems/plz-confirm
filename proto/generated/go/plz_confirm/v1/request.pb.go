@@ -314,15 +314,17 @@ type UIRequest struct {
 	//	*UIRequest_UploadOutput
 	//	*UIRequest_TableOutput
 	//	*UIRequest_ImageOutput
-	Output        isUIRequest_Output `protobuf_oneof:"output"`
-	Status        RequestStatus      `protobuf:"varint,16,opt,name=status,proto3,enum=plz_confirm.v1.RequestStatus" json:"status,omitempty"`
-	CreatedAt     string             `protobuf:"bytes,17,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"` // RFC3339Nano timestamp
-	CompletedAt   *string            `protobuf:"bytes,18,opt,name=completed_at,json=completedAt,proto3,oneof" json:"completed_at,omitempty"`
-	ExpiresAt     string             `protobuf:"bytes,19,opt,name=expires_at,json=expiresAt,proto3" json:"expires_at,omitempty"` // RFC3339Nano timestamp
-	Error         *string            `protobuf:"bytes,20,opt,name=error,proto3,oneof" json:"error,omitempty"`
-	Metadata      *RequestMetadata   `protobuf:"bytes,21,opt,name=metadata,proto3,oneof" json:"metadata,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	Output         isUIRequest_Output `protobuf_oneof:"output"`
+	Status         RequestStatus      `protobuf:"varint,16,opt,name=status,proto3,enum=plz_confirm.v1.RequestStatus" json:"status,omitempty"`
+	CreatedAt      string             `protobuf:"bytes,17,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"` // RFC3339Nano timestamp
+	CompletedAt    *string            `protobuf:"bytes,18,opt,name=completed_at,json=completedAt,proto3,oneof" json:"completed_at,omitempty"`
+	ExpiresAt      string             `protobuf:"bytes,19,opt,name=expires_at,json=expiresAt,proto3" json:"expires_at,omitempty"` // RFC3339Nano timestamp
+	Error          *string            `protobuf:"bytes,20,opt,name=error,proto3,oneof" json:"error,omitempty"`
+	Metadata       *RequestMetadata   `protobuf:"bytes,21,opt,name=metadata,proto3,oneof" json:"metadata,omitempty"`
+	TouchedAt      *string            `protobuf:"bytes,22,opt,name=touched_at,json=touchedAt,proto3,oneof" json:"touched_at,omitempty"`                 // RFC3339Nano timestamp (first UI interaction)
+	ExpiryDisabled *bool              `protobuf:"varint,23,opt,name=expiry_disabled,json=expiryDisabled,proto3,oneof" json:"expiry_disabled,omitempty"` // If true, server will not auto-complete on expires_at
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
 }
 
 func (x *UIRequest) Reset() {
@@ -540,6 +542,20 @@ func (x *UIRequest) GetMetadata() *RequestMetadata {
 	return nil
 }
 
+func (x *UIRequest) GetTouchedAt() string {
+	if x != nil && x.TouchedAt != nil {
+		return *x.TouchedAt
+	}
+	return ""
+}
+
+func (x *UIRequest) GetExpiryDisabled() bool {
+	if x != nil && x.ExpiryDisabled != nil {
+		return *x.ExpiryDisabled
+	}
+	return false
+}
+
 type isUIRequest_Input interface {
 	isUIRequest_Input()
 }
@@ -643,7 +659,8 @@ const file_plz_confirm_v1_request_proto_rawDesc = "" +
 	"\x04_cwdB\a\n" +
 	"\x05_selfB\x0e\n" +
 	"\f_remote_addrB\r\n" +
-	"\v_user_agent\"\xb7\t\n" +
+	"\v_user_agent\"\xac\n" +
+	"\n" +
 	"\tUIRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12.\n" +
 	"\x04type\x18\x02 \x01(\x0e2\x1a.plz_confirm.v1.WidgetTypeR\x04type\x12\x1d\n" +
@@ -673,12 +690,17 @@ const file_plz_confirm_v1_request_proto_rawDesc = "" +
 	"\n" +
 	"expires_at\x18\x13 \x01(\tR\texpiresAt\x12\x19\n" +
 	"\x05error\x18\x14 \x01(\tH\x03R\x05error\x88\x01\x01\x12@\n" +
-	"\bmetadata\x18\x15 \x01(\v2\x1f.plz_confirm.v1.RequestMetadataH\x04R\bmetadata\x88\x01\x01B\a\n" +
+	"\bmetadata\x18\x15 \x01(\v2\x1f.plz_confirm.v1.RequestMetadataH\x04R\bmetadata\x88\x01\x01\x12\"\n" +
+	"\n" +
+	"touched_at\x18\x16 \x01(\tH\x05R\ttouchedAt\x88\x01\x01\x12,\n" +
+	"\x0fexpiry_disabled\x18\x17 \x01(\bH\x06R\x0eexpiryDisabled\x88\x01\x01B\a\n" +
 	"\x05inputB\b\n" +
 	"\x06outputB\x0f\n" +
 	"\r_completed_atB\b\n" +
 	"\x06_errorB\v\n" +
-	"\t_metadata*c\n" +
+	"\t_metadataB\r\n" +
+	"\v_touched_atB\x12\n" +
+	"\x10_expiry_disabled*c\n" +
 	"\rRequestStatus\x12\x1e\n" +
 	"\x1arequest_status_unspecified\x10\x00\x12\v\n" +
 	"\apending\x10\x01\x12\r\n" +
