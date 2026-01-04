@@ -1,7 +1,11 @@
-title: "📝 docs: add tmux timeout+ws demo script"
+title: "⏱️ server: auto-complete expired requests"
 description: |
-  Add a ticket-local tmux script to run backend+vite+ws watcher and trigger a
-  short-timeout request, and document the workflow in the diary.
+  Change `expiresAt` handling so the server auto-completes pending requests when
+  they expire, generating a safe default output and marking it via
+  `comment=AUTO_TIMEOUT`.
 
   Tests:
-  - N/A (docs only)
+  - buf lint .
+  - golangci-lint run -v
+  - go test ./... -count=1
+  - pnpm -C agent-ui-system run check
