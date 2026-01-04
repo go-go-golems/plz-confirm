@@ -1,8 +1,7 @@
-title: "⏱️  cli: handle timeout + session-id"
+title: "📝 docs: add tmux timeout+ws demo script"
 description: |
-  Add `--session-id` to widget commands so they can target the right WebSocket
-  session, and handle server-side timeouts (`status=timeout`) without panicking.
+  Add a ticket-local tmux script to run backend+vite+ws watcher and trigger a
+  short-timeout request, and document the workflow in the diary.
 
   Tests:
-  - go test ./... -count=1
-  - pnpm -C agent-ui-system run check
+  - N/A (docs only)

@@ -382,3 +382,20 @@ To make timeout behavior testable without relying on the browser UI, I added a s
 - Watch events:
   - `go run ./cmd/plz-confirm ws --base-url http://localhost:3001 --session-id global --pretty`
 - Create a request with a short timeout, then observe a `request_completed` event with `status=timeout`.
+
+## Step 12: Run a tmux demo to watch timeouts end-to-end (server + WS + UI)
+
+This step makes the timeout behavior easy to reproduce: a ticket-local script spins up a tmux session with the backend, Vite frontend, a CLI WS watcher, and a pre-canned CLI request with a short timeout. With `sessionId` scoping enabled in the server, the demo also ensures that the UI and CLI are on the same session (`global` by default).
+
+In the run I captured, the request timed out (no UI click before `expiresAt`), and the WS watcher showed a `request_completed` event with `status=timeout`. The CLI command returned a clean error instead of panicking.
+
+### What I did
+- Added and used:
+  - `ttmp/2026/01/03/001-QOL-HISTORY-TUI--history-pagination-metadata-defaults/scripts/tmux-timeout-ws-demo.sh`
+- Verified the WS watcher sees:
+  - `new_request` (status pending)
+  - `request_completed` (status timeout, error "request timed out")
+
+### Notes
+- The demo session is `PLZ-TIMEOUT`.
+- UI URL: `http://localhost:3000/?sessionId=global`

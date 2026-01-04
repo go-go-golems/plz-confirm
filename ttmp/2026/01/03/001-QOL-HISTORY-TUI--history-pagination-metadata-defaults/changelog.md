@@ -9,3 +9,4 @@
 - Validated locally that history no longer duplicates entries (docs: c924478)
 - Suppressed duplicate Redux completion actions by correlating completions by request id (code: eb41c20)
 - Enforced `expiresAt` server-side (status transitions to `timeout`, WS broadcast, UI label) (code: b7fd7b5)
+- Added `--session-id` to CLI widget commands + made UI sessionId configurable (`?sessionId=`) to support WS session scoping (code: 970404a)
