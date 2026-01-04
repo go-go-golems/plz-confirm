@@ -34,7 +34,7 @@ SERVER_CMD="cd \"$REPO\" && go run ./cmd/plz-confirm serve --addr \"$API_ADDR\" 
 VITE_CMD="cd \"$VITE\" && (test -d node_modules || pnpm install) && pnpm dev --host --port \"$UI_PORT\" 2>&1 | tee /tmp/plz-confirm-timeout-vite.log; echo \"vite exited\"; exec bash"
 WS_CMD="cd \"$REPO\" && go run ./cmd/plz-confirm ws --base-url \"http://localhost${API_ADDR}\" --session-id \"$SESSION_ID\" --pretty 2>&1 | tee /tmp/plz-confirm-timeout-ws.log; echo \"ws watcher exited\"; exec bash"
 
-TRIGGER_CMD="cd \"$REPO\" && go run ./cmd/plz-confirm confirm --base-url \"http://localhost${API_ADDR}\" --session-id \"$SESSION_ID\" --timeout 20 --wait-timeout 120 --title \"TIMEOUT_DEMO\" --message \"Click approve within 20s, or let it timeout to see status=timeout.\""
+TRIGGER_CMD="cd \"$REPO\" && go run ./cmd/plz-confirm confirm --base-url \"http://localhost${API_ADDR}\" --session-id \"$SESSION_ID\" --timeout 20 --wait-timeout 120 --title \"TIMEOUT_DEMO\" --message \"Click approve within 20s, or let it expire to see status=completed + comment=AUTO_TIMEOUT.\""
 
 if tmux has-session -t "$SESSION" 2>/dev/null; then
   echo "tmux session already exists: $SESSION"

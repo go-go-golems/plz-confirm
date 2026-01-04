@@ -399,3 +399,54 @@ In the run I captured, the request timed out (no UI click before `expiresAt`), a
 ### Notes
 - The demo session is `PLZ-TIMEOUT`.
 - UI URL: `http://localhost:3000/?sessionId=global`
+
+## Step 13: Change expiry semantics to “auto-complete” (default outputs) instead of `status=timeout`
+
+The server-side expiry scheduler was working, but the desired semantics changed: when `expiresAt` is reached, requests should be treated as a normal completion with a synthetic default output (not a distinct `timeout` status). The key idea is to preserve idempotency and correlation via request id while making the server’s behavior compatible with CLI/automation that expects `status=completed`.
+
+This step implements default output generation per widget type and marks these auto-completions via a shared `comment="AUTO_TIMEOUT"` marker so the UI can still label them as TIMEOUT even though `status=completed`.
+
+**Commit (code):** 3afe968 — "⏱️ server: auto-complete expired requests"
+
+### What I did
+- Updated `internal/store/store.go:Expire` to set `status=completed` and synthesize a default output for the request’s widget type.
+- Implemented `setDefaultOutputFor` to write the protobuf oneof output directly (avoids referencing the unexported generated oneof interface type).
+- Updated CLI widget commands in `internal/cli/*.go` to no longer special-case `status=timeout`.
+- Updated the history status badge in `agent-ui-system/client/src/pages/Home.tsx` to render TIMEOUT when `status=completed` and `output.comment == "AUTO_TIMEOUT"`.
+
+### Why
+- “Timeout” as a distinct status makes CLI callers treat expiry as an error path, which is not desired for this workflow.
+- Keeping `status=completed` for expiry makes the request lifecycle uniform while still allowing the UI to communicate “this was auto-completed”.
+
+### What worked
+- `go run ./cmd/plz-confirm confirm ... --timeout 20` returns `approved=false` with `comment=AUTO_TIMEOUT` instead of erroring.
+- The WS watcher receives `request_completed` with `status=completed` for expired requests.
+
+### What didn't work
+- First attempt returned a generated oneof interface type (`v1.IsUIRequest_Output`), but it’s not exported in Go generated code:
+  - `internal/store/store.go:161:77: undefined: v1.IsUIRequest_Output`
+- Also hit a structpb assignment mismatch while drafting the default form output:
+  - `cannot use *st ... as *structpb.Struct`
+- Pre-commit `exhaustive` linter required an explicit `widget_type_unspecified` case even though a `default:` existed.
+
+### What I learned
+- For protobuf oneofs in Go, it’s often easiest to assign concrete wrapper types directly to the oneof field instead of trying to name the oneof interface type.
+- If the UI needs to distinguish “auto-completed” from “user-completed”, a stable marker in the payload (like `comment`) is a practical bridge until we add an explicit enum/field.
+
+### What was tricky to build
+- Designing “safe” defaults for each widget type without inventing new schema (e.g. select/table/image multi vs single), while keeping the output always present to avoid nil-handling edge cases.
+
+### What warrants a second pair of eyes
+- Confirm that using `comment="AUTO_TIMEOUT"` as the cross-widget marker is acceptable long-term, or whether we should introduce an explicit `completion_kind`/`auto_completed` field in `UIRequest`.
+- Verify that the default outputs are aligned with how each CLI command and widget renderer interprets “empty” selections.
+
+### What should be done in the future
+- Add explicit completion kind fields to the protobuf envelope (instead of overloading `comment`).
+- Add unit tests for expiry auto-completion output generation (one per widget type).
+
+### Code review instructions
+- Start with `internal/store/store.go:setDefaultOutputFor` and `internal/store/store.go:Expire`.
+- Validate quickly with:
+  - `go run ./cmd/plz-confirm serve --addr :3001`
+  - `go run ./cmd/plz-confirm ws --base-url http://localhost:3001 --session-id global --pretty`
+  - `go run ./cmd/plz-confirm confirm --base-url http://localhost:3001 --session-id global --timeout 5 --wait-timeout 30 --title TEST`
