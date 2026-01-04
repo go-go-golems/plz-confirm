@@ -1,8 +1,8 @@
-title: "⏳ ui: show expiry countdown"
+title: "🐛 ui: fix WidgetRenderer hook order"
 description: |
-  Show an EXPIRES_IN countdown in the active widget renderer and hide it once
-  the server confirms `expiry_disabled=true` via the /touch endpoint response.
-  Also add a small reducer to patch requests by id.
+  Fix a Rules of Hooks violation in WidgetRenderer by ensuring useEffect is
+  called unconditionally, and increase the CLI default --wait-timeout to 300s.
 
   Tests:
+  - go test ./... -count=1
   - pnpm -C agent-ui-system run check
