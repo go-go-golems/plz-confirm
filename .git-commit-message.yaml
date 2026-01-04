@@ -1,11 +1,8 @@
-title: "🫳 server: disable expiry on touch"
+title: "⏳ ui: show expiry countdown"
 description: |
-  Add `POST /api/requests/{id}/touch` so the UI can permanently disable expiry
-  auto-completion for a request after first interaction, using `touched_at` and
-  `expiry_disabled` fields on `UIRequest`.
+  Show an EXPIRES_IN countdown in the active widget renderer and hide it once
+  the server confirms `expiry_disabled=true` via the /touch endpoint response.
+  Also add a small reducer to patch requests by id.
 
   Tests:
-  - buf lint .
-  - golangci-lint run -v
-  - go test ./... -count=1
   - pnpm -C agent-ui-system run check
