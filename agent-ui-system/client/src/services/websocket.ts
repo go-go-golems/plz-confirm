@@ -4,6 +4,7 @@ import {
   setError,
   enqueueRequest,
   completeRequest,
+  patchRequest,
 } from "@/store/store";
 import { browserNotificationService } from "./notifications";
 import {
@@ -20,8 +21,9 @@ const completedIds = new Set<string>();
 const completedOrder: string[] = [];
 
 const MAX_KNOWN_TOUCHES = 512;
-const touchedIds = new Set<string>();
+const touchedConfirmedIds = new Set<string>();
 const touchedOrder: string[] = [];
+const touchInFlightIds = new Set<string>();
 
 const markCompleted = (requestId: string) => {
   if (completedIds.has(requestId)) return;
@@ -34,14 +36,14 @@ const markCompleted = (requestId: string) => {
   }
 };
 
-const markTouched = (requestId: string) => {
-  if (touchedIds.has(requestId)) return;
-  touchedIds.add(requestId);
+const markTouchedConfirmed = (requestId: string) => {
+  if (touchedConfirmedIds.has(requestId)) return;
+  touchedConfirmedIds.add(requestId);
   touchedOrder.push(requestId);
   while (touchedOrder.length > MAX_KNOWN_TOUCHES) {
     const oldest = touchedOrder.shift();
     if (!oldest) continue;
-    touchedIds.delete(oldest);
+    touchedConfirmedIds.delete(oldest);
   }
 };
 
@@ -124,15 +126,30 @@ export const connectWebSocket = () => {
 };
 
 export const touchRequest = async (requestId: string) => {
-  if (touchedIds.has(requestId)) return;
-  markTouched(requestId);
+  if (touchedConfirmedIds.has(requestId)) return;
+  if (touchInFlightIds.has(requestId)) return;
+  touchInFlightIds.add(requestId);
 
   try {
     // Best-effort: if the request already completed, this will 409.
     // We still keep local "touched" state to avoid spamming.
-    await fetch(`/api/requests/${requestId}/touch`, { method: "POST" });
+    const resp = await fetch(`/api/requests/${requestId}/touch`, {
+      method: "POST",
+    });
+    if (!resp.ok) {
+      // Allow retry on a later interaction.
+      touchInFlightIds.delete(requestId);
+      return;
+    }
+
+    const json = await resp.json();
+    const req = normalizeUIRequest(json);
+    markTouchedConfirmed(requestId);
+    touchInFlightIds.delete(requestId);
+    store.dispatch(patchRequest(req));
   } catch (error) {
     console.error("Error touching request:", error);
+    touchInFlightIds.delete(requestId);
   }
 };
 

@@ -14,6 +14,7 @@ import { WidgetType } from "@/proto/generated/plz_confirm/v1/request";
 export const WidgetRenderer: React.FC = () => {
   const { active, loading } = useSelector((state: RootState) => state.request);
   const lastTouchedId = React.useRef<string | null>(null);
+  const [nowMs, setNowMs] = React.useState(() => Date.now());
 
   if (!active) {
     return (
@@ -31,6 +32,47 @@ export const WidgetRenderer: React.FC = () => {
       </div>
     );
   }
+
+  React.useEffect(() => {
+    setNowMs(Date.now());
+    if (active.expiryDisabled) return;
+    const t = setInterval(() => setNowMs(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, [active.id, active.expiryDisabled]);
+
+  const parseRFC3339NanoToMs = (s: string): number | null => {
+    if (!s) return null;
+    const m = s.match(
+      /^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(?:\.(\d+))?(Z|[+-]\d{2}:\d{2})$/
+    );
+    if (!m) {
+      const t = Date.parse(s);
+      return Number.isFinite(t) ? t : null;
+    }
+    const base = m[1];
+    const frac = (m[2] ?? "0").padEnd(3, "0").slice(0, 3);
+    const tz = m[3];
+    const t = Date.parse(`${base}.${frac}${tz}`);
+    return Number.isFinite(t) ? t : null;
+  };
+
+  const expiresAtMs = parseRFC3339NanoToMs(active.expiresAt) ?? null;
+  const remainingMs =
+    expiresAtMs == null ? null : Math.max(0, expiresAtMs - nowMs);
+  const remainingS =
+    remainingMs == null ? null : Math.max(0, Math.ceil(remainingMs / 1000));
+  const formatRemaining = (totalS: number) => {
+    const s = Math.max(0, totalS);
+    const h = Math.floor(s / 3600);
+    const m = Math.floor((s % 3600) / 60);
+    const ss = s % 60;
+    if (h > 0) {
+      return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(
+        ss
+      ).padStart(2, "0")}`;
+    }
+    return `${String(m).padStart(2, "0")}:${String(ss).padStart(2, "0")}`;
+  };
 
   const handleFirstInteraction = () => {
     if (!active) return;
@@ -95,6 +137,15 @@ export const WidgetRenderer: React.FC = () => {
     <div className="w-full max-w-3xl mx-auto animate-in slide-in-from-bottom-4 duration-500">
       <div className="mb-2 flex justify-between items-end text-xs text-muted-foreground font-mono uppercase">
         <span>REQ_ID: {active.id.substring(0, 8)}</span>
+        {active.expiryDisabled ? (
+          <span className="text-[10px] text-green-500">TIMEOUT_DISABLED</span>
+        ) : remainingS != null ? (
+          <span className="text-[10px] text-yellow-500">
+            EXPIRES_IN: {formatRemaining(remainingS)}
+          </span>
+        ) : (
+          <span />
+        )}
         <span>
           TYPE:{" "}
           {String(

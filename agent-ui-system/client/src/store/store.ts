@@ -1,6 +1,6 @@
-import { configureStore, createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { UIRequest } from '@/proto/generated/plz_confirm/v1/request';
-import { Notification } from '@/types/notifications';
+import { configureStore, createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { UIRequest } from "@/proto/generated/plz_confirm/v1/request";
+import { Notification } from "@/types/notifications";
 
 // Session Slice
 interface SessionState {
@@ -12,18 +12,20 @@ interface SessionState {
 
 const DEFAULT_SESSION_ID = (() => {
   if (typeof window === "undefined") return "global";
-  return new URLSearchParams(window.location.search).get("sessionId") ?? "global";
+  return (
+    new URLSearchParams(window.location.search).get("sessionId") ?? "global"
+  );
 })();
 
 const initialSessionState: SessionState = {
   id: DEFAULT_SESSION_ID,
   connected: false,
   reconnecting: false,
-  error: null
+  error: null,
 };
 
 const sessionSlice = createSlice({
-  name: 'session',
+  name: "session",
   initialState: initialSessionState,
   reducers: {
     setConnected: (state, action: PayloadAction<boolean>) => {
@@ -31,8 +33,8 @@ const sessionSlice = createSlice({
     },
     setError: (state, action: PayloadAction<string | null>) => {
       state.error = action.payload;
-    }
-  }
+    },
+  },
 });
 
 // Request Slice
@@ -43,26 +45,31 @@ interface RequestState {
   loading: boolean;
 }
 
+type RequestPatch = Partial<UIRequest> & { id: string };
+
 const initialRequestState: RequestState = {
   active: null,
   pending: [],
   history: [],
-  loading: false
+  loading: false,
 };
 
 const requestSlice = createSlice({
-  name: 'request',
+  name: "request",
   initialState: initialRequestState,
   reducers: {
-    setActiveRequest: (state: RequestState, action: PayloadAction<UIRequest | null>) => {
+    setActiveRequest: (
+      state: RequestState,
+      action: PayloadAction<UIRequest | null>
+    ) => {
       state.active = action.payload;
     },
     enqueueRequest: (state: RequestState, action: PayloadAction<UIRequest>) => {
       const incoming = action.payload;
 
       if (state.active?.id === incoming.id) return;
-      if (state.pending.some((r) => r.id === incoming.id)) return;
-      if (state.history.some((r) => r.id === incoming.id)) return;
+      if (state.pending.some(r => r.id === incoming.id)) return;
+      if (state.history.some(r => r.id === incoming.id)) return;
 
       if (!state.active) {
         state.active = incoming;
@@ -70,27 +77,45 @@ const requestSlice = createSlice({
       }
       state.pending.push(incoming);
     },
-    completeRequest: (state: RequestState, action: PayloadAction<UIRequest>) => {
+    completeRequest: (
+      state: RequestState,
+      action: PayloadAction<UIRequest>
+    ) => {
       const completedReq = action.payload;
       if (state.active?.id === completedReq.id) {
         state.active = null;
       }
 
-      state.pending = state.pending.filter((r) => r.id !== completedReq.id);
+      state.pending = state.pending.filter(r => r.id !== completedReq.id);
 
-      state.history = state.history.filter((r) => r.id !== completedReq.id);
+      state.history = state.history.filter(r => r.id !== completedReq.id);
       state.history.unshift(completedReq);
 
       if (!state.active && state.pending.length > 0) {
         state.active = state.pending.shift() ?? null;
       }
     },
+    patchRequest: (
+      state: RequestState,
+      action: PayloadAction<RequestPatch>
+    ) => {
+      const { id, ...patch } = action.payload;
+      if (state.active?.id === id) {
+        state.active = { ...state.active, ...patch };
+      }
+      state.pending = state.pending.map(r =>
+        r.id === id ? { ...r, ...patch } : r
+      );
+      state.history = state.history.map(r =>
+        r.id === id ? { ...r, ...patch } : r
+      );
+    },
     addToHistory: (state: RequestState, action: PayloadAction<UIRequest>) => {
       const req = action.payload;
-      state.history = state.history.filter((r) => r.id !== req.id);
+      state.history = state.history.filter(r => r.id !== req.id);
       state.history.unshift(req);
-    }
-  }
+    },
+  },
 });
 
 // Notification Slice
@@ -99,34 +124,48 @@ interface NotificationState {
 }
 
 const initialNotificationState: NotificationState = {
-  items: []
+  items: [],
 };
 
 const notificationSlice = createSlice({
-  name: 'notifications',
+  name: "notifications",
   initialState: initialNotificationState,
   reducers: {
-    addNotification: (state: NotificationState, action: PayloadAction<Notification>) => {
+    addNotification: (
+      state: NotificationState,
+      action: PayloadAction<Notification>
+    ) => {
       state.items.unshift(action.payload);
     },
-    removeNotification: (state: NotificationState, action: PayloadAction<string>) => {
-      state.items = state.items.filter((item: Notification) => item.id !== action.payload);
-    }
-  }
+    removeNotification: (
+      state: NotificationState,
+      action: PayloadAction<string>
+    ) => {
+      state.items = state.items.filter(
+        (item: Notification) => item.id !== action.payload
+      );
+    },
+  },
 });
 
 export const store = configureStore({
   reducer: {
     session: sessionSlice.reducer,
     request: requestSlice.reducer,
-    notifications: notificationSlice.reducer
-  }
+    notifications: notificationSlice.reducer,
+  },
 });
 
 export type RootState = ReturnType<typeof store.getState>;
 export type AppDispatch = typeof store.dispatch;
 
 export const { setConnected, setError } = sessionSlice.actions;
-export const { setActiveRequest, enqueueRequest, completeRequest, addToHistory } =
-  requestSlice.actions;
-export const { addNotification, removeNotification } = notificationSlice.actions;
+export const {
+  setActiveRequest,
+  enqueueRequest,
+  completeRequest,
+  patchRequest,
+  addToHistory,
+} = requestSlice.actions;
+export const { addNotification, removeNotification } =
+  notificationSlice.actions;
