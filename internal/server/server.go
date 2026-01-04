@@ -212,9 +212,9 @@ func (s *Server) handleCreateRequest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Broadcast new_request to all connected WS clients (G=no-session).
+	// Broadcast new_request to WS clients in this session.
 	if msg, err := marshalWSEvent("new_request", req); err == nil {
-		s.ws.BroadcastRawJSON(msg)
+		s.ws.BroadcastRawJSON(req.SessionId, msg)
 	} else {
 		log.Printf("[WS] marshal new_request failed: %v", err)
 	}
@@ -336,9 +336,9 @@ func (s *Server) handleSubmitResponse(w http.ResponseWriter, r *http.Request, id
 		return
 	}
 
-	// Broadcast completion to all connected WS clients.
+	// Broadcast completion to WS clients in this session.
 	if msg, err := marshalWSEvent("request_completed", req); err == nil {
-		s.ws.BroadcastRawJSON(msg)
+		s.ws.BroadcastRawJSON(req.SessionId, msg)
 	} else {
 		log.Printf("[WS] marshal request_completed failed: %v", err)
 	}
