@@ -450,3 +450,43 @@ This step implements default output generation per widget type and marks these a
   - `go run ./cmd/plz-confirm serve --addr :3001`
   - `go run ./cmd/plz-confirm ws --base-url http://localhost:3001 --session-id global --pretty`
   - `go run ./cmd/plz-confirm confirm --base-url http://localhost:3001 --session-id global --timeout 5 --wait-timeout 30 --title TEST`
+
+## Step 14: Disable expiry permanently on first UI interaction (`/touch`)
+
+With server-side auto-complete in place, the remaining UX requirement is that once a user starts interacting with a widget, it should no longer auto-complete at `expiresAt`. The chosen semantics are “disable permanently”: the first interaction flips a flag and the server’s expiry loop will skip the request forever (until it is completed normally).
+
+This step adds a small `POST /api/requests/{id}/touch` endpoint, stores the state on the request (`touched_at` + `expiry_disabled`), and wires the frontend to call it once per request id on the first pointer/keyboard interaction. The server-side touch handling is idempotent so the UI can be aggressive without spamming.
+
+**Commit (code):** fdf1d15 — "🫳 server: disable expiry on touch"
+
+### What I did
+- Extended `proto/plz_confirm/v1/request.proto` with `touched_at` and `expiry_disabled` and regenerated Go/TS code (`make codegen`).
+- Added `internal/store/store.go:Touch` and taught `internal/store/store.go:Expire` to skip requests with `expiry_disabled=true`.
+- Added REST endpoint `POST /api/requests/{id}/touch` in `internal/server/server.go`.
+- Added best-effort touch call from the UI on first interaction:
+  - `agent-ui-system/client/src/components/WidgetRenderer.tsx` captures pointer/key events.
+  - `agent-ui-system/client/src/services/websocket.ts` sends the POST and locally suppresses repeats by request id.
+
+### Why
+- If someone is actively filling a form/selecting options, auto-completing would be surprising and may lose work.
+- Permanent disable is the simplest mental model and avoids having to define “pause window” semantics.
+
+### What worked
+- Touch is idempotent: repeated UI events do not cause repeated network calls.
+- Once touched, the request is no longer auto-completed by the server expiry loop even after `expiresAt`.
+
+### What was tricky to build
+- Picking state that is visible everywhere (REST/WS/UI) without introducing a second “out-of-band” store: storing `touched_at`/`expiry_disabled` on `UIRequest` keeps it portable.
+
+### What warrants a second pair of eyes
+- Whether we should broadcast an explicit WS update event when touch happens (currently we only update server-side state; UI doesn’t render it yet).
+
+### What should be done in the future
+- Implement the countdown badge and hide/stop it once `expiry_disabled=true` is observed by the UI.
+
+### Code review instructions
+- Start at `proto/plz_confirm/v1/request.proto`, then:
+  - `internal/store/store.go:Touch`, `internal/store/store.go:Expire`
+  - `internal/server/server.go:handleTouch`
+  - `agent-ui-system/client/src/components/WidgetRenderer.tsx` (event capture)
+  - `agent-ui-system/client/src/services/websocket.ts:touchRequest`

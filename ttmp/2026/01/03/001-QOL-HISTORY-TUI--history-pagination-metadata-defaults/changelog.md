@@ -11,3 +11,4 @@
 - Enforced `expiresAt` server-side (status transitions to `timeout`, WS broadcast, UI label) (code: b7fd7b5)
 - Added `--session-id` to CLI widget commands + made UI sessionId configurable (`?sessionId=`) to support WS session scoping (code: 970404a)
 - Changed expiry semantics: auto-complete expired requests with default outputs (`status=completed`, `comment=AUTO_TIMEOUT`) and label them as TIMEOUT in UI history (code: 3afe968)
+- Added permanent expiry disable on first interaction via `POST /api/requests/{id}/touch` + `expiry_disabled`/`touched_at` fields (code: fdf1d15)

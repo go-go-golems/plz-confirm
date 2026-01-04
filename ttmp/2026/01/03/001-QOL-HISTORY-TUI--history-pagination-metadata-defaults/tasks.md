@@ -28,23 +28,23 @@
 - [ ] Make `expiresAt` enforceable “UI timeout” with countdown, pausable on interaction
   - [x] Define semantics precisely:
     - [x] When `now >= expiresAt`, server auto-completes with default output (`status=completed`, output `comment=AUTO_TIMEOUT`)
-    - [ ] “Interaction stops timeout”: is it a permanent disable, or does it extend/refresh `expiresAt`?
-    - [ ] What counts as interaction (any click/keydown anywhere in widget vs only input changes)?
+- [x] “Interaction stops timeout”: is it a permanent disable, or does it extend/refresh `expiresAt`?
+- [x] What counts as interaction (any click/keydown anywhere in widget vs only input changes)?
   - [x] Add server-side expiry scheduler (authoritative, not browser-only)
     - [x] Periodically scan pending requests and expire those past `expiresAt`
     - [x] On expire: broadcast WS event (`request_completed` with `status=completed` + `comment=AUTO_TIMEOUT`)
-  - [ ] Add an “activity/touch” API so the UI can pause/disable expiry
-    - [ ] `POST /api/requests/{id}/touch` (or similar) marks request as “touched/active” and disables expiry enforcement
-    - [ ] Decide idempotency and rate-limiting (to avoid spam from keypress handlers)
-  - [ ] Extend protobuf envelope to record timeout/interaction state
-    - [ ] Add fields like `touched_at`, `expiry_paused_at`, `expiry_disabled` (final shape TBD)
-    - [ ] Ensure protojson output exposes these fields for UI countdown display
+- [x] Add an “activity/touch” API so the UI can pause/disable expiry
+- [x] `POST /api/requests/{id}/touch` (or similar) marks request as “touched/active” and disables expiry enforcement
+- [x] Decide idempotency and rate-limiting (to avoid spam from keypress handlers)
+- [x] Extend protobuf envelope to record timeout/interaction state
+- [x] Add fields `touched_at` + `expiry_disabled` (permanent disable on first interaction)
+- [x] Ensure protojson output exposes these fields for UI countdown display
   - [ ] Implement UI countdown display
     - [ ] Render countdown badge in `agent-ui-system/client/src/components/WidgetRenderer.tsx` (or per-widget)
     - [ ] Stop/hide countdown once server confirms timeout paused/disabled
-  - [ ] Implement UI interaction detection + debounced touch calls
-    - [ ] Hook into widget containers to capture click/keydown/input events
-    - [ ] Debounce touch calls (e.g. once per N seconds)
+- [x] Implement UI interaction detection + debounced touch calls
+- [x] Hook into widget containers to capture click/keydown/input events
+- [x] Debounce touch calls (e.g. once per N seconds)
   - [x] Update CLI behavior on expiry auto-complete
     - [x] CLI commands treat expiry as a normal completion (default output + `comment=AUTO_TIMEOUT`)
   - [ ] Add tests
