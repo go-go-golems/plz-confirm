@@ -13,3 +13,4 @@
 - Changed expiry semantics: auto-complete expired requests with default outputs (`status=completed`, `comment=AUTO_TIMEOUT`) and label them as TIMEOUT in UI history (code: 3afe968)
 - Added permanent expiry disable on first interaction via `POST /api/requests/{id}/touch` + `expiry_disabled`/`touched_at` fields (code: fdf1d15)
 - Added a UI countdown badge for `expiresAt` and hide it once `expiry_disabled=true` is confirmed (code: f74473a)
+- Fixed WidgetRenderer Rules-of-Hooks crash and bumped CLI default `--wait-timeout` to 300s (code: fa00efe)

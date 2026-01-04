@@ -507,3 +507,18 @@ The main implementation detail is parsing RFC3339Nano safely in the browser: we 
 
 ### What warrants a second pair of eyes
 - Whether we want the countdown to disappear immediately on first interaction (optimistic) vs only after the `/touch` response (current: confirm-first).
+
+## Step 16: Fix a WidgetRenderer Hooks violation and bump CLI wait default
+
+While testing select widgets, the UI hit a runtime error: `Rendered more hooks than during the previous render`. Root cause was a `useEffect` defined after an early return (`if (!active) return ...`), which violates the Rules of Hooks because the effect hook only exists in some renders.
+
+In the same pass, I bumped the CLI default `--wait-timeout` to 300s so it matches the common server-side timeout default and reduces surprise for longer-running approvals.
+
+**Commit (code):** fa00efe — "🐛 ui: fix WidgetRenderer hook order"
+
+### What I did
+- Moved the `useEffect` in `WidgetRenderer` so it’s called unconditionally; it now no-ops when there is no active request.
+- Changed all Glazed widget commands’ `--wait-timeout` default from 60 to 300 seconds (`internal/cli/*.go`).
+
+### What was tricky to build
+- The countdown effect needed to stay conditional on `active` without being conditionally *declared* as a hook.
