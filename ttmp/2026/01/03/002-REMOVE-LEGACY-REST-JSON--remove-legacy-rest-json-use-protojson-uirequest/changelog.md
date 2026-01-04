@@ -35,3 +35,8 @@ Honor sessionId in Go server (scope WS connections, pending replay, and broadcas
 - /home/manuel/workspaces/2026-01-03/plz-confirm-improvements/plz-confirm/internal/server/ws.go — WS clients grouped by sessionId; replay pending per-session
 - /home/manuel/workspaces/2026-01-03/plz-confirm-improvements/plz-confirm/internal/server/server.go — new_request/request_completed broadcasts scoped to req.SessionId
 - /home/manuel/workspaces/2026-01-03/plz-confirm-improvements/plz-confirm/internal/store/store.go — Added PendingForSession helper
+
+## 2026-01-03
+
+All tasks complete; ticket closed
+
