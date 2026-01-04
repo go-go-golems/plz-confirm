@@ -58,10 +58,19 @@ export const WidgetRenderer: React.FC = () => {
   };
 
   const expiresAtMs = parseRFC3339NanoToMs(active.expiresAt) ?? null;
+  const createdAtMs = parseRFC3339NanoToMs(active.createdAt) ?? null;
+  const totalMs =
+    expiresAtMs != null && createdAtMs != null
+      ? Math.max(0, expiresAtMs - createdAtMs)
+      : null;
   const remainingMs =
     expiresAtMs == null ? null : Math.max(0, expiresAtMs - nowMs);
   const remainingS =
     remainingMs == null ? null : Math.max(0, Math.ceil(remainingMs / 1000));
+  const remainingPct =
+    totalMs == null || totalMs === 0 || remainingMs == null
+      ? null
+      : Math.max(0, Math.min(100, (remainingMs / totalMs) * 100));
   const formatRemaining = (totalS: number) => {
     const s = Math.max(0, totalS);
     const h = Math.floor(s / 3600);
@@ -138,15 +147,27 @@ export const WidgetRenderer: React.FC = () => {
     <div className="w-full max-w-3xl mx-auto animate-in slide-in-from-bottom-4 duration-500">
       <div className="mb-2 flex justify-between items-end text-xs text-muted-foreground font-mono uppercase">
         <span>REQ_ID: {active.id.substring(0, 8)}</span>
-        {active.expiryDisabled ? (
-          <span className="text-[10px] text-green-500">TIMEOUT_DISABLED</span>
-        ) : remainingS != null ? (
-          <span className="text-[10px] text-yellow-500">
-            EXPIRES_IN: {formatRemaining(remainingS)}
-          </span>
-        ) : (
-          <span />
-        )}
+        <span className="flex flex-col items-end gap-1">
+          {active.expiryDisabled ? (
+            <span className="text-[10px] text-green-500">TIMEOUT_DISABLED</span>
+          ) : remainingS != null ? (
+            <>
+              <span className="text-[10px] text-yellow-500">
+                EXPIRES_IN: {formatRemaining(remainingS)}
+              </span>
+              {remainingPct != null && (
+                <span className="h-1 w-28 rounded bg-muted/40 overflow-hidden">
+                  <span
+                    className="block h-full bg-yellow-500"
+                    style={{ width: `${remainingPct}%` }}
+                  />
+                </span>
+              )}
+            </>
+          ) : (
+            <span />
+          )}
+        </span>
         <span>
           TYPE:{" "}
           {String(
