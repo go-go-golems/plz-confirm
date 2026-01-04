@@ -16,6 +16,14 @@ export const WidgetRenderer: React.FC = () => {
   const lastTouchedId = React.useRef<string | null>(null);
   const [nowMs, setNowMs] = React.useState(() => Date.now());
 
+  React.useEffect(() => {
+    setNowMs(Date.now());
+    if (!active) return;
+    if (active.expiryDisabled) return;
+    const t = setInterval(() => setNowMs(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, [active?.id, active?.expiryDisabled]);
+
   if (!active) {
     return (
       <div className="flex flex-col items-center justify-center h-[60vh] text-muted-foreground animate-in fade-in duration-700">
@@ -32,13 +40,6 @@ export const WidgetRenderer: React.FC = () => {
       </div>
     );
   }
-
-  React.useEffect(() => {
-    setNowMs(Date.now());
-    if (active.expiryDisabled) return;
-    const t = setInterval(() => setNowMs(Date.now()), 1000);
-    return () => clearInterval(t);
-  }, [active.id, active.expiryDisabled]);
 
   const parseRFC3339NanoToMs = (s: string): number | null => {
     if (!s) return null;

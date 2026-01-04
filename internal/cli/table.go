@@ -65,7 +65,7 @@ func NewTableCommand(layersList ...layers.ParameterLayer) (*TableCommand, error)
 			parameters.NewParameterDefinition(
 				"wait-timeout",
 				parameters.ParameterTypeInteger,
-				parameters.WithDefault(60),
+				parameters.WithDefault(300),
 				parameters.WithHelp("How long to wait for a response in seconds (0 = wait forever)"),
 			),
 			parameters.NewParameterDefinition(
