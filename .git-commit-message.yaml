@@ -1,8 +1,8 @@
-title: "⏱️ server: auto-complete expired requests"
+title: "🫳 server: disable expiry on touch"
 description: |
-  Change `expiresAt` handling so the server auto-completes pending requests when
-  they expire, generating a safe default output and marking it via
-  `comment=AUTO_TIMEOUT`.
+  Add `POST /api/requests/{id}/touch` so the UI can permanently disable expiry
+  auto-completion for a request after first interaction, using `touched_at` and
+  `expiry_disabled` fields on `UIRequest`.
 
   Tests:
   - buf lint .
