@@ -9,6 +9,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/go-go-golems/plz-confirm/proto/generated/go/plz_confirm/v1"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 type requestEntry struct {
@@ -124,6 +125,212 @@ func (s *Store) PendingForSession(_ context.Context, sessionID string) []*v1.UIR
 	return out
 }
 
+func (s *Store) Expire(now time.Time) []*v1.UIRequest {
+	now = now.UTC()
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	var expired []*v1.UIRequest
+	for _, e := range s.requests {
+		if e.req.Status != v1.RequestStatus_pending {
+			continue
+		}
+		if e.req.ExpiryDisabled != nil && *e.req.ExpiryDisabled {
+			continue
+		}
+		expAt, err := time.Parse(time.RFC3339Nano, e.req.ExpiresAt)
+		if err != nil {
+			continue
+		}
+		if now.Before(expAt) {
+			continue
+		}
+
+		autoComment := "AUTO_TIMEOUT"
+		setDefaultOutputFor(e.req, now, &autoComment)
+		e.req.Status = v1.RequestStatus_completed
+		completedAt := now.Format(time.RFC3339Nano)
+		e.req.CompletedAt = &completedAt
+		e.req.Error = nil
+
+		e.doneOnce.Do(func() { close(e.done) })
+		expired = append(expired, e.req)
+	}
+
+	return expired
+}
+
+func (s *Store) Touch(_ context.Context, id string, now time.Time) (*v1.UIRequest, error) {
+	now = now.UTC()
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	e, ok := s.requests[id]
+	if !ok {
+		return nil, ErrNotFound
+	}
+	if e.req.Status != v1.RequestStatus_pending {
+		return nil, ErrAlreadyCompleted
+	}
+	if e.req.ExpiryDisabled != nil && *e.req.ExpiryDisabled {
+		return e.req, nil
+	}
+
+	t := true
+	e.req.ExpiryDisabled = &t
+	touchedAt := now.Format(time.RFC3339Nano)
+	e.req.TouchedAt = &touchedAt
+
+	return e.req, nil
+}
+
+func setDefaultOutputFor(req *v1.UIRequest, now time.Time, comment *string) {
+	switch req.Type {
+	case v1.WidgetType_widget_type_unspecified:
+		req.Output = nil
+		return
+	case v1.WidgetType_confirm:
+		req.Output = &v1.UIRequest_ConfirmOutput{
+			ConfirmOutput: &v1.ConfirmOutput{
+				Approved:  false,
+				Timestamp: now.Format(time.RFC3339Nano),
+				Comment:   comment,
+			},
+		}
+		return
+	case v1.WidgetType_select:
+		in := req.GetSelectInput()
+		multi := in != nil && in.Multi != nil && *in.Multi
+		if multi {
+			req.Output = &v1.UIRequest_SelectOutput{
+				SelectOutput: &v1.SelectOutput{
+					Selected: &v1.SelectOutput_SelectedMulti{
+						SelectedMulti: &v1.SelectOutputMulti{Values: []string{}},
+					},
+					Comment: comment,
+				},
+			}
+			return
+		}
+		first := ""
+		if in != nil && len(in.Options) > 0 {
+			first = in.Options[0]
+		}
+		req.Output = &v1.UIRequest_SelectOutput{
+			SelectOutput: &v1.SelectOutput{
+				Selected: &v1.SelectOutput_SelectedSingle{SelectedSingle: first},
+				Comment:  comment,
+			},
+		}
+		return
+	case v1.WidgetType_form:
+		st, _ := structpb.NewStruct(map[string]any{})
+		req.Output = &v1.UIRequest_FormOutput{
+			FormOutput: &v1.FormOutput{
+				Data:    st,
+				Comment: comment,
+			},
+		}
+		return
+	case v1.WidgetType_upload:
+		req.Output = &v1.UIRequest_UploadOutput{
+			UploadOutput: &v1.UploadOutput{
+				Files:   []*v1.UploadedFile{},
+				Comment: comment,
+			},
+		}
+		return
+	case v1.WidgetType_table:
+		in := req.GetTableInput()
+		multi := in != nil && in.MultiSelect != nil && *in.MultiSelect
+		if multi {
+			req.Output = &v1.UIRequest_TableOutput{
+				TableOutput: &v1.TableOutput{
+					Selected: &v1.TableOutput_SelectedMulti{
+						SelectedMulti: &v1.TableOutputMulti{Values: []*structpb.Struct{}},
+					},
+					Comment: comment,
+				},
+			}
+			return
+		}
+		st, _ := structpb.NewStruct(map[string]any{})
+		req.Output = &v1.UIRequest_TableOutput{
+			TableOutput: &v1.TableOutput{
+				Selected: &v1.TableOutput_SelectedSingle{SelectedSingle: st},
+				Comment:  comment,
+			},
+		}
+		return
+	case v1.WidgetType_image:
+		in := req.GetImageInput()
+		isConfirm := in != nil && in.Mode == "confirm"
+		hasOptions := in != nil && len(in.Options) > 0
+		multi := in != nil && in.Multi != nil && *in.Multi
+		if isConfirm {
+			req.Output = &v1.UIRequest_ImageOutput{
+				ImageOutput: &v1.ImageOutput{
+					Selected:  &v1.ImageOutput_SelectedBool{SelectedBool: false},
+					Timestamp: now.Format(time.RFC3339Nano),
+					Comment:   comment,
+				},
+			}
+			return
+		}
+		if hasOptions {
+			if multi {
+				req.Output = &v1.UIRequest_ImageOutput{
+					ImageOutput: &v1.ImageOutput{
+						Selected: &v1.ImageOutput_SelectedStrings{
+							SelectedStrings: &v1.ImageOutputStrings{Values: []string{}},
+						},
+						Timestamp: now.Format(time.RFC3339Nano),
+						Comment:   comment,
+					},
+				}
+				return
+			}
+			first := ""
+			if len(in.Options) > 0 {
+				first = in.Options[0]
+			}
+			req.Output = &v1.UIRequest_ImageOutput{
+				ImageOutput: &v1.ImageOutput{
+					Selected:  &v1.ImageOutput_SelectedString{SelectedString: first},
+					Timestamp: now.Format(time.RFC3339Nano),
+					Comment:   comment,
+				},
+			}
+			return
+		}
+		if multi {
+			req.Output = &v1.UIRequest_ImageOutput{
+				ImageOutput: &v1.ImageOutput{
+					Selected: &v1.ImageOutput_SelectedNumbers{
+						SelectedNumbers: &v1.ImageOutputNumbers{Values: []int64{}},
+					},
+					Timestamp: now.Format(time.RFC3339Nano),
+					Comment:   comment,
+				},
+			}
+			return
+		}
+		req.Output = &v1.UIRequest_ImageOutput{
+			ImageOutput: &v1.ImageOutput{
+				Selected:  &v1.ImageOutput_SelectedNumber{SelectedNumber: 0},
+				Timestamp: now.Format(time.RFC3339Nano),
+				Comment:   comment,
+			},
+		}
+		return
+	default:
+		req.Output = nil
+		return
+	}
+}
+
 func (s *Store) Complete(_ context.Context, id string, output *v1.UIRequest) (*v1.UIRequest, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -155,7 +362,7 @@ func (s *Store) Wait(ctx context.Context, id string) (*v1.UIRequest, error) {
 	if !ok {
 		return nil, ErrNotFound
 	}
-	if e.req.Status == v1.RequestStatus_completed {
+	if e.req.Status == v1.RequestStatus_completed || e.req.Status == v1.RequestStatus_timeout || e.req.Status == v1.RequestStatus_error {
 		return e.req, nil
 	}
 

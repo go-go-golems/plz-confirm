@@ -1,7 +1,7 @@
 ---
 Title: Remove legacy REST JSON; use protojson UIRequest
 Ticket: 002-REMOVE-LEGACY-REST-JSON
-Status: active
+Status: complete
 Topics:
     - backend
     - api
@@ -27,10 +27,11 @@ RelatedFiles:
       Note: UIRequest envelope includes widget input/output oneofs
 ExternalSources: []
 Summary: ""
-LastUpdated: 2026-01-03T14:23:32.463018368-05:00
+LastUpdated: 2026-01-03T21:17:12.847664467-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 
 # Remove legacy REST JSON; use protojson UIRequest

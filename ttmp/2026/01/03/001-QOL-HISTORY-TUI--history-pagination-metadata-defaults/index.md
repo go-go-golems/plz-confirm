@@ -40,6 +40,8 @@ RelatedFiles:
     Note: tmux session helper to run backend (:3001) and Vite (:3000)
   - Path: ttmp/2026/01/03/001-QOL-HISTORY-TUI--history-pagination-metadata-defaults/scripts/seed-requests-with-metadata.sh
     Note: Ticket-local script to seed multiple pending requests via CLI (for reproducing history/queue behavior)
+  - Path: ttmp/2026/01/03/001-QOL-HISTORY-TUI--history-pagination-metadata-defaults/scripts/tmux-timeout-ws-demo.sh
+    Note: Ticket-local tmux demo to run backend+vite+ws watcher and trigger a short-timeout request
 ExternalSources: []
 Summary: "Research + design notes to add bounded/paginated request history, per-request metadata, and widget-level defaults with timeouts."
 LastUpdated: 2026-01-03T00:00:00Z

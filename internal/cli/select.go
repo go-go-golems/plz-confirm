@@ -23,6 +23,7 @@ var _ cmds.GlazeCommand = &SelectCommand{}
 
 type SelectSettings struct {
 	BaseURL     string `glazed.parameter:"base-url"`
+	SessionID   string `glazed.parameter:"session-id"`
 	TimeoutS    int    `glazed.parameter:"timeout"`
 	WaitTimeout int    `glazed.parameter:"wait-timeout"`
 
@@ -45,6 +46,12 @@ func NewSelectCommand(layersList ...layers.ParameterLayer) (*SelectCommand, erro
 				parameters.WithHelp("Base URL (default: http://localhost:3000)"),
 			),
 			parameters.NewParameterDefinition(
+				"session-id",
+				parameters.ParameterTypeString,
+				parameters.WithDefault("global"),
+				parameters.WithHelp("Session ID (used for WebSocket scoping)"),
+			),
+			parameters.NewParameterDefinition(
 				"timeout",
 				parameters.ParameterTypeInteger,
 				parameters.WithDefault(300),
@@ -53,7 +60,7 @@ func NewSelectCommand(layersList ...layers.ParameterLayer) (*SelectCommand, erro
 			parameters.NewParameterDefinition(
 				"wait-timeout",
 				parameters.ParameterTypeInteger,
-				parameters.WithDefault(60),
+				parameters.WithDefault(300),
 				parameters.WithHelp("How long to wait for a response in seconds (0 = wait forever)"),
 			),
 			parameters.NewParameterDefinition(
@@ -108,7 +115,7 @@ func (c *SelectCommand) RunIntoGlazeProcessor(
 
 	created, err := cl.CreateRequest(ctx, client.CreateRequestParams{
 		Type:      v1.WidgetType_select,
-		SessionID: "global", // ignored by server; kept for compatibility
+		SessionID: settings.SessionID,
 		Input:     input,
 		TimeoutS:  settings.TimeoutS,
 	})
@@ -119,6 +126,10 @@ func (c *SelectCommand) RunIntoGlazeProcessor(
 	completed, err := cl.WaitRequest(ctx, created.Id, settings.WaitTimeout)
 	if err != nil {
 		return errors.Wrap(err, "wait for select response")
+	}
+
+	if completed.Status != v1.RequestStatus_completed {
+		return errors.Errorf("request %s ended with status=%s", created.Id, completed.Status.String())
 	}
 
 	out := completed.GetSelectOutput()

@@ -347,3 +347,178 @@ Even though state was idempotent, Redux DevTools still showed two completion-rel
 - Getting the ordering right without time-based correlation:
   - if WS arrives first, the HTTP response path should not dispatch
   - if HTTP response arrives first, the WS echo should not dispatch
+
+## Step 10: Enforce `expiresAt` server-side (authoritative timeouts)
+
+This step makes timeouts real: the server now transitions pending requests to `status=timeout` when `expiresAt` passes, unblocks any long-poll waiters, and broadcasts the updated request via WebSocket. This is deliberately “authoritative”: it does not rely on the browser being open to enforce expiry.
+
+I also refactored the scheduler goroutine ownership to be tied to `ListenAndServe` via an `errgroup`, so time-based background work stops reliably when the server context is canceled.
+
+**Commit (code):** b7fd7b5 — "⏱️  server: enforce request expiresAt"
+
+### What I did
+- Added `internal/store/store.go:Expire(now)` to transition pending requests to `timeout`, set `completedAt` and a simple `error` string, and close the request `done` channel.
+- Updated `internal/store/store.go:Wait` to return for `timeout`/`error` status (not only `completed`).
+- Added a server-side ticker in `internal/server/server.go:ListenAndServe` that calls `Expire` and broadcasts a `request_completed` event for timed-out requests (scoped to the request’s `sessionId`).
+- Updated `agent-ui-system/client/src/pages/Home.tsx` to render a distinct TIMEOUT label in history.
+
+### Why
+- Without server-side enforcement, `expiresAt` is just a TTL hint and “timeouts” are not observable/consistent across clients.
+
+### What warrants a second pair of eyes
+- Whether timeout should use `request_completed` or a dedicated WS event type (`request_timed_out`) once the UI grows more nuanced timeout UX.
+
+## Step 11: Add a CLI WebSocket watcher for debugging timeouts
+
+To make timeout behavior testable without relying on the browser UI, I added a small CLI command that connects to the server’s WebSocket endpoint and prints events. This lets us confirm that a request transitions to `status=timeout` and that the server broadcasts a completion event when `expiresAt` passes.
+
+**Commit (code):** 29ef3b0 — "✨ cli: add ws event watcher command"
+
+### What I did
+- Added `plz-confirm ws` as a Cobra subcommand (not Glazed) under `cmd/plz-confirm/ws.go`.
+- The command connects to `/ws?sessionId=...` (derived from `--base-url`) and prints each event as a JSON line (optional `--pretty`).
+
+### How to use
+- Watch events:
+  - `go run ./cmd/plz-confirm ws --base-url http://localhost:3001 --session-id global --pretty`
+- Create a request with a short timeout, then observe a `request_completed` event with `status=timeout`.
+
+## Step 12: Run a tmux demo to watch timeouts end-to-end (server + WS + UI)
+
+This step makes the timeout behavior easy to reproduce: a ticket-local script spins up a tmux session with the backend, Vite frontend, a CLI WS watcher, and a pre-canned CLI request with a short timeout. With `sessionId` scoping enabled in the server, the demo also ensures that the UI and CLI are on the same session (`global` by default).
+
+In the run I captured, the request timed out (no UI click before `expiresAt`), and the WS watcher showed a `request_completed` event with `status=timeout`. The CLI command returned a clean error instead of panicking.
+
+### What I did
+- Added and used:
+  - `ttmp/2026/01/03/001-QOL-HISTORY-TUI--history-pagination-metadata-defaults/scripts/tmux-timeout-ws-demo.sh`
+- Verified the WS watcher sees:
+  - `new_request` (status pending)
+  - `request_completed` (status timeout, error "request timed out")
+
+### Notes
+- The demo session is `PLZ-TIMEOUT`.
+- UI URL: `http://localhost:3000/?sessionId=global`
+
+## Step 13: Change expiry semantics to “auto-complete” (default outputs) instead of `status=timeout`
+
+The server-side expiry scheduler was working, but the desired semantics changed: when `expiresAt` is reached, requests should be treated as a normal completion with a synthetic default output (not a distinct `timeout` status). The key idea is to preserve idempotency and correlation via request id while making the server’s behavior compatible with CLI/automation that expects `status=completed`.
+
+This step implements default output generation per widget type and marks these auto-completions via a shared `comment="AUTO_TIMEOUT"` marker so the UI can still label them as TIMEOUT even though `status=completed`.
+
+**Commit (code):** 3afe968 — "⏱️ server: auto-complete expired requests"
+
+### What I did
+- Updated `internal/store/store.go:Expire` to set `status=completed` and synthesize a default output for the request’s widget type.
+- Implemented `setDefaultOutputFor` to write the protobuf oneof output directly (avoids referencing the unexported generated oneof interface type).
+- Updated CLI widget commands in `internal/cli/*.go` to no longer special-case `status=timeout`.
+- Updated the history status badge in `agent-ui-system/client/src/pages/Home.tsx` to render TIMEOUT when `status=completed` and `output.comment == "AUTO_TIMEOUT"`.
+
+### Why
+- “Timeout” as a distinct status makes CLI callers treat expiry as an error path, which is not desired for this workflow.
+- Keeping `status=completed` for expiry makes the request lifecycle uniform while still allowing the UI to communicate “this was auto-completed”.
+
+### What worked
+- `go run ./cmd/plz-confirm confirm ... --timeout 20` returns `approved=false` with `comment=AUTO_TIMEOUT` instead of erroring.
+- The WS watcher receives `request_completed` with `status=completed` for expired requests.
+
+### What didn't work
+- First attempt returned a generated oneof interface type (`v1.IsUIRequest_Output`), but it’s not exported in Go generated code:
+  - `internal/store/store.go:161:77: undefined: v1.IsUIRequest_Output`
+- Also hit a structpb assignment mismatch while drafting the default form output:
+  - `cannot use *st ... as *structpb.Struct`
+- Pre-commit `exhaustive` linter required an explicit `widget_type_unspecified` case even though a `default:` existed.
+
+### What I learned
+- For protobuf oneofs in Go, it’s often easiest to assign concrete wrapper types directly to the oneof field instead of trying to name the oneof interface type.
+- If the UI needs to distinguish “auto-completed” from “user-completed”, a stable marker in the payload (like `comment`) is a practical bridge until we add an explicit enum/field.
+
+### What was tricky to build
+- Designing “safe” defaults for each widget type without inventing new schema (e.g. select/table/image multi vs single), while keeping the output always present to avoid nil-handling edge cases.
+
+### What warrants a second pair of eyes
+- Confirm that using `comment="AUTO_TIMEOUT"` as the cross-widget marker is acceptable long-term, or whether we should introduce an explicit `completion_kind`/`auto_completed` field in `UIRequest`.
+- Verify that the default outputs are aligned with how each CLI command and widget renderer interprets “empty” selections.
+
+### What should be done in the future
+- Add explicit completion kind fields to the protobuf envelope (instead of overloading `comment`).
+- Add unit tests for expiry auto-completion output generation (one per widget type).
+
+### Code review instructions
+- Start with `internal/store/store.go:setDefaultOutputFor` and `internal/store/store.go:Expire`.
+- Validate quickly with:
+  - `go run ./cmd/plz-confirm serve --addr :3001`
+  - `go run ./cmd/plz-confirm ws --base-url http://localhost:3001 --session-id global --pretty`
+  - `go run ./cmd/plz-confirm confirm --base-url http://localhost:3001 --session-id global --timeout 5 --wait-timeout 30 --title TEST`
+
+## Step 14: Disable expiry permanently on first UI interaction (`/touch`)
+
+With server-side auto-complete in place, the remaining UX requirement is that once a user starts interacting with a widget, it should no longer auto-complete at `expiresAt`. The chosen semantics are “disable permanently”: the first interaction flips a flag and the server’s expiry loop will skip the request forever (until it is completed normally).
+
+This step adds a small `POST /api/requests/{id}/touch` endpoint, stores the state on the request (`touched_at` + `expiry_disabled`), and wires the frontend to call it once per request id on the first pointer/keyboard interaction. The server-side touch handling is idempotent so the UI can be aggressive without spamming.
+
+**Commit (code):** fdf1d15 — "🫳 server: disable expiry on touch"
+
+### What I did
+- Extended `proto/plz_confirm/v1/request.proto` with `touched_at` and `expiry_disabled` and regenerated Go/TS code (`make codegen`).
+- Added `internal/store/store.go:Touch` and taught `internal/store/store.go:Expire` to skip requests with `expiry_disabled=true`.
+- Added REST endpoint `POST /api/requests/{id}/touch` in `internal/server/server.go`.
+- Added best-effort touch call from the UI on first interaction:
+  - `agent-ui-system/client/src/components/WidgetRenderer.tsx` captures pointer/key events.
+  - `agent-ui-system/client/src/services/websocket.ts` sends the POST and locally suppresses repeats by request id.
+
+### Why
+- If someone is actively filling a form/selecting options, auto-completing would be surprising and may lose work.
+- Permanent disable is the simplest mental model and avoids having to define “pause window” semantics.
+
+### What worked
+- Touch is idempotent: repeated UI events do not cause repeated network calls.
+- Once touched, the request is no longer auto-completed by the server expiry loop even after `expiresAt`.
+
+### What was tricky to build
+- Picking state that is visible everywhere (REST/WS/UI) without introducing a second “out-of-band” store: storing `touched_at`/`expiry_disabled` on `UIRequest` keeps it portable.
+
+### What warrants a second pair of eyes
+- Whether we should broadcast an explicit WS update event when touch happens (currently we only update server-side state; UI doesn’t render it yet).
+
+### What should be done in the future
+- Implement the countdown badge and hide/stop it once `expiry_disabled=true` is observed by the UI.
+
+### Code review instructions
+- Start at `proto/plz_confirm/v1/request.proto`, then:
+  - `internal/store/store.go:Touch`, `internal/store/store.go:Expire`
+  - `internal/server/server.go:handleTouch`
+  - `agent-ui-system/client/src/components/WidgetRenderer.tsx` (event capture)
+  - `agent-ui-system/client/src/services/websocket.ts:touchRequest`
+
+## Step 15: Add a countdown badge and hide it after touch confirmation
+
+Now that the server supports permanent expiry disable on interaction, the UI needs to expose the countdown so users can see when auto-complete will happen. This step adds a small “EXPIRES_IN” badge derived from `expiresAt` and updates it once per second, while also hiding it once the server confirms the request has been touched (`expiryDisabled=true`).
+
+The main implementation detail is parsing RFC3339Nano safely in the browser: we truncate fractional seconds to milliseconds to keep `Date.parse` reliable, then format a human-friendly `MM:SS` (or `HH:MM:SS`) countdown.
+
+### What I did
+- Added `patchRequest` reducer so the UI can apply partial updates by request id (`agent-ui-system/client/src/store/store.ts`).
+- Updated `touchRequest` to parse the `/touch` response and patch the request in Redux only after server confirmation (`agent-ui-system/client/src/services/websocket.ts`).
+- Added a countdown badge in `WidgetRenderer` and hide it once `expiryDisabled` is present (`agent-ui-system/client/src/components/WidgetRenderer.tsx`).
+
+### What was tricky to build
+- JS date parsing of RFC3339Nano: we normalize the fractional seconds to 3 digits (milliseconds) before parsing to avoid “Invalid Date” edge cases.
+
+### What warrants a second pair of eyes
+- Whether we want the countdown to disappear immediately on first interaction (optimistic) vs only after the `/touch` response (current: confirm-first).
+
+## Step 16: Fix a WidgetRenderer Hooks violation and bump CLI wait default
+
+While testing select widgets, the UI hit a runtime error: `Rendered more hooks than during the previous render`. Root cause was a `useEffect` defined after an early return (`if (!active) return ...`), which violates the Rules of Hooks because the effect hook only exists in some renders.
+
+In the same pass, I bumped the CLI default `--wait-timeout` to 300s so it matches the common server-side timeout default and reduces surprise for longer-running approvals.
+
+**Commit (code):** fa00efe — "🐛 ui: fix WidgetRenderer hook order"
+
+### What I did
+- Moved the `useEffect` in `WidgetRenderer` so it’s called unconditionally; it now no-ops when there is no active request.
+- Changed all Glazed widget commands’ `--wait-timeout` default from 60 to 300 seconds (`internal/cli/*.go`).
+
+### What was tricky to build
+- The countdown effect needed to stay conditional on `active` without being conditionally *declared* as a hook.

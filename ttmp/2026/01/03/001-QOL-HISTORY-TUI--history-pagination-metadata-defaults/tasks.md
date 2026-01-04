@@ -26,27 +26,27 @@
   - [x] Ensure history panel height is bounded to viewport and doesn’t push left column out of view
 
 - [ ] Make `expiresAt` enforceable “UI timeout” with countdown, pausable on interaction
-  - [ ] Define semantics precisely:
-    - [ ] When `now >= expiresAt`, server transitions request to `timeout` (or completes with default output; decide)
-    - [ ] “Interaction stops timeout”: is it a permanent disable, or does it extend/refresh `expiresAt`?
-    - [ ] What counts as interaction (any click/keydown anywhere in widget vs only input changes)?
-  - [ ] Add server-side expiry scheduler (authoritative, not browser-only)
-    - [ ] Periodically scan pending requests and expire those past `expiresAt`, or maintain a deadline heap
-    - [ ] On expire: persist state + broadcast WS event (reuse `request_completed` or add `request_timed_out`)
-  - [ ] Add an “activity/touch” API so the UI can pause/disable expiry
-    - [ ] `POST /api/requests/{id}/touch` (or similar) marks request as “touched/active” and disables expiry enforcement
-    - [ ] Decide idempotency and rate-limiting (to avoid spam from keypress handlers)
-  - [ ] Extend protobuf envelope to record timeout/interaction state
-    - [ ] Add fields like `touched_at`, `expiry_paused_at`, `expiry_disabled` (final shape TBD)
-    - [ ] Ensure protojson output exposes these fields for UI countdown display
-  - [ ] Implement UI countdown display
-    - [ ] Render countdown badge in `agent-ui-system/client/src/components/WidgetRenderer.tsx` (or per-widget)
-    - [ ] Stop/hide countdown once server confirms timeout paused/disabled
-  - [ ] Implement UI interaction detection + debounced touch calls
-    - [ ] Hook into widget containers to capture click/keydown/input events
-    - [ ] Debounce touch calls (e.g. once per N seconds)
-  - [ ] Update CLI behavior on timeout
-    - [ ] Decide how CLI commands exit when `status=timeout` (non-zero exit? structured output? error message?)
+  - [x] Define semantics precisely:
+    - [x] When `now >= expiresAt`, server auto-completes with default output (`status=completed`, output `comment=AUTO_TIMEOUT`)
+- [x] “Interaction stops timeout”: is it a permanent disable, or does it extend/refresh `expiresAt`?
+- [x] What counts as interaction (any click/keydown anywhere in widget vs only input changes)?
+  - [x] Add server-side expiry scheduler (authoritative, not browser-only)
+    - [x] Periodically scan pending requests and expire those past `expiresAt`
+    - [x] On expire: broadcast WS event (`request_completed` with `status=completed` + `comment=AUTO_TIMEOUT`)
+- [x] Add an “activity/touch” API so the UI can pause/disable expiry
+- [x] `POST /api/requests/{id}/touch` (or similar) marks request as “touched/active” and disables expiry enforcement
+- [x] Decide idempotency and rate-limiting (to avoid spam from keypress handlers)
+- [x] Extend protobuf envelope to record timeout/interaction state
+- [x] Add fields `touched_at` + `expiry_disabled` (permanent disable on first interaction)
+- [x] Ensure protojson output exposes these fields for UI countdown display
+- [x] Implement UI countdown display
+- [x] Render countdown badge in `agent-ui-system/client/src/components/WidgetRenderer.tsx` (or per-widget)
+- [x] Stop/hide countdown once server confirms timeout paused/disabled
+- [x] Implement UI interaction detection + debounced touch calls
+- [x] Hook into widget containers to capture click/keydown/input events
+- [x] Debounce touch calls (e.g. once per N seconds)
+  - [x] Update CLI behavior on expiry auto-complete
+    - [x] CLI commands treat expiry as a normal completion (default output + `comment=AUTO_TIMEOUT`)
   - [ ] Add tests
     - [ ] Go unit tests for expiry scheduler + touch semantics
     - [ ] Frontend: at least typecheck + minimal behavioral coverage if test framework exists

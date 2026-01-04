@@ -93,5 +93,13 @@ export interface UIRequest {
   /** RFC3339Nano timestamp */
   expiresAt: string;
   error?: string | undefined;
-  metadata?: RequestMetadata | undefined;
+  metadata?:
+    | RequestMetadata
+    | undefined;
+  /** RFC3339Nano timestamp (first UI interaction) */
+  touchedAt?:
+    | string
+    | undefined;
+  /** If true, server will not auto-complete on expires_at */
+  expiryDisabled?: boolean | undefined;
 }

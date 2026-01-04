@@ -77,4 +77,6 @@ message UIRequest {
   string expires_at = 19;       // RFC3339Nano timestamp
   optional string error = 20;
   optional RequestMetadata metadata = 21;
+  optional string touched_at = 22; // RFC3339Nano timestamp (first UI interaction)
+  optional bool expiry_disabled = 23; // If true, server will not auto-complete on expires_at
 }

@@ -15,6 +15,7 @@ import (
 
 	"github.com/go-go-golems/plz-confirm/internal/store"
 	"github.com/go-go-golems/plz-confirm/proto/generated/go/plz_confirm/v1"
+	"golang.org/x/sync/errgroup"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 )
@@ -117,14 +118,42 @@ func (s *Server) ListenAndServe(ctx context.Context, opts Options) error {
 		addr = ":3000"
 	}
 
+	srv := &http.Server{
+		Addr:              addr,
+		Handler:           s.Handler(),
+		ReadHeaderTimeout: 10 * time.Second,
+	}
+
+	g, gctx := errgroup.WithContext(ctx)
+
+	g.Go(func() error {
+		t := time.NewTicker(1 * time.Second)
+		defer t.Stop()
+		for {
+			select {
+			case <-gctx.Done():
+				return nil
+			case <-t.C:
+				expired := s.store.Expire(time.Now().UTC())
+				for _, req := range expired {
+					if msg, err := marshalWSEvent("request_completed", req); err == nil {
+						s.ws.BroadcastRawJSON(req.SessionId, msg)
+					} else {
+						log.Printf("[WS] marshal request_completed (timeout) failed: %v", err)
+					}
+				}
+			}
+		}
+	})
+
 	if s.images != nil {
-		go func() {
+		g.Go(func() error {
 			t := time.NewTicker(30 * time.Second)
 			defer t.Stop()
 			for {
 				select {
-				case <-ctx.Done():
-					return
+				case <-gctx.Done():
+					return nil
 				case <-t.C:
 					deleted := s.images.Cleanup(context.Background(), time.Now().UTC())
 					if deleted > 0 {
@@ -132,34 +161,34 @@ func (s *Server) ListenAndServe(ctx context.Context, opts Options) error {
 					}
 				}
 			}
-		}()
+		})
 	}
 
-	srv := &http.Server{
-		Addr:              addr,
-		Handler:           s.Handler(),
-		ReadHeaderTimeout: 10 * time.Second,
-	}
-
-	errCh := make(chan error, 1)
-	go func() {
+	g.Go(func() error {
 		log.Printf("plz-confirm server listening on http://localhost%s", addr)
-		errCh <- srv.ListenAndServe()
-	}()
+		err := srv.ListenAndServe()
+		if stderrors.Is(err, http.ErrServerClosed) {
+			return nil
+		}
+		return err
+	})
 
-	select {
-	case <-ctx.Done():
+	g.Go(func() error {
+		<-gctx.Done()
 		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 		_ = srv.Shutdown(shutdownCtx)
-		// Ctrl+C / signal cancellation should be a clean shutdown (exit 0).
-		if stderrors.Is(ctx.Err(), context.Canceled) {
-			return nil
-		}
-		return ctx.Err()
-	case err := <-errCh:
+		return nil
+	})
+
+	if err := g.Wait(); err != nil {
 		return err
 	}
+	// Ctrl+C / signal cancellation should be a clean shutdown (exit 0).
+	if stderrors.Is(ctx.Err(), context.Canceled) {
+		return nil
+	}
+	return ctx.Err()
 }
 
 // --- REST handlers ---
@@ -267,6 +296,13 @@ func (s *Server) handleRequestsItem(w http.ResponseWriter, r *http.Request) {
 		}
 		s.handleSubmitResponse(w, r, id)
 		return
+	case "touch":
+		if r.Method != http.MethodPost {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		s.handleTouch(w, r, id)
+		return
 	case "wait":
 		if r.Method != http.MethodGet {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
@@ -278,6 +314,24 @@ func (s *Server) handleRequestsItem(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "not found", http.StatusNotFound)
 		return
 	}
+}
+
+func (s *Server) handleTouch(w http.ResponseWriter, r *http.Request, id string) {
+	req, err := s.store.Touch(r.Context(), id, time.Now().UTC())
+	if err != nil {
+		if stderrors.Is(err, store.ErrNotFound) {
+			http.Error(w, "request not found", http.StatusNotFound)
+			return
+		}
+		if stderrors.Is(err, store.ErrAlreadyCompleted) {
+			http.Error(w, "request already completed", http.StatusConflict)
+			return
+		}
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+
+	writeProtoJSON(w, http.StatusOK, req)
 }
 
 func (s *Server) handleSubmitResponse(w http.ResponseWriter, r *http.Request, id string) {

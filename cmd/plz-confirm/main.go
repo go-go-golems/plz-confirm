@@ -133,6 +133,7 @@ func main() {
 	rootCmd.AddCommand(cobraImageCmd)
 
 	rootCmd.AddCommand(newServeCmd(ctx))
+	rootCmd.AddCommand(newWSCmd(ctx))
 
 	// Enhanced help system
 	helpSystem := help.NewHelpSystem()

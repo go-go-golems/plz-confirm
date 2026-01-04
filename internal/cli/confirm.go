@@ -22,6 +22,7 @@ var _ cmds.GlazeCommand = &ConfirmCommand{}
 
 type ConfirmSettings struct {
 	BaseURL     string `glazed.parameter:"base-url"`
+	SessionID   string `glazed.parameter:"session-id"`
 	TimeoutS    int    `glazed.parameter:"timeout"`
 	WaitTimeout int    `glazed.parameter:"wait-timeout"`
 
@@ -44,6 +45,12 @@ func NewConfirmCommand(layersList ...layers.ParameterLayer) (*ConfirmCommand, er
 				parameters.WithHelp("Base URL (default: http://localhost:3000)"),
 			),
 			parameters.NewParameterDefinition(
+				"session-id",
+				parameters.ParameterTypeString,
+				parameters.WithDefault("global"),
+				parameters.WithHelp("Session ID (used for WebSocket scoping)"),
+			),
+			parameters.NewParameterDefinition(
 				"timeout",
 				parameters.ParameterTypeInteger,
 				parameters.WithDefault(300),
@@ -52,7 +59,7 @@ func NewConfirmCommand(layersList ...layers.ParameterLayer) (*ConfirmCommand, er
 			parameters.NewParameterDefinition(
 				"wait-timeout",
 				parameters.ParameterTypeInteger,
-				parameters.WithDefault(60),
+				parameters.WithDefault(300),
 				parameters.WithHelp("How long to wait for a response in seconds (0 = wait forever)"),
 			),
 			parameters.NewParameterDefinition(
@@ -96,7 +103,7 @@ func (c *ConfirmCommand) RunIntoGlazeProcessor(
 	cl := client.New(settings.BaseURL)
 	created, err := cl.CreateRequest(ctx, client.CreateRequestParams{
 		Type:      v1.WidgetType_confirm,
-		SessionID: "global", // ignored by server; kept for compatibility
+		SessionID: settings.SessionID,
 		Input: &v1.ConfirmInput{
 			Title:       settings.Title,
 			Message:     settings.Message,
@@ -112,6 +119,10 @@ func (c *ConfirmCommand) RunIntoGlazeProcessor(
 	completed, err := cl.WaitRequest(ctx, created.Id, settings.WaitTimeout)
 	if err != nil {
 		return errors.Wrap(err, "wait for confirm response")
+	}
+
+	if completed.Status != v1.RequestStatus_completed {
+		return errors.Errorf("request %s ended with status=%s", created.Id, completed.Status.String())
 	}
 
 	out := completed.GetConfirmOutput()
