@@ -39,9 +39,9 @@
 - [x] Extend protobuf envelope to record timeout/interaction state
 - [x] Add fields `touched_at` + `expiry_disabled` (permanent disable on first interaction)
 - [x] Ensure protojson output exposes these fields for UI countdown display
-  - [ ] Implement UI countdown display
-    - [ ] Render countdown badge in `agent-ui-system/client/src/components/WidgetRenderer.tsx` (or per-widget)
-    - [ ] Stop/hide countdown once server confirms timeout paused/disabled
+- [x] Implement UI countdown display
+- [x] Render countdown badge in `agent-ui-system/client/src/components/WidgetRenderer.tsx` (or per-widget)
+- [x] Stop/hide countdown once server confirms timeout paused/disabled
 - [x] Implement UI interaction detection + debounced touch calls
 - [x] Hook into widget containers to capture click/keydown/input events
 - [x] Debounce touch calls (e.g. once per N seconds)

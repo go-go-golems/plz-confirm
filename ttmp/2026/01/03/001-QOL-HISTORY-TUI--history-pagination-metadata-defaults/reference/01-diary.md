@@ -490,3 +490,20 @@ This step adds a small `POST /api/requests/{id}/touch` endpoint, stores the stat
   - `internal/server/server.go:handleTouch`
   - `agent-ui-system/client/src/components/WidgetRenderer.tsx` (event capture)
   - `agent-ui-system/client/src/services/websocket.ts:touchRequest`
+
+## Step 15: Add a countdown badge and hide it after touch confirmation
+
+Now that the server supports permanent expiry disable on interaction, the UI needs to expose the countdown so users can see when auto-complete will happen. This step adds a small “EXPIRES_IN” badge derived from `expiresAt` and updates it once per second, while also hiding it once the server confirms the request has been touched (`expiryDisabled=true`).
+
+The main implementation detail is parsing RFC3339Nano safely in the browser: we truncate fractional seconds to milliseconds to keep `Date.parse` reliable, then format a human-friendly `MM:SS` (or `HH:MM:SS`) countdown.
+
+### What I did
+- Added `patchRequest` reducer so the UI can apply partial updates by request id (`agent-ui-system/client/src/store/store.ts`).
+- Updated `touchRequest` to parse the `/touch` response and patch the request in Redux only after server confirmation (`agent-ui-system/client/src/services/websocket.ts`).
+- Added a countdown badge in `WidgetRenderer` and hide it once `expiryDisabled` is present (`agent-ui-system/client/src/components/WidgetRenderer.tsx`).
+
+### What was tricky to build
+- JS date parsing of RFC3339Nano: we normalize the fractional seconds to 3 digits (milliseconds) before parsing to avoid “Invalid Date” edge cases.
+
+### What warrants a second pair of eyes
+- Whether we want the countdown to disappear immediately on first interaction (optimistic) vs only after the `/touch` response (current: confirm-first).
