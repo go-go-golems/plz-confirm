@@ -1,4 +1,4 @@
-.PHONY: gifs proto ts-proto codegen frontend-check buf-lint test build install ci dev-backend dev-frontend dev-tmux
+.PHONY: gifs proto ts-proto codegen frontend-check buf-lint test build install ci ui-build dev-backend dev-frontend dev-tmux
 
 all: gifs
 
@@ -54,13 +54,18 @@ proto:
 
 codegen: proto ts-proto
 
-build: codegen
-	go generate ./... && go build -tags embed ./...
+build: codegen ui-build
+	go build -tags embed ./...
 
 ci: buf-lint test frontend-check
 
 DEV_API_ADDR ?= :3001
 DEV_UI_PORT ?= 3000
+
+.PHONY: ui-build
+
+ui-build:
+	GOWORK=off go run ./internal/server/generate_build.go
 
 dev-backend:
 	go run ./cmd/plz-confirm serve --addr "$(DEV_API_ADDR)"
@@ -93,6 +98,6 @@ bump-glazed:
 	go mod tidy
 
 PLZ_CONFIRM_BINARY=$(shell which plz-confirm)
-install:
-	go generate ./... && go build -tags embed -o ./dist/plz-confirm ./cmd/plz-confirm && \
+install: ui-build
+	go build -tags embed -o ./dist/plz-confirm ./cmd/plz-confirm && \
 		cp ./dist/plz-confirm $(PLZ_CONFIRM_BINARY)

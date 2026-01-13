@@ -1,60 +1,96 @@
+//go:build ignore
 // +build ignore
 
 package main
 
 import (
+	"context"
 	"fmt"
-	"io"
+	"log"
 	"os"
-	"os/exec"
 	"path/filepath"
+	"strings"
+
+	"dagger.io/dagger"
 )
 
 func main() {
-	if err := buildAndCopy(); err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-		os.Exit(1)
-	}
-}
-
-func buildAndCopy() error {
 	// Find repo root (where go.mod is)
 	repoRoot, err := findRepoRoot()
 	if err != nil {
-		return fmt.Errorf("find repo root: %w", err)
+		fatalf("find repo root: %v", err)
 	}
 
 	// Paths
 	frontendDir := filepath.Join(repoRoot, "agent-ui-system")
-	distDir := filepath.Join(frontendDir, "dist", "public")
 	embedDir := filepath.Join(repoRoot, "internal", "server", "embed", "public")
 
-	// Step 1: Build frontend with Vite
-	fmt.Println("Building frontend with Vite...")
-	buildCmd := exec.Command("pnpm", "run", "build")
-	buildCmd.Dir = frontendDir
-	buildCmd.Stdout = os.Stdout
-	buildCmd.Stderr = os.Stderr
-	if err := buildCmd.Run(); err != nil {
-		return fmt.Errorf("vite build failed: %w", err)
+	if _, err := os.Stat(frontendDir); err != nil {
+		fatalf("frontend directory not found at %s: %v", frontendDir, err)
 	}
 
-	// Step 2: Ensure embed directory exists and is clean
-	if err := os.RemoveAll(embedDir); err != nil && !os.IsNotExist(err) {
-		return fmt.Errorf("remove embed dir: %w", err)
-	}
-	if err := os.MkdirAll(embedDir, 0755); err != nil {
-		return fmt.Errorf("create embed dir: %w", err)
+	pnpmVersion := os.Getenv("WEB_PNPM_VERSION")
+	if pnpmVersion == "" {
+		pnpmVersion = "10.4.1"
 	}
 
-	// Step 3: Copy dist/public to internal/server/embed/public
-	fmt.Printf("Copying %s to %s...\n", distDir, embedDir)
-	if err := copyDir(distDir, embedDir); err != nil {
-		return fmt.Errorf("copy dist to embed: %w", err)
+	builderImage := os.Getenv("WEB_BUILDER_IMAGE")
+	if builderImage == "" {
+		builderImage = "node:22"
 	}
 
-	fmt.Println("Frontend build and copy completed successfully!")
-	return nil
+	ctx := context.Background()
+	client, err := dagger.Connect(ctx, dagger.WithLogOutput(os.Stdout))
+	if err != nil {
+		fatalf("connect dagger: %v", err)
+	}
+	defer client.Close()
+
+	if err := os.RemoveAll(embedDir); err != nil {
+		fatalf("remove %s: %v", embedDir, err)
+	}
+	if err := os.MkdirAll(embedDir, 0o755); err != nil {
+		fatalf("mkdir %s: %v", embedDir, err)
+	}
+
+	uiDir := client.Host().Directory(frontendDir)
+	ctr := client.Container().From(builderImage).
+		WithWorkdir("/src").
+		WithMountedDirectory("/src", uiDir).
+		WithEnvVariable("PNPM_HOME", "/pnpm")
+
+	analyticsEndpoint := os.Getenv("VITE_ANALYTICS_ENDPOINT")
+	analyticsWebsiteID := os.Getenv("VITE_ANALYTICS_WEBSITE_ID")
+	ctr = ctr.
+		WithEnvVariable("VITE_ANALYTICS_ENDPOINT", analyticsEndpoint).
+		WithEnvVariable("VITE_ANALYTICS_WEBSITE_ID", analyticsWebsiteID)
+
+	if pnpmCacheDir := os.Getenv("PNPM_CACHE_DIR"); pnpmCacheDir != "" {
+		if err := os.MkdirAll(pnpmCacheDir, 0o755); err != nil {
+			fatalf("mkdir %s: %v", pnpmCacheDir, err)
+		}
+		cacheDir := client.Host().Directory(pnpmCacheDir)
+		ctr = ctr.WithMountedDirectory("/pnpm/store", cacheDir).
+			WithEnvVariable("PNPM_STORE_DIR", "/pnpm/store")
+	}
+
+	if os.Getenv("WEB_BUILDER_IMAGE") == "" || !strings.Contains(builderImage, ":") {
+		ctr = ctr.WithExec([]string{
+			"sh", "-lc",
+			fmt.Sprintf("corepack enable && corepack prepare pnpm@%s --activate", pnpmVersion),
+		})
+	}
+
+	ctr = ctr.
+		WithExec([]string{"sh", "-lc", "pnpm --version"}).
+		WithExec([]string{"sh", "-lc", "pnpm install --reporter=append-only"}).
+		WithExec([]string{"sh", "-lc", "pnpm build"})
+
+	dist := ctr.Directory("/src/dist/public")
+	if _, err := dist.Export(ctx, embedDir); err != nil {
+		fatalf("export dist: %v", err)
+	}
+	log.Printf("exported web dist to %s", embedDir)
 }
 
 func findRepoRoot() (string, error) {
@@ -75,45 +111,7 @@ func findRepoRoot() (string, error) {
 	}
 }
 
-func copyDir(src, dst string) error {
-	return filepath.Walk(src, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-
-		relPath, err := filepath.Rel(src, path)
-		if err != nil {
-			return err
-		}
-
-		dstPath := filepath.Join(dst, relPath)
-
-		if info.IsDir() {
-			return os.MkdirAll(dstPath, info.Mode())
-		}
-
-		return copyFile(path, dstPath, info.Mode())
-	})
+func fatalf(format string, args ...any) {
+	_, _ = fmt.Fprintf(os.Stderr, format+"\n", args...)
+	os.Exit(1)
 }
-
-func copyFile(src, dst string, mode os.FileMode) error {
-	if err := os.MkdirAll(filepath.Dir(dst), 0755); err != nil {
-		return err
-	}
-
-	srcFile, err := os.Open(src)
-	if err != nil {
-		return err
-	}
-	defer srcFile.Close()
-
-	dstFile, err := os.OpenFile(dst, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, mode)
-	if err != nil {
-		return err
-	}
-	defer dstFile.Close()
-
-	_, err = io.Copy(dstFile, srcFile)
-	return err
-}
-

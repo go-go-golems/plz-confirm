@@ -12,8 +12,8 @@ import (
 // embeddedPublicFS is nil unless we detect a local dev build output on disk.
 //
 // In default (no build tag) builds we try a best-effort disk fallback so
-// `go run ./cmd/plz-confirm serve` can still serve the SPA after `go generate
-// ./internal/server` has populated `internal/server/embed/public/`.
+// `go run ./cmd/plz-confirm serve` can still serve the SPA after `make ui-build`
+// has populated `internal/server/embed/public/`.
 var embeddedPublicFS fs.FS = diskPublicFS()
 
 func diskPublicFS() fs.FS {
