@@ -3,6 +3,8 @@
 all: gifs
 
 VERSION=v0.1.14
+GORELEASER_ARGS ?= --skip=sign --snapshot --clean
+GORELEASER_TARGET ?= --single-target
 
 AGENT_UI_DIR=agent-ui-system
 AGENT_UI_TSC_BIN=$(AGENT_UI_DIR)/node_modules/.bin/tsc
@@ -70,7 +72,7 @@ dev-tmux:
 	API_ADDR="$(DEV_API_ADDR)" UI_PORT="$(DEV_UI_PORT)" bash scripts/tmux-up.sh
 
 goreleaser:
-	goreleaser release --skip=sign --snapshot --clean
+	goreleaser release $(GORELEASER_ARGS) $(GORELEASER_TARGET)
 
 tag-major:
 	git tag $(shell svu major)
