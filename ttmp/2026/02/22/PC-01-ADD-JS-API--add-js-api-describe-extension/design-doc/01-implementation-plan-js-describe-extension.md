@@ -10,24 +10,26 @@ DocType: design-doc
 Intent: long-term
 Owners: []
 RelatedFiles:
-    - Path: go-go-goja/engine/runtime.go
+    - Path: ../../../../../../../go-go-goja/engine/runtime.go
       Note: Current engine bootstrap and blank-import module behavior used for dependency tradeoff analysis
-    - Path: go-go-goja/modules/common.go
+    - Path: ../../../../../../../go-go-goja/modules/common.go
       Note: Native module adapter/registration pattern referenced by runtime design
-    - Path: go-go-goja/pkg/runtimeowner/runner.go
+    - Path: ../../../../../../../go-go-goja/pkg/runtimeowner/runner.go
       Note: Owner-thread runtime scheduling model and timeout/cancellation guidance
-    - Path: plz-confirm/agent-ui-system/client/src/components/WidgetRenderer.tsx
+    - Path: agent-ui-system/client/src/components/WidgetRenderer.tsx
       Note: Frontend widget switch and submit flow integration point for script dialog
-    - Path: plz-confirm/agent-ui-system/client/src/services/websocket.ts
+    - Path: agent-ui-system/client/src/services/websocket.ts
       Note: WS event handling and submit/touch API helpers
-    - Path: plz-confirm/internal/server/server.go
+    - Path: internal/server/server.go
       Note: REST lifecycle and widget completion routing that must gain event/update semantics
-    - Path: plz-confirm/internal/store/store.go
+    - Path: internal/store/store.go
       Note: Pending/completion storage model and timeout defaults
-    - Path: plz-confirm/proto/plz_confirm/v1/request.proto
+    - Path: proto/plz_confirm/v1/request.proto
       Note: Current UIRequest and WidgetType schema to extend for script/describe support
-    - Path: plz-confirm/proto/plz_confirm/v1/widgets.proto
+    - Path: proto/plz_confirm/v1/widgets.proto
       Note: Current widget message contracts and oneof output/input patterns
+    - Path: ttmp/2026/02/22/PC-01-ADD-JS-API--add-js-api-describe-extension/tasks.md
+      Note: Implementation backlog checklist derives directly from this design doc
 ExternalSources:
     - local:plz-confirm-js.md
 Summary: Detailed, intern-oriented implementation plan for adding a JS-driven widget API and describe extension across plz-confirm and go-go-goja.
@@ -35,6 +37,7 @@ LastUpdated: 2026-02-22T20:58:00Z
 WhatFor: Plan the full architecture, contracts, and phased implementation for script/describe support with concrete file-level guidance.
 WhenToUse: Use when implementing or reviewing JS describe extension work in plz-confirm and reusable runtime support in go-go-goja.
 ---
+
 
 
 # Implementation Plan: JS Describe Extension

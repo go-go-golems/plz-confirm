@@ -10,20 +10,23 @@ DocType: reference
 Intent: long-term
 Owners: []
 RelatedFiles:
-    - Path: plz-confirm/ttmp/2026/02/22/PC-01-ADD-JS-API--add-js-api-describe-extension/design-doc/01-implementation-plan-js-describe-extension.md
+    - Path: ttmp/2026/02/22/PC-01-ADD-JS-API--add-js-api-describe-extension/design-doc/01-implementation-plan-js-describe-extension.md
       Note: Diary step documents creation of final implementation plan
-    - Path: plz-confirm/ttmp/2026/02/22/PC-01-ADD-JS-API--add-js-api-describe-extension/scripts/goja-flow/main.go
+    - Path: ttmp/2026/02/22/PC-01-ADD-JS-API--add-js-api-describe-extension/scripts/goja-flow/main.go
       Note: Diary captures runtime export-shape experiment
-    - Path: plz-confirm/ttmp/2026/02/22/PC-01-ADD-JS-API--add-js-api-describe-extension/scripts/goja-interrupt/main.go
+    - Path: ttmp/2026/02/22/PC-01-ADD-JS-API--add-js-api-describe-extension/scripts/goja-interrupt/main.go
       Note: Diary captures timeout interrupt experiment
-    - Path: plz-confirm/ttmp/2026/02/22/PC-01-ADD-JS-API--add-js-api-describe-extension/scripts/protojson-shape/main.go
+    - Path: ttmp/2026/02/22/PC-01-ADD-JS-API--add-js-api-describe-extension/scripts/protojson-shape/main.go
       Note: Diary captures protojson shape experiment
+    - Path: ttmp/2026/02/22/PC-01-ADD-JS-API--add-js-api-describe-extension/tasks.md
+      Note: Diary tracks execution checklist completion and commit cadence
 ExternalSources: []
 Summary: ""
 LastUpdated: 2026-02-22T15:39:48.380638079-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 
 # Diary
@@ -412,3 +415,64 @@ I converted the ticket from a placeholder tasks file into a detailed phased task
 
 ### Technical details
 - `tasks.md` now includes phased checkpoints for contract/proto/server/store/frontend/CLI/runtime/tests/docs rollout.
+
+## Step 6: Refreshed Doc Relationships and Checked Off Linking Task
+
+I refreshed ticket-level and doc-level relationships so the ticket index and core docs now explicitly point to `tasks.md` and `changelog.md`, and the design/diary docs now reference the task checklist as their execution companion.
+
+### Prompt Context
+
+**User prompt (verbatim):** "Create a detailed list of tasks in the ticket, check the moff as you work one by one, commit as you go, and continue keeping your diary."
+
+**Assistant interpretation:** Continue the sequential checkoff flow and update ticket metadata relationships while documenting each step.
+
+**Inferred user intent:** Keep navigation and traceability tight so future contributors can jump between plan, checklist, and work log.
+
+**Commit (code):** pending for this step
+
+### What I did
+- Updated ticket index related files:
+  - added `tasks.md`
+  - added `changelog.md`
+- Updated diary related files:
+  - added `tasks.md`
+- Updated implementation plan related files:
+  - added `tasks.md`
+
+Commands used:
+- `docmgr doc relate --ticket PC-01-ADD-JS-API --file-note ...tasks.md:... --file-note ...changelog.md:...`
+- `docmgr doc relate --doc .../reference/01-diary.md --file-note ...tasks.md:...`
+- `docmgr doc relate --doc .../design-doc/01-implementation-plan-js-describe-extension.md --file-note ...tasks.md:...`
+
+### Why
+- This makes the ticket easier to navigate and keeps checklist execution tightly bound to architecture and diary context.
+
+### What worked
+- `docmgr` successfully added relationships to all three targets with clear counts.
+
+### What didn't work
+- N/A
+
+### What I learned
+- Linking `tasks.md` directly from both design doc and diary reduces context switching during execution.
+
+### What was tricky to build
+- Avoiding relationship sprawl while still capturing the minimum useful graph.
+
+### What warrants a second pair of eyes
+- Confirm whether ticket index should stay at ~5 related files or include script artifacts directly.
+
+### What should be done in the future
+- Revisit related-file set once coding starts to keep it concise and high-signal.
+
+### Code review instructions
+- Inspect updated frontmatter sections:
+  - `/home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/ttmp/2026/02/22/PC-01-ADD-JS-API--add-js-api-describe-extension/index.md`
+  - `/home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/ttmp/2026/02/22/PC-01-ADD-JS-API--add-js-api-describe-extension/reference/01-diary.md`
+  - `/home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/ttmp/2026/02/22/PC-01-ADD-JS-API--add-js-api-describe-extension/design-doc/01-implementation-plan-js-describe-extension.md`
+
+### Technical details
+- Relationship update result highlights:
+  - index: `Added: 2`
+  - diary: `Added: 1`
+  - design-doc: `Added: 1`
