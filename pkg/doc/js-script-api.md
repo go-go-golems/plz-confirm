@@ -1,138 +1,339 @@
 ---
 Title: JS Script API Reference
 Slug: js-script-api
-Short: Complete developer guide for plz-confirm's script widget API, contract, lifecycle, and troubleshooting.
+Short: API reference for plz-confirm's script widget — contract, endpoints, widget mapping, and error codes.
 Topics:
 - developer
 - api
 - javascript
 - scripts
-- backend
-- frontend
 Commands:
 - serve
 IsTopLevel: true
 IsTemplate: false
 ShowPerDefault: true
-SectionType: Tutorial
+SectionType: Reference
 ---
 
-This page is the end-to-end reference for the JS script functionality in `plz-confirm`. It is written for developers who are new to the codebase and need both a conceptual model and exact API details.
+The script API lets you define a multi-step interaction as a JavaScript state machine. Instead of sending a single static widget input (e.g. `confirmInput`), you send `scriptInput.script` and the server drives the flow through runtime callbacks.
 
-The script API lets you define a multi-step interaction as JavaScript and execute it through the same request lifecycle as other widgets. Instead of sending a static widget input (for example `confirmInput`), you send `scriptInput.script` and let runtime callbacks drive the flow.
+## Quick Start
 
-## What You Are Building
+Write a script file:
 
-A script flow is a state machine with four required exports:
+```javascript
+// /tmp/plz-script.js
+module.exports = {
+  describe: function () {
+    return { name: "my-flow", version: "1.0.0" };
+  },
+  init: function () {
+    return { step: "confirm" };
+  },
+  view: function (state) {
+    return {
+      widgetType: "confirm",
+      input: { title: "Continue?", approveText: "Yes", rejectText: "No" },
+      stepId: "confirm"
+    };
+  },
+  update: function (state, event) {
+    return { done: true, result: { approved: !!(event.data && event.data.approved) } };
+  }
+};
+```
 
-- `describe(ctx)` returns metadata (`name`, `version`, optional fields).
-- `init(ctx)` returns initial state.
-- `view(state, ctx)` returns the UI projection (`widgetType` + `input`).
-- `update(state, event, ctx)` returns either next state or terminal `{ done: true, result: ... }`.
+Create the request:
 
-The server executes this contract and stores progression in request fields:
+```bash
+REQ_ID=$(
+  jq -n --rawfile script /tmp/plz-script.js \
+    '{type:"script",sessionId:"global",scriptInput:{title:"Demo",timeoutMs:1500,script:$script}}' \
+  | curl -sS -X POST http://localhost:3000/api/requests \
+      -H 'Content-Type: application/json' -d @- \
+  | jq -r '.id'
+)
+```
 
-- `scriptState`
-- `scriptView`
-- `scriptDescribe`
-- `scriptOutput` (on completion)
+Submit an event:
 
-## Where This Lives In The Codebase
+```bash
+curl -sS -X POST "http://localhost:3000/api/requests/$REQ_ID/event" \
+  -H 'Content-Type: application/json' \
+  -d '{"type":"submit","stepId":"confirm","data":{"approved":true}}'
+```
 
-Start here when reading implementation:
+Read the result:
 
-- Runtime:
-  - `internal/scriptengine/engine.go`
-  - `internal/scriptengine/engine_test.go`
-- Server lifecycle:
-  - `internal/server/server.go`
-  - `internal/server/script.go`
-  - `internal/server/script_test.go`
-  - `internal/server/ws.go`
-  - `internal/server/ws_test.go`
-- Persistence:
-  - `internal/store/store.go`
-- Frontend integration:
-  - `agent-ui-system/client/src/services/websocket.ts`
-  - `agent-ui-system/client/src/components/WidgetRenderer.tsx`
-  - `agent-ui-system/client/src/store/store.ts`
+```bash
+curl -sS "http://localhost:3000/api/requests/$REQ_ID" | jq '.scriptOutput'
+```
 
-## Lifecycle Overview
+## Lifecycle
 
-The script flow extends the default request lifecycle with one extra endpoint: `/event`.
+```text
+Agent / CLI                      Server                              Browser
+──────────                      ──────                              ───────
+POST /api/requests         ──>  describe() -> init() -> view()
+  type:"script"                 store scriptState + scriptView
+  scriptInput:{script,...}      broadcast "new_request"        ──>  render widget
 
-1. Client creates request:
-   - `POST /api/requests` with `type: "script"` + `scriptInput`.
-2. Server executes:
-   - `describe -> init -> view`.
-3. Server stores pending request with `scriptState` and `scriptView`.
-4. Browser receives `new_request` over WS.
-5. Browser submits events:
-   - `POST /api/requests/{id}/event` with `ScriptEvent`.
-6. Server executes:
-   - `update(state, event, ctx)`.
-7. If non-terminal:
-   - patch request (`scriptState`/`scriptView`), broadcast `request_updated`.
-8. If terminal:
-   - complete request with `scriptOutput`, broadcast `request_completed`.
-9. CLI/API consumer can observe completion via:
-   - `GET /api/requests/{id}`
-   - `GET /api/requests/{id}/wait?timeout=<seconds>`
+                                                               <──  user interacts
+                           <──  POST /api/requests/{id}/event
+                                update(state, event, ctx)
+                                  ├─ non-terminal: patch state/view
+                                  │  broadcast "request_updated"  ──>  re-render
+                                  └─ terminal: store scriptOutput
+                                     broadcast "request_completed" ──> show done
 
-## API Reference
+GET /api/requests/{id}     ──>  return final state
+GET .../wait?timeout=60    ──>  long-poll until completed
+```
+
+## Script Contract
+
+Your script must `module.exports` four functions.
+
+### `describe(ctx) -> object`
+
+Returns metadata identifying the script. Called once on request creation.
+
+Required fields:
+- `name` (string)
+- `version` (string)
+
+Optional fields:
+- `apiVersion` (string) — for future contract versioning.
+- `capabilities` (string[]) — declares what event types the script handles.
+
+### `init(ctx) -> object`
+
+Returns the initial state. Called once after `describe`.
+
+- Must return a plain object (not a primitive, not an array).
+- Should be deterministic for the same `ctx.props`.
+
+### `view(state, ctx) -> object`
+
+Projects state into a widget instruction. Called after `init` and after every non-terminal `update`.
+
+Required fields:
+- `widgetType` (string) — which widget to render (see Widget Type Reference below).
+- `input` (object) — widget-specific configuration (see Widget Type Reference below).
+
+Optional fields:
+- `stepId` (string) — correlates the view to a logical step; passed back in `event.stepId`.
+- `title` (string) — override title shown in UI.
+- `description` (string) — supplementary text shown in UI.
+
+### `update(state, event, ctx) -> object`
+
+Consumes a user event and advances the flow. Return one of:
+
+**Non-terminal** — return a state object. The server calls `view(newState, ctx)` and broadcasts `request_updated`.
+
+```javascript
+// mutating the state in place is fine
+state.step = "next";
+return state;
+```
+
+**Terminal** — return `{ done: true, result: {...} }`. The server stores `result` as `scriptOutput` and broadcasts `request_completed`.
+
+```javascript
+return { done: true, result: { approved: true, env: "prod" } };
+```
+
+`result` must be a plain object.
+
+### The `ctx` Object
+
+All four functions receive `ctx` as their last argument. It contains:
+
+| Field | Type | Description |
+|---|---|---|
+| `ctx.props` | object | Values from `scriptInput.props`. Empty object if omitted. |
+| `ctx.now` | string | Current server time (RFC 3339 with nanoseconds). |
+
+Example using props:
+
+```javascript
+init: function (ctx) {
+  return { step: "confirm", env: ctx.props.defaultEnv || "staging" };
+}
+```
+
+### The `event` Object
+
+The `event` passed to `update` has this shape:
+
+| Field | Type | Description |
+|---|---|---|
+| `event.type` | string | Semantic event type. The UI always sends `"submit"`. |
+| `event.stepId` | string? | Echoed from `view().stepId` if set. |
+| `event.actionId` | string? | Action-level correlation (not commonly used). |
+| `event.data` | object? | Widget output payload. Shape depends on widget type. |
+
+## Widget Type Reference
+
+Each `widgetType` returned by `view()` maps to an existing plz-confirm widget. The `input` object mirrors the widget's proto input, and `event.data` mirrors its proto output.
+
+### `confirm`
+
+Simple yes/no dialog.
+
+`input` fields:
+- `title` (string, required)
+- `message` (string, optional)
+- `approveText` (string, optional, default "Approve")
+- `rejectText` (string, optional, default "Reject")
+
+`event.data` on submit:
+- `approved` (boolean)
+- `timestamp` (string, ISO 8601)
+- `comment` (string, optional)
+
+### `select`
+
+Single or multi-select from a list.
+
+`input` fields:
+- `title` (string, required)
+- `options` (string[], required)
+- `multi` (boolean, optional, default false)
+- `searchable` (boolean, optional, default false)
+
+`event.data` on submit:
+- `selectedSingle` (string) — when `multi: false`
+- `selectedMulti` (`{ values: string[] }`) — when `multi: true`
+- `comment` (string, optional)
+
+### `form`
+
+Dynamic form driven by JSON Schema.
+
+`input` fields:
+- `title` (string, required)
+- `schema` (object, required) — JSON Schema definition
+
+`event.data` on submit:
+- The form field values as a flat object (matches schema properties).
+- `comment` (string, optional)
+
+### `table`
+
+Tabular data with row selection.
+
+`input` fields:
+- `title` (string, required)
+- `data` (object[], required) — row objects
+- `columns` (string[], required) — column keys to display
+- `multiSelect` (boolean, optional, default false)
+- `searchable` (boolean, optional, default false)
+
+`event.data` on submit:
+- `selectedSingle` (object) — when `multiSelect: false`
+- `selectedMulti` (`{ values: object[] }`) — when `multiSelect: true`
+- `comment` (string, optional)
+
+### `upload`
+
+File upload dialog.
+
+`input` fields:
+- `title` (string, required)
+- `accept` (string[], optional) — MIME types or extensions
+- `multiple` (boolean, optional, default false)
+- `maxSize` (number, optional) — bytes
+- `callbackUrl` (string, optional)
+
+`event.data` on submit:
+- `files` (`{ name, size, path, mimeType }[]`)
+- `comment` (string, optional)
+
+### `image`
+
+Image display with selection or confirmation.
+
+`input` fields:
+- `title` (string, required)
+- `message` (string, optional)
+- `images` (`{ src, alt?, label?, caption? }[]`, required)
+- `mode` (string, `"select"` or `"confirm"`)
+- `options` (string[], optional) — text choices shown alongside images
+- `multi` (boolean, optional, default false)
+
+`event.data` on submit (varies by mode):
+- `selectedNumber` / `selectedNumbers` — image index(es) when mode is `"select"` without `options`
+- `selectedString` / `selectedStrings` — option value(s) when `options` are provided
+- `selectedBool` — when mode is `"confirm"`
+- `timestamp` (string, ISO 8601)
+- `comment` (string, optional)
+
+## HTTP Endpoints
 
 ### Create Script Request
-
-Endpoint:
 
 ```text
 POST /api/requests
 Content-Type: application/json
 ```
 
-Required top-level fields:
+Body:
 
-- `type`: must be `"script"`.
-- `sessionId`: optional, defaults to `"global"` if omitted.
-- `scriptInput`: object with `title` and `script`.
+```json
+{
+  "type": "script",
+  "sessionId": "global",
+  "scriptInput": {
+    "title": "My Flow",
+    "script": "module.exports = { ... }",
+    "props": { "key": "value" },
+    "timeoutMs": 5000
+  }
+}
+```
 
 `scriptInput` fields:
 
-- `title` (string): human-readable title.
-- `script` (string): JavaScript source with required exports.
-- `props` (object, optional): values passed to `ctx.props`.
-- `timeoutMs` (int64, optional): per-call timeout for runtime invocations.
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `title` | string | yes | Human-readable title |
+| `script` | string | yes | JavaScript source with required exports |
+| `props` | object | no | Passed to `ctx.props` in all script functions |
+| `timeoutMs` | int64 | no | Per-call execution timeout in milliseconds |
+
+Response: `UIRequest` with `scriptState`, `scriptView`, `scriptDescribe` populated.
 
 ### Submit Script Event
-
-Endpoint:
 
 ```text
 POST /api/requests/{id}/event
 Content-Type: application/json
 ```
 
-Payload (`ScriptEvent`):
+Body:
 
-- `type` (string, required): semantic event type (`submit`, `next`, etc.).
-- `stepId` (string, optional): step correlation.
-- `actionId` (string, optional): action-level correlation.
-- `data` (object, optional): event payload.
+```json
+{
+  "type": "submit",
+  "stepId": "confirm",
+  "data": { "approved": true }
+}
+```
 
-### Read Request
+Response: updated `UIRequest`. If terminal, includes `scriptOutput`.
 
-Endpoints:
+### Read / Wait
 
 ```text
 GET /api/requests/{id}
 GET /api/requests/{id}/wait?timeout=60
 ```
 
-Use `GET` to inspect current pending state/view or final output.
+The `/wait` endpoint long-polls until the request completes or the timeout elapses.
 
-### WebSocket Event Types
-
-Endpoint:
+### WebSocket
 
 ```text
 GET /ws?sessionId=<id>
@@ -141,165 +342,30 @@ GET /ws?sessionId=<id>
 Event envelope:
 
 ```json
-{
-  "type": "new_request|request_updated|request_completed",
-  "request": { "...UIRequest protojson..." }
-}
+{ "type": "new_request|request_updated|request_completed", "request": { ... } }
 ```
 
-For script flows:
+- `new_request` — emitted after `describe/init/view` on creation.
+- `request_updated` — emitted after a non-terminal `update`.
+- `request_completed` — emitted when `update` returns `{ done: true }`.
 
-- `new_request`: initial `describe/init/view` snapshot.
-- `request_updated`: intermediate progression after `update`.
-- `request_completed`: terminal state with `scriptOutput`.
+## Error Codes
 
-## Script Contract In Detail
+| Status | Meaning | Common Cause |
+|---|---|---|
+| `400` | Validation failure | Missing export, non-object return from `init`/`view`, invalid `scriptInput` |
+| `408` | Cancelled | Request context cancelled (e.g. client disconnect) |
+| `422` | Runtime fault | Script threw an error during `update` or `view` |
+| `504` | Timeout | Script execution exceeded `timeoutMs` |
 
-### `describe(ctx)`
+## Examples
 
-Purpose:
-
-- identify script behavior and version.
-
-Must return object with:
-
-- `name` (string, required)
-- `version` (string, required)
-
-Optional:
-
-- `apiVersion` (string)
-- `capabilities` (string[])
-
-### `init(ctx)`
-
-Purpose:
-
-- produce initial state object.
-
-Requirements:
-
-- must return an object.
-- should be deterministic for same `ctx.props` unless intentional randomness is required.
-
-### `view(state, ctx)`
-
-Purpose:
-
-- project state to a renderable widget instruction.
-
-Must return object with:
-
-- `widgetType` (string, required), one of currently supported renderer mappings:
-  - `confirm`
-  - `select`
-  - `table`
-  - `form`
-  - `upload`
-  - `image`
-- `input` (object, optional but usually present)
-
-Optional fields used by UI:
-
-- `stepId`
-- `title`
-- `description`
-
-### `update(state, event, ctx)`
-
-Purpose:
-
-- consume input event and advance flow.
-
-Return either:
-
-- next state object, or
-- terminal object:
-
-```json
-{ "done": true, "result": { "...any object..." } }
-```
-
-Notes:
-
-- If `done: true`, `result` must be an object.
-- If non-terminal, returned object becomes new `scriptState`, then `view` is called again.
-
-## Runtime Behavior And Constraints
-
-Execution model:
-
-- Runtime is Goja (`internal/scriptengine`).
-- Server enforces required exports.
-- Each invocation is timeout-bounded (`timeoutMs` or default).
-
-Current sandbox constraints:
-
-- `require` is unavailable.
-- `process` is unavailable.
-- No host module bridge is exposed.
-
-Cancellation and timeout:
-
-- Timeout/cancel interrupts runtime execution.
-- Cancellation and timeout are surfaced as mapped HTTP statuses (below).
-
-## Error Mapping
-
-Script errors map to response status classes:
-
-- `400 Bad Request`:
-  - contract/payload validation failures
-  - missing required exports/fields
-  - invalid shape (non-object where object required)
-- `422 Unprocessable Entity`:
-  - runtime script fault during execution (for example thrown error in `update`)
-- `504 Gateway Timeout`:
-  - script execution exceeded `timeoutMs`
-- `408 Request Timeout`:
-  - execution cancelled by request context cancellation
-
-## Example 1: Minimal One-Step Confirm Script
+### Two-Step: Confirm then Select
 
 ```javascript
 module.exports = {
   describe: function () {
-    return { name: "minimal-confirm", version: "1.0.0" };
-  },
-  init: function () {
-    return { step: "confirm" };
-  },
-  view: function () {
-    return {
-      widgetType: "confirm",
-      input: {
-        title: "Continue?",
-        approveText: "Yes",
-        rejectText: "No"
-      },
-      stepId: "confirm"
-    };
-  },
-  update: function (state, event) {
-    return {
-      done: true,
-      result: { approved: !!(event.data && event.data.approved) }
-    };
-  }
-};
-```
-
-## Example 2: Two-Step Confirm -> Select Script
-
-```javascript
-module.exports = {
-  describe: function () {
-    return {
-      name: "deploy-wizard",
-      version: "1.0.0",
-      apiVersion: "v1",
-      capabilities: ["submit"]
-    };
+    return { name: "deploy-wizard", version: "1.0.0" };
   },
   init: function () {
     return { step: "confirm" };
@@ -330,27 +396,56 @@ module.exports = {
   },
   update: function (state, event) {
     if (state.step === "confirm") {
-      if (event.type === "submit" && event.data && event.data.approved === true) {
-        return { done: true, result: { approved: true, env: "prod" } };
+      if (event.data && event.data.approved) {
+        return { done: true, result: { env: "prod" } };
       }
       state.step = "pick";
       return state;
     }
-
     return {
       done: true,
-      result: {
-        approved: false,
-        env: event.data ? event.data.selectedSingle : "staging"
-      }
+      result: { env: event.data ? event.data.selectedSingle : "staging" }
     };
   }
 };
 ```
 
-## Example 3: Full API Test Sequence (Copy/Paste)
+### Using Props for Configuration
 
-Create script source:
+```javascript
+module.exports = {
+  describe: function () {
+    return { name: "configurable-confirm", version: "1.0.0" };
+  },
+  init: function (ctx) {
+    return { action: ctx.props.action || "deploy" };
+  },
+  view: function (state, ctx) {
+    return {
+      widgetType: "confirm",
+      input: {
+        title: "Confirm " + state.action + "?",
+        message: ctx.props.message || ""
+      }
+    };
+  },
+  update: function (state, event) {
+    return { done: true, result: { action: state.action, approved: !!(event.data && event.data.approved) } };
+  }
+};
+```
+
+Create with props:
+
+```bash
+jq -n --rawfile script /tmp/configurable.js \
+  '{type:"script",scriptInput:{title:"Deploy",script:$script,props:{action:"deploy",message:"This deploys v2.1"}}}' \
+| curl -sS -X POST http://localhost:3000/api/requests -H 'Content-Type: application/json' -d @-
+```
+
+### Full API Test Sequence (Copy/Paste)
+
+Save the two-step script to a file, then run:
 
 ```bash
 cat >/tmp/plz-script.js <<'JS'
@@ -362,112 +457,54 @@ module.exports = {
       return { widgetType: "confirm", stepId: "confirm", input: { title: "Proceed?" } };
     }
     return {
-      widgetType: "select",
-      stepId: "select",
+      widgetType: "select", stepId: "select",
       input: { title: "Choose env", options: ["staging", "prod"], multi: false, searchable: false }
     };
   },
   update: function (state, event) {
-    if (state.step === "confirm") {
-      state.step = "select";
-      return state;
-    }
+    if (state.step === "confirm") { state.step = "select"; return state; }
     return { done: true, result: { env: event.data.selectedSingle } };
   }
 };
 JS
-```
 
-Create request:
-
-```bash
+# Create
 REQ_ID=$(
   jq -n --rawfile script /tmp/plz-script.js \
     '{type:"script",sessionId:"global",scriptInput:{title:"API Sequence",timeoutMs:1500,script:$script}}' \
   | curl -sS -X POST http://localhost:3000/api/requests \
-      -H 'Content-Type: application/json' \
-      -d @- \
+      -H 'Content-Type: application/json' -d @- \
   | jq -r '.id'
 )
-echo "$REQ_ID"
-```
 
-Advance first step:
-
-```bash
+# Step 1: advance past confirm
 curl -sS -X POST "http://localhost:3000/api/requests/$REQ_ID/event" \
   -H 'Content-Type: application/json' \
   -d '{"type":"submit","stepId":"confirm","data":{"approved":false}}' | jq
-```
 
-Complete second step:
-
-```bash
+# Step 2: complete with selection
 curl -sS -X POST "http://localhost:3000/api/requests/$REQ_ID/event" \
   -H 'Content-Type: application/json' \
   -d '{"type":"submit","stepId":"select","data":{"selectedSingle":"staging"}}' | jq
+
+# Verify
+curl -sS "http://localhost:3000/api/requests/$REQ_ID" \
+  | jq '{status,scriptState,scriptView,scriptOutput}'
 ```
-
-Verify persisted/final state:
-
-```bash
-curl -sS "http://localhost:3000/api/requests/$REQ_ID" | jq '{status,scriptState,scriptView,scriptOutput}'
-```
-
-## Local Development Workflow
-
-Recommended local setup:
-
-```bash
-# terminal 1 (backend)
-go run ./cmd/plz-confirm serve --addr :3001
-
-# terminal 2 (frontend dev server)
-pnpm -C agent-ui-system dev --host --port 3000
-```
-
-Open browser:
-
-- `http://localhost:3000?sessionId=global`
-
-In this mode:
-
-- Browser connects WS to `/ws` on port `3000` (proxied to backend `:3001`).
-- API calls to `/api/*` on `3000` are proxied to backend `:3001`.
 
 ## Common Mistakes
 
-- Missing required export:
-  - script compiles, but create fails because `describe/init/view/update` is incomplete.
-- Returning primitive from `init` or `view`:
-  - server expects object and returns validation error.
-- Returning `done: true` without object result:
-  - server treats result shape as invalid.
-- Unsupported `widgetType` in `view`:
-  - frontend renders explicit unsupported-widget error.
-- Ignoring timeout:
-  - long loops in script callbacks can trigger `504`.
-
-## Troubleshooting
-
-| Problem | Likely Cause | Solution |
+| Mistake | Symptom | Fix |
 |---|---|---|
-| `400` on create (`script init failed` / `must export`) | Missing required export or invalid return shape | Validate contract: all four exports must exist and return objects where required |
-| `422` on event (`script update failed`) | Script threw runtime error in `update` or `view` | Add guards in script logic and log intermediate state/event values |
-| `504` on create/event | Callback exceeded `timeoutMs` | Simplify callback work, avoid loops, or raise `timeoutMs` conservatively |
-| Browser shows unsupported script widget | `view.widgetType` not mapped in renderer | Use a supported widget type or add renderer support in `WidgetRenderer.tsx` |
-| Request appears stuck pending | Non-terminal `update` result keeps cycling or no completion event submitted | Verify event payload and that terminal condition returns `{done:true,result:{...}}` |
-
-## Rollout Guidance
-
-- Gate script flow usage (config or allowlist) before broad enablement.
-- Start with internal sessions.
-- Track and alert on script status mix (`400/408/422/504`), timeout spikes, and runtime-fault spikes.
-- Keep non-script command paths unchanged while rolling out script behavior.
+| Missing a required export (`describe`, `init`, `view`, or `update`) | `400` on create | Add all four exports to `module.exports` |
+| Returning a primitive or array from `init` or `view` | `400` — "invalid return shape" | Return a plain object `{}` |
+| Returning `{ done: true }` without `result` being an object | `400` — invalid terminal shape | Use `{ done: true, result: { ... } }` |
+| Using an unsupported `widgetType` | Browser shows "unsupported widget" error | Use one of: `confirm`, `select`, `table`, `form`, `upload`, `image` |
+| Infinite loop or heavy computation in a callback | `504` timeout | Keep callbacks simple; raise `timeoutMs` if needed |
+| Accessing `event.data.x` without null-checking `event.data` | `422` runtime error | Guard: `event.data && event.data.x` |
 
 ## See Also
 
-- `how-to-use`
-- `adding-widgets`
-- `internal/scriptengine/engine.go` (runtime contract implementation)
-- `internal/server/script.go` (event lifecycle and mapping)
+- `how-to-use` — end-user and agent-developer usage guide
+- `adding-widgets` — adding new widget types to plz-confirm
+- `js-script-development` — codebase internals, dev workflow, and troubleshooting for contributors
