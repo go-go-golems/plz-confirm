@@ -105,3 +105,26 @@ Added frontend Vitest coverage for script reducer and renderer behavior; checked
 - /home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/agent-ui-system/client/src/store/store.ts — Store factory export for isolated frontend tests
 - /home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/ttmp/2026/02/22/PC-01-ADD-JS-API--add-js-api-describe-extension/tasks.md — Task 54 and Phase 8 checked
 
+
+## 2026-02-22
+
+Completed Phase 7 runtime ownership items: tightened script interrupt lifecycle handling and added sandbox exposure/cancel-path tests.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/internal/scriptengine/engine.go — Context-driven interrupt lifecycle cleanup
+- /home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/internal/scriptengine/engine_test.go — Sandbox and cancellation regression coverage
+- /home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/ttmp/2026/02/22/PC-01-ADD-JS-API--add-js-api-describe-extension/tasks.md — Tasks 45/48/49 checked
+
+
+## 2026-02-22
+
+Added explicit script error taxonomy mapping (validation/runtime/timeout/cancel) and server tests for persisted partially-progressed state retrieval.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/internal/server/script.go — HTTP status mapping for script execution failures
+- /home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/internal/server/script_test.go — Coverage for 504/422 mapping and GET-after-patch stability
+- /home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/internal/server/server.go — Create-path script error mapping
+- /home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/ttmp/2026/02/22/PC-01-ADD-JS-API--add-js-api-describe-extension/tasks.md — Tasks 28 and 32 checked
+

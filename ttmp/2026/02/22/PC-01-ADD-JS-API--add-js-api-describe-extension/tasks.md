@@ -35,12 +35,12 @@
 - [x] Implement event loop path for `update` and projection path for `view`
 - [x] Implement request-update broadcast path over websocket
 - [x] Ensure final submit path remains compatible with existing `wait`/`response` semantics
-- [ ] Add robust error mapping (validation error vs runtime fault vs timeout)
+- [x] Add robust error mapping (validation error vs runtime fault vs timeout)
 
 - [x] Phase 4: Store and persistence behavior
 - [x] Decide persisted fields for script progression (`state`, `view`, metadata pointers)
 - [x] Update store create/update clone behavior in `internal/store/store.go`
-- [ ] Ensure history queries remain stable with partially progressed script requests
+- [x] Ensure history queries remain stable with partially progressed script requests
 - [x] Ensure backward compatibility for non-script request types
 
 - [x] Phase 5: Frontend runtime and rendering
@@ -56,11 +56,11 @@
 - [x] Ensure session scoping and timeout behavior are preserved for script flows
 - [x] Ensure non-script commands remain unchanged
 
-- [ ] Phase 7: Runtime ownership and go-go-goja alignment
+- [x] Phase 7: Runtime ownership and go-go-goja alignment
 - [x] Choose integration strategy: direct `go-go-goja` engine usage vs thin local wrapper
 - [x] Implement bounded execution/interrupt handling consistent with go-go-goja patterns
-- [ ] Validate module exposure and host bridge constraints for script API surface
-- [ ] Add runtime lifecycle cleanup hooks to avoid leaked goroutines/resources
+- [x] Validate module exposure and host bridge constraints for script API surface
+- [x] Add runtime lifecycle cleanup hooks to avoid leaked goroutines/resources
 
 - [x] Phase 8: Testing and validation
 - [x] Add unit tests for contract validation and runtime envelope decoding

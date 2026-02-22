@@ -1055,3 +1055,150 @@ This closes task `54` and fully closes Phase 8 checklist coverage in the ticket.
   - `3` passing tests across `2` files.
 - Phase status:
   - Phase 8 (Testing and validation) now fully checked.
+
+## Step 15: Closed Phase 7 Runtime Ownership Tasks with Sandbox + Lifecycle Hardening
+
+I completed the remaining Phase 7 runtime ownership work by tightening interruption lifecycle handling and adding explicit sandbox exposure tests.
+
+The timeout/cancel path now uses a cancellable execution context with an interrupt watcher and deterministic cleanup signal, which removes the previous pattern of running script execution in a separate goroutine and waiting on a result channel after interrupt.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 11)
+
+**Assistant interpretation:** Continue through remaining implementation tasks and complete runtime ownership/alignment items.
+
+**Inferred user intent:** Ensure runtime behavior is robust, constrained, and test-backed before closing implementation phases.
+
+**Commit (code):** `e281851` — "refactor(scriptengine): tighten interrupt lifecycle and sandbox checks"
+
+### What I did
+- Reworked timeout/cancellation execution path:
+  - `/home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/internal/scriptengine/engine.go`
+  - `runWithTimeout` now:
+    - derives `context.WithTimeout`
+    - uses watcher goroutine that interrupts VM on context completion
+    - uses explicit stop-channel cleanup to terminate watcher
+- Added runtime tests:
+  - `/home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/internal/scriptengine/engine_test.go`
+  - `TestContextCancel`
+  - `TestCancelPathReturnsQuickly`
+  - `TestSandboxHasNoHostBridge` (validates `require` and `process` are unavailable)
+- Ran validation:
+  - `go test ./internal/scriptengine -count=1`
+  - `go test ./... -count=1`
+- Checked off tasks:
+  - `48` validate module exposure and host bridge constraints
+  - `49` runtime lifecycle cleanup hooks
+  - `45` Phase 7 heading
+
+### Why
+- This closes the remaining runtime ownership gaps identified in the ticket and turns assumptions about sandboxing and cancellation behavior into explicit tests.
+
+### What worked
+- All new scriptengine tests pass.
+- Full repository Go tests still pass after lifecycle refactor.
+
+### What didn't work
+- N/A
+
+### What I learned
+- A context-driven interrupt watcher simplifies lifecycle cleanup reasoning and avoids coupling timeout completion to a separate function-execution goroutine channel.
+
+### What was tricky to build
+- Preserving existing error semantics (`timeout` vs `cancelled`) while changing core timeout control flow required careful ordering of context checks after script execution returns.
+
+### What warrants a second pair of eyes
+- Confirm whether we want additional hard limits (for example, maximum script source size) in `scriptengine` as a separate guardrail.
+
+### What should be done in the future
+- Consider adding benchmark coverage for script init/update paths under repeated short timeouts to detect regressions in interrupt handling overhead.
+
+### Code review instructions
+- Review:
+  - `/home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/internal/scriptengine/engine.go`
+  - `/home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/internal/scriptengine/engine_test.go`
+- Re-run:
+  - `go test ./internal/scriptengine -count=1`
+  - `go test ./... -count=1`
+
+### Technical details
+- New sandbox test validates JS runtime does not expose host bridge globals:
+  - `typeof require === "undefined"`
+  - `typeof process === "undefined"`
+
+## Step 16: Added Script Error Taxonomy Mapping and Persistence Stability Coverage
+
+I closed two remaining backend quality tasks in one slice: robust script error mapping (task `28`) and explicit stability checks for partially-progressed script state retrieval (task `32`).
+
+The server now maps script execution failures to clearer HTTP statuses (validation vs runtime fault vs timeout/cancel), and tests now assert that patched pending script state/view is persisted and retrievable via `GET /api/requests/{id}`.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 11)
+
+**Assistant interpretation:** Continue through remaining open tasks with concrete code and test-backed completion.
+
+**Inferred user intent:** Close backend correctness gaps that affect production behavior and observability.
+
+**Commit (code):** `0712057` — "feat(server): map script errors and verify persisted patch state"
+
+### What I did
+- Added script error -> HTTP status mapping utility:
+  - `/home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/internal/server/script.go`
+  - maps to:
+    - `400` validation/shape issues
+    - `422` runtime script faults
+    - `504` timeouts
+    - `408` cancellation
+- Applied mapping in both create and event paths:
+  - `/home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/internal/server/server.go`
+  - `/home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/internal/server/script.go`
+- Expanded server tests:
+  - `/home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/internal/server/script_test.go`
+  - Added timeout-to-504 test for create path.
+  - Added runtime-fault-to-422 test for update path.
+  - Added GET-after-patch assertions to confirm persisted pending script state/view.
+- Ran validation:
+  - `go test ./internal/server ./internal/scriptengine ./internal/store -count=1`
+  - `go test ./... -count=1`
+- Checked off tasks:
+  - `28` robust error mapping
+  - `32` history/state stability for partially progressed script requests
+
+### Why
+- Prior behavior collapsed most script failures to `400`, obscuring whether failures were user-input validation problems, script runtime faults, or timeouts.
+
+### What worked
+- Status mapping and tests pass under full lint/test hooks.
+- Persisted intermediate script state is now explicitly validated by tests.
+
+### What didn't work
+- N/A
+
+### What I learned
+- This API benefits from explicit error classes because script execution combines user-authored logic and server-managed contracts.
+
+### What was tricky to build
+- Balancing status mapping heuristics with existing error strings required conservative matching to avoid reclassifying known validation errors into runtime faults.
+
+### What warrants a second pair of eyes
+- Confirm API consumers are aligned with `422` for script runtime faults; if clients expect `400`, we may need a migration note.
+
+### What should be done in the future
+- Add structured error bodies/codes (beyond status and message strings) so frontend can provide more specific user guidance.
+
+### Code review instructions
+- Review:
+  - `/home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/internal/server/script.go`
+  - `/home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/internal/server/server.go`
+  - `/home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/internal/server/script_test.go`
+- Re-run:
+  - `go test ./internal/server -count=1`
+  - `go test ./... -count=1`
+
+### Technical details
+- New tests explicitly assert:
+  - create timeout => `504`
+  - update runtime throw => `422`
+  - post-update GET returns pending request with patched `script_state` and `script_view`.
