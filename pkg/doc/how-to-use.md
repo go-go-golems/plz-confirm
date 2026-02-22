@@ -640,6 +640,66 @@ else
 fi
 ```
 
+## Script API Extension (Experimental)
+
+The JS describe extension is currently API-first. A script request provides `scriptInput.script` (JavaScript source) and advances through `/event` calls.
+
+### Contract
+
+Your script must export these functions:
+
+- `describe(ctx)` -> object with required `name`, `version`
+- `init(ctx)` -> initial state object
+- `view(state, ctx)` -> renderable object with at least `widgetType`
+- `update(state, event, ctx)` -> either next state object or terminal `{ done: true, result: {...} }`
+
+### Minimal Example
+
+```bash
+curl -sS -X POST http://localhost:3000/api/requests \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "type":"script",
+    "sessionId":"global",
+    "scriptInput":{
+      "title":"Demo Flow",
+      "timeoutMs":1500,
+      "script":"module.exports={describe:function(){return{name:\"demo\",version:\"1.0.0\"}},init:function(){return{step:\"confirm\"}},view:function(){return{widgetType:\"confirm\",input:{title:\"Continue?\"}}},update:function(s,e){return{done:true,result:{approved:!!e.data.approved}}}}"
+    }
+  }'
+```
+
+Then submit events:
+
+```bash
+curl -sS -X POST http://localhost:3000/api/requests/<id>/event \
+  -H 'Content-Type: application/json' \
+  -d '{"type":"submit","data":{"approved":true}}'
+```
+
+### Error/Troubleshooting Guide
+
+- `400`: contract or payload validation issue (missing required exports/fields, invalid object shapes)
+- `422`: runtime script fault (exception/invalid transition)
+- `504`: script timeout (`timeoutMs` exceeded)
+- `408`: execution cancelled by request context cancellation
+
+If you see repeated `504`:
+- reduce script complexity per step
+- increase `timeoutMs` conservatively
+- verify `update` always converges and does not loop
+
+## Rollout and Observability Checklist (Maintainers)
+
+- Rollout:
+  - gate script usage behind a guarded path (config flag or allowlist policy),
+  - start with internal sessions and smoke scripts,
+  - expand scope after stability checks.
+- Observability:
+  - monitor script endpoint status mix (`400/408/422/504`),
+  - monitor `request_updated` to `request_completed` ratio,
+  - track timeout and runtime-fault trends by script `name`/`version`.
+
 ## Tips for Users
 
 - **Keep the browser open**: The web UI must be open and connected to receive notifications from agents.
@@ -654,4 +714,3 @@ fi
 - **Use file inputs**: The `@file.json` syntax (or `-` for stdin) makes it easy to pass complex data to `form` and `table` commands. For example: `--schema @file.json` or `--schema -` (for stdin), `--data @file.json` or `--data -` (for stdin).
 - **Repeat flags for multiple values**: Use `--option` multiple times for `select` (e.g., `--option value1 --option value2`) and `--accept` multiple times for `upload` (e.g., `--accept .log --accept .txt`).
 - **Handle timeouts gracefully**: If a user doesn't respond in time, the command will exit with an error. Handle this case in your agent scripts.
-

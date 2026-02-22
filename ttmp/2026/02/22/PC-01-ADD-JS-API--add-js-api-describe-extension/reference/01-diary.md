@@ -10,6 +10,8 @@ DocType: reference
 Intent: long-term
 Owners: []
 RelatedFiles:
+    - Path: README.md
+      Note: Diary step documents final user-facing script contract and rollout notes
     - Path: agent-ui-system/client/src/components/WidgetRenderer.test.ts
       Note: Diary step documents renderer mapping coverage
     - Path: agent-ui-system/client/src/services/websocket.ts
@@ -30,6 +32,10 @@ RelatedFiles:
       Note: Diary step documents websocket write-safety hardening
     - Path: internal/server/ws_test.go
       Note: Diary step documents websocket ordering tests
+    - Path: pkg/doc/adding-widgets.md
+      Note: Diary step documents developer-facing script contract constraints
+    - Path: pkg/doc/how-to-use.md
+      Note: Diary step documents operational script API guidance
     - Path: ttmp/2026/02/22/PC-01-ADD-JS-API--add-js-api-describe-extension/design-doc/01-implementation-plan-js-describe-extension.md
       Note: Diary step documents creation of final implementation plan
     - Path: ttmp/2026/02/22/PC-01-ADD-JS-API--add-js-api-describe-extension/scripts/goja-flow/main.go
@@ -52,6 +58,7 @@ LastUpdated: 2026-02-22T15:39:48.380638079-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 
 
@@ -1202,3 +1209,74 @@ The server now maps script execution failures to clearer HTTP statuses (validati
   - create timeout => `504`
   - update runtime throw => `422`
   - post-update GET returns pending request with patched `script_state` and `script_view`.
+
+## Step 17: Closed Phase 9 Docs/Rollout Tasks and Completed Ticket Checklist
+
+I finished the remaining docs-and-rollout tasks by updating user and developer documentation with the JS script contract, troubleshooting guidance, rollout strategy, and post-rollout observability watchpoints.
+
+This step closes Phase 9 and completes the full ticket task checklist.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 11)
+
+**Assistant interpretation:** Continue until all checklist items are completed, tested, and documented.
+
+**Inferred user intent:** Leave the ticket in a fully actionable and auditable state with implementation, tests, and operational guidance all included.
+
+**Commit (code):** pending docs commit for this step
+
+### What I did
+- Updated end-user/developer docs:
+  - `/home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/README.md`
+  - `/home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/pkg/doc/how-to-use.md`
+  - `/home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/pkg/doc/adding-widgets.md`
+- Added/expanded in docs:
+  - script `describe/init/view/update` contract and API examples
+  - troubleshooting notes for `400/408/422/504`
+  - rollout strategy with guarded path guidance
+  - post-rollout observability watchpoints and metrics focus
+- Updated ticket design doc rollout section with explicit guard + observability checklist:
+  - `/home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/ttmp/2026/02/22/PC-01-ADD-JS-API--add-js-api-describe-extension/design-doc/01-implementation-plan-js-describe-extension.md`
+- Checked off tasks:
+  - `57` Phase 9 heading
+  - `58` docs contract/examples
+  - `59` troubleshooting notes
+  - `60` rollout strategy
+  - `61` post-rollout observability checks
+
+### Why
+- The final phase required operational readiness, not just code readiness.
+
+### What worked
+- The checklist now reports all tasks complete (`61/61` checked).
+- Rollout/observability guidance is now explicit in both ticket design material and user/developer docs.
+
+### What didn't work
+- N/A
+
+### What I learned
+- Closing rollout tasks is fastest when guidance is written at two levels:
+  - user/developer docs (how to use and troubleshoot), and
+  - ticket design doc (deployment strategy and watchpoints).
+
+### What was tricky to build
+- Keeping rollout guidance concrete without over-specifying implementation details that depend on deployment environment.
+
+### What warrants a second pair of eyes
+- Confirm whether maintainers want a hard-coded feature gate implementation now, or to keep rollout gating as operational policy/documentation for the next code slice.
+
+### What should be done in the future
+- Consider adding a lightweight structured metrics endpoint/log schema specifically for script flow lifecycle events.
+
+### Code review instructions
+- Review docs updates:
+  - `/home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/README.md`
+  - `/home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/pkg/doc/how-to-use.md`
+  - `/home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/pkg/doc/adding-widgets.md`
+  - `/home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/ttmp/2026/02/22/PC-01-ADD-JS-API--add-js-api-describe-extension/design-doc/01-implementation-plan-js-describe-extension.md`
+- Verify checklist completion:
+  - `docmgr task list --ticket PC-01-ADD-JS-API`
+
+### Technical details
+- Final checklist state reached all checked tasks through `docmgr task check --ticket PC-01-ADD-JS-API --id 58,59,60,61,57`.

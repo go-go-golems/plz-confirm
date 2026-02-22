@@ -17,6 +17,7 @@ This architecture allows agents to leverage rich web UIs for complex interaction
 ## Features
 
 - **Six Widget Types**: Confirmation dialogs, selection menus, image prompts, forms, file uploads, and data tables
+- **Script Extension (API-first, experimental)**: Multi-step JS-driven flows with `describe/init/view/update` contract
 - **Real-time Communication**: WebSocket-based bidirectional communication between CLI and web UI
 - **Browser Notifications**: Native browser notifications alert users when new requests arrive
 - **Multiple Output Formats**: JSON, YAML, CSV, and table output formats
@@ -176,6 +177,56 @@ plz-confirm table \
   --searchable \
   --multi-select
 ```
+
+### Script Flow (JS describe extension, API)
+
+The script extension is currently API-first (no dedicated CLI command yet). A request contains a JS program exporting `describe/init/view/update`. The server initializes state/view, then clients submit events to advance or complete the flow.
+
+```bash
+# Create script request
+curl -sS -X POST http://localhost:3000/api/requests \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "type": "script",
+    "sessionId": "global",
+    "scriptInput": {
+      "title": "Deploy Wizard",
+      "timeoutMs": 2000,
+      "script": "module.exports={describe:function(){return{name:\"wizard\",version:\"1.0.0\"}},init:function(){return{step:\"confirm\"}},view:function(s){return{widgetType:\"confirm\",input:{title:\"Ship to prod?\"}}},update:function(s,e){return{done:true,result:{approved:e.data.approved}}}}"
+    }
+  }'
+
+# Submit script event
+curl -sS -X POST http://localhost:3000/api/requests/<request-id>/event \
+  -H 'Content-Type: application/json' \
+  -d '{"type":"submit","data":{"approved":true}}'
+```
+
+Contract requirements:
+- `describe(ctx)` must return object with `name` and `version`.
+- `init(ctx)` must return state object.
+- `view(state, ctx)` must return renderable `{widgetType,input,...}` object.
+- `update(state, event, ctx)` must return:
+  - next state object, or
+  - terminal object `{done:true,result:{...}}`.
+
+### Script Runtime Troubleshooting
+
+- `400 Bad Request`: validation/shape mismatch (missing exports, invalid payload shape).
+- `422 Unprocessable Entity`: script runtime fault (for example thrown exception in `update`).
+- `504 Gateway Timeout`: script exceeded configured `timeoutMs`.
+- `408 Request Timeout`: execution cancelled by request context cancellation.
+
+### Rollout And Observability Guidance
+
+- Rollout strategy:
+  - keep script path behind a guarded activation policy (environment/config or session allowlist),
+  - start with internal sessions only,
+  - enable broadly after smoke + regression checks pass.
+- Observability watchpoints:
+  - count `request_updated` and `request_completed` by session and script name/version,
+  - track status code distribution for script endpoints (`400/408/422/504`),
+  - alert on timeout/cancel rate spikes and elevated runtime-fault ratio.
 
 ## Widget Commands
 

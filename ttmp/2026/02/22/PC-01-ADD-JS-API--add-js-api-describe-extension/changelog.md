@@ -128,3 +128,16 @@ Added explicit script error taxonomy mapping (validation/runtime/timeout/cancel)
 - /home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/internal/server/server.go — Create-path script error mapping
 - /home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/ttmp/2026/02/22/PC-01-ADD-JS-API--add-js-api-describe-extension/tasks.md — Tasks 28 and 32 checked
 
+
+## 2026-02-22
+
+Completed Phase 9 docs/rollout work: added script contract examples, troubleshooting guidance, rollout strategy, and observability watchpoints; all ticket tasks now checked.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/README.md — User-facing script contract/troubleshooting/rollout guidance
+- /home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/pkg/doc/adding-widgets.md — Developer contract constraints for script widget runtime
+- /home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/pkg/doc/how-to-use.md — API-first script extension usage and error guidance
+- /home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/ttmp/2026/02/22/PC-01-ADD-JS-API--add-js-api-describe-extension/design-doc/01-implementation-plan-js-describe-extension.md — Rollout guard path and observability checklist
+- /home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/ttmp/2026/02/22/PC-01-ADD-JS-API--add-js-api-describe-extension/tasks.md — Phase 9 tasks checked and ticket checklist completed
+

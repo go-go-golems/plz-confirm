@@ -800,11 +800,30 @@ Mitigation:
 
 ## Rollout Plan
 
-1. Ship behind feature gate flag on server (env/config toggle).
-2. Enable only for local development sessions first.
-3. Add one internal script sample and smoke script.
-4. Gather logs/error telemetry.
-5. Enable by default after passing test and security checklist.
+1. Guarded path:
+   - enable script widget only when rollout gate is on (env/config toggle) OR session is in explicit allowlist.
+2. Internal rollout:
+   - enable for internal development sessions only.
+   - run smoke flow (create -> updated -> completed) on each deploy candidate.
+3. Limited external rollout:
+   - enable per-team/session allowlist.
+   - keep non-script widgets untouched and monitor status-code/error ratios.
+4. General availability:
+   - enable by default after timeout/fault rates are within target and security checklist passes.
+
+### Post-rollout observability checks
+
+- API status mix for script endpoints:
+  - monitor `400`, `408`, `422`, `504` rates independently.
+- Lifecycle progression:
+  - monitor counts and ratio of `new_request`, `request_updated`, `request_completed`.
+- Timeout and runtime fault watchpoints:
+  - alert if timeout rate exceeds baseline threshold.
+  - alert if runtime fault (`422`) rate spikes after releases.
+- Per-script metadata watchpoints:
+  - include `scriptDescribe.name` + `scriptDescribe.version` in logs/metrics labels where feasible.
+- Queue/latency watchpoints:
+  - track time from request creation to completion for script flows.
 
 ## Open Questions
 

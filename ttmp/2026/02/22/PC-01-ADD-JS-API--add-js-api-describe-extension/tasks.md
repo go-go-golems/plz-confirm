@@ -70,8 +70,8 @@
 - [x] Add smoke/e2e script that exercises end-to-end script progression
 - [x] Run full repo checks (`go test`, frontend checks) and capture known environment limitations
 
-- [ ] Phase 9: Docs and rollout
-- [ ] Update user/developer docs with JS extension contract and examples
-- [ ] Add troubleshooting notes for runtime errors, timeouts, and interrupt handling
-- [ ] Define rollout strategy (feature flag or guarded command path)
-- [ ] Define post-rollout observability checks and regression watchpoints
+- [x] Phase 9: Docs and rollout
+- [x] Update user/developer docs with JS extension contract and examples
+- [x] Add troubleshooting notes for runtime errors, timeouts, and interrupt handling
+- [x] Define rollout strategy (feature flag or guarded command path)
+- [x] Define post-rollout observability checks and regression watchpoints
