@@ -7,8 +7,9 @@ import (
 	"os"
 
 	"github.com/go-go-golems/glazed/pkg/cmds"
-	"github.com/go-go-golems/glazed/pkg/cmds/layers"
-	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
+	"github.com/go-go-golems/glazed/pkg/cmds/fields"
+	"github.com/go-go-golems/glazed/pkg/cmds/schema"
+	"github.com/go-go-golems/glazed/pkg/cmds/values"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/pkg/errors"
@@ -35,50 +36,49 @@ type FormSettings struct {
 	Schema string `glazed.parameter:"schema"`
 }
 
-func NewFormCommand(layersList ...layers.ParameterLayer) (*FormCommand, error) {
+func NewFormCommand() (*FormCommand, error) {
 	desc := cmds.NewCommandDescription(
 		"form",
 		cmds.WithShort("Request form input via the agent-ui web frontend"),
 		cmds.WithLong("Creates a form widget request based on a JSON Schema, waits for the user input, and outputs the result."),
 		cmds.WithFlags(
-			parameters.NewParameterDefinition(
+			fields.New(
 				"base-url",
-				parameters.ParameterTypeString,
-				parameters.WithDefault("http://localhost:3000"),
-				parameters.WithHelp("Base URL (default: http://localhost:3000)"),
+				fields.TypeString,
+				fields.WithDefault("http://localhost:3000"),
+				fields.WithHelp("Base URL (default: http://localhost:3000)"),
 			),
-			parameters.NewParameterDefinition(
+			fields.New(
 				"session-id",
-				parameters.ParameterTypeString,
-				parameters.WithDefault("global"),
-				parameters.WithHelp("Session ID (used for WebSocket scoping)"),
+				fields.TypeString,
+				fields.WithDefault("global"),
+				fields.WithHelp("Session ID (used for WebSocket scoping)"),
 			),
-			parameters.NewParameterDefinition(
+			fields.New(
 				"timeout",
-				parameters.ParameterTypeInteger,
-				parameters.WithDefault(300),
-				parameters.WithHelp("Request expiration in seconds (server-side)"),
+				fields.TypeInteger,
+				fields.WithDefault(300),
+				fields.WithHelp("Request expiration in seconds (server-side)"),
 			),
-			parameters.NewParameterDefinition(
+			fields.New(
 				"wait-timeout",
-				parameters.ParameterTypeInteger,
-				parameters.WithDefault(300),
-				parameters.WithHelp("How long to wait for a response in seconds (0 = wait forever)"),
+				fields.TypeInteger,
+				fields.WithDefault(300),
+				fields.WithHelp("How long to wait for a response in seconds (0 = wait forever)"),
 			),
-			parameters.NewParameterDefinition(
+			fields.New(
 				"title",
-				parameters.ParameterTypeString,
-				parameters.WithHelp("Dialog title"),
-				parameters.WithRequired(true),
+				fields.TypeString,
+				fields.WithHelp("Dialog title"),
+				fields.WithRequired(true),
 			),
-			parameters.NewParameterDefinition(
+			fields.New(
 				"schema",
-				parameters.ParameterTypeString,
-				parameters.WithHelp("Path to JSON Schema file (use @file.json or - for stdin)"),
-				parameters.WithRequired(true),
+				fields.TypeString,
+				fields.WithHelp("Path to JSON Schema file (use @file.json or - for stdin)"),
+				fields.WithRequired(true),
 			),
 		),
-		cmds.WithLayersList(layersList...),
 	)
 
 	return &FormCommand{CommandDescription: desc}, nil
@@ -86,11 +86,11 @@ func NewFormCommand(layersList ...layers.ParameterLayer) (*FormCommand, error) {
 
 func (c *FormCommand) RunIntoGlazeProcessor(
 	ctx context.Context,
-	parsedLayers *layers.ParsedLayers,
+	parsedValues *values.Values,
 	gp middlewares.Processor,
 ) error {
 	settings := &FormSettings{}
-	if err := parsedLayers.InitializeStruct(layers.DefaultSlug, settings); err != nil {
+	if err := parsedValues.DecodeSectionInto(schema.DefaultSlug, settings); err != nil {
 		return err
 	}
 

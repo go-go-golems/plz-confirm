@@ -75,7 +75,7 @@ module.exports = {
 
 	ctx := map[string]any{
 		"props": map[string]any{
-			"user": "intern-1",
+			"user":   "intern-1",
 			"ticket": "PC-01",
 		},
 	}
@@ -95,7 +95,7 @@ module.exports = {
 	event := map[string]any{
 		"type": "submit",
 		"data": map[string]any{
-			"env": "prod",
+			"env":    "prod",
 			"ticket": "CHG-123",
 		},
 	}

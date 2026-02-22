@@ -5,8 +5,9 @@ import (
 	"encoding/json"
 
 	"github.com/go-go-golems/glazed/pkg/cmds"
-	"github.com/go-go-golems/glazed/pkg/cmds/layers"
-	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
+	"github.com/go-go-golems/glazed/pkg/cmds/fields"
+	"github.com/go-go-golems/glazed/pkg/cmds/schema"
+	"github.com/go-go-golems/glazed/pkg/cmds/values"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/pkg/errors"
@@ -33,62 +34,61 @@ type SelectSettings struct {
 	Searchable bool     `glazed.parameter:"searchable"`
 }
 
-func NewSelectCommand(layersList ...layers.ParameterLayer) (*SelectCommand, error) {
+func NewSelectCommand() (*SelectCommand, error) {
 	desc := cmds.NewCommandDescription(
 		"select",
 		cmds.WithShort("Request a selection via the agent-ui web frontend"),
 		cmds.WithLong("Creates a select widget request, waits for the user selection, and outputs the result."),
 		cmds.WithFlags(
-			parameters.NewParameterDefinition(
+			fields.New(
 				"base-url",
-				parameters.ParameterTypeString,
-				parameters.WithDefault("http://localhost:3000"),
-				parameters.WithHelp("Base URL (default: http://localhost:3000)"),
+				fields.TypeString,
+				fields.WithDefault("http://localhost:3000"),
+				fields.WithHelp("Base URL (default: http://localhost:3000)"),
 			),
-			parameters.NewParameterDefinition(
+			fields.New(
 				"session-id",
-				parameters.ParameterTypeString,
-				parameters.WithDefault("global"),
-				parameters.WithHelp("Session ID (used for WebSocket scoping)"),
+				fields.TypeString,
+				fields.WithDefault("global"),
+				fields.WithHelp("Session ID (used for WebSocket scoping)"),
 			),
-			parameters.NewParameterDefinition(
+			fields.New(
 				"timeout",
-				parameters.ParameterTypeInteger,
-				parameters.WithDefault(300),
-				parameters.WithHelp("Request expiration in seconds (server-side)"),
+				fields.TypeInteger,
+				fields.WithDefault(300),
+				fields.WithHelp("Request expiration in seconds (server-side)"),
 			),
-			parameters.NewParameterDefinition(
+			fields.New(
 				"wait-timeout",
-				parameters.ParameterTypeInteger,
-				parameters.WithDefault(300),
-				parameters.WithHelp("How long to wait for a response in seconds (0 = wait forever)"),
+				fields.TypeInteger,
+				fields.WithDefault(300),
+				fields.WithHelp("How long to wait for a response in seconds (0 = wait forever)"),
 			),
-			parameters.NewParameterDefinition(
+			fields.New(
 				"title",
-				parameters.ParameterTypeString,
-				parameters.WithHelp("Dialog title"),
-				parameters.WithRequired(true),
+				fields.TypeString,
+				fields.WithHelp("Dialog title"),
+				fields.WithRequired(true),
 			),
-			parameters.NewParameterDefinition(
+			fields.New(
 				"option",
-				parameters.ParameterTypeStringList,
-				parameters.WithHelp("Option value (repeatable)"),
-				parameters.WithRequired(true),
+				fields.TypeStringList,
+				fields.WithHelp("Option value (repeatable)"),
+				fields.WithRequired(true),
 			),
-			parameters.NewParameterDefinition(
+			fields.New(
 				"multi",
-				parameters.ParameterTypeBool,
-				parameters.WithDefault(false),
-				parameters.WithHelp("Allow selecting multiple options"),
+				fields.TypeBool,
+				fields.WithDefault(false),
+				fields.WithHelp("Allow selecting multiple options"),
 			),
-			parameters.NewParameterDefinition(
+			fields.New(
 				"searchable",
-				parameters.ParameterTypeBool,
-				parameters.WithDefault(true),
-				parameters.WithHelp("Enable search/filter box in the UI"),
+				fields.TypeBool,
+				fields.WithDefault(true),
+				fields.WithHelp("Enable search/filter box in the UI"),
 			),
 		),
-		cmds.WithLayersList(layersList...),
 	)
 
 	return &SelectCommand{CommandDescription: desc}, nil
@@ -96,11 +96,11 @@ func NewSelectCommand(layersList ...layers.ParameterLayer) (*SelectCommand, erro
 
 func (c *SelectCommand) RunIntoGlazeProcessor(
 	ctx context.Context,
-	parsedLayers *layers.ParsedLayers,
+	parsedValues *values.Values,
 	gp middlewares.Processor,
 ) error {
 	settings := &SelectSettings{}
-	if err := parsedLayers.InitializeStruct(layers.DefaultSlug, settings); err != nil {
+	if err := parsedValues.DecodeSectionInto(schema.DefaultSlug, settings); err != nil {
 		return err
 	}
 
