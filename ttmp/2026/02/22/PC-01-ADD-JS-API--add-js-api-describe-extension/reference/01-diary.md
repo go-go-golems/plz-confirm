@@ -476,3 +476,59 @@ Commands used:
   - index: `Added: 2`
   - diary: `Added: 1`
   - design-doc: `Added: 1`
+
+## Step 7: Ran Ticket Hygiene Checks and Captured Findings
+
+I ran `docmgr` health checks for the ticket and validated frontmatter on core authored docs (index, design-doc, diary). The authored docs are valid; the imported raw source file still triggers a doctor parse error because it intentionally lacks frontmatter.
+
+### Prompt Context
+
+**User prompt (verbatim):** "Create a detailed list of tasks in the ticket, check the moff as you work one by one, commit as you go, and continue keeping your diary."
+
+**Assistant interpretation:** Continue sequential checklist execution with concrete verification evidence.
+
+**Inferred user intent:** Each checked task should be backed by command output.
+
+**Commit (code):** pending for this step
+
+### What I did
+- Ran doctor report for ticket:
+  - `docmgr doctor --ticket PC-01-ADD-JS-API --stale-after 30`
+- Validated authored docs frontmatter:
+  - `docmgr validate frontmatter --doc .../index.md --suggest-fixes`
+  - `docmgr validate frontmatter --doc .../design-doc/01-implementation-plan-js-describe-extension.md --suggest-fixes`
+  - `docmgr validate frontmatter --doc .../reference/01-diary.md --suggest-fixes`
+
+### Why
+- Needed objective hygiene checks before marking checklist progress.
+
+### What worked
+- Frontmatter validation passed for authored docs (`index`, `design-doc`, `diary`).
+
+### What didn't work
+- `docmgr doctor` reports an error for imported source file:
+  - `sources/local/plz-confirm-js.md` has no frontmatter delimiters.
+- `docmgr doctor` also warns that imported source filename lacks numeric prefix.
+
+### What I learned
+- Imported source artifacts are useful evidence but may not satisfy docmgr authored-doc frontmatter conventions.
+
+### What was tricky to build
+- Distinguishing “real authored-doc hygiene failures” from expected behavior of imported raw source files.
+
+### What warrants a second pair of eyes
+- Decide whether imported raw sources should be excluded from doctor strictness or wrapped in frontmatter metadata docs.
+
+### What should be done in the future
+- If strict doctor cleanliness is required, add a normalized wrapper source note with frontmatter and link raw imported file as attachment/reference.
+
+### Code review instructions
+- Re-run checks exactly:
+  - `docmgr doctor --ticket PC-01-ADD-JS-API --stale-after 30`
+  - `docmgr validate frontmatter --doc /home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/ttmp/2026/02/22/PC-01-ADD-JS-API--add-js-api-describe-extension/index.md --suggest-fixes`
+  - `docmgr validate frontmatter --doc /home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/ttmp/2026/02/22/PC-01-ADD-JS-API--add-js-api-describe-extension/design-doc/01-implementation-plan-js-describe-extension.md --suggest-fixes`
+  - `docmgr validate frontmatter --doc /home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/ttmp/2026/02/22/PC-01-ADD-JS-API--add-js-api-describe-extension/reference/01-diary.md --suggest-fixes`
+
+### Technical details
+- Doctor report summary: `2 findings` (1 error + 1 warning), both on imported source file.
+- Authored docs validation: all returned `Frontmatter OK`.
