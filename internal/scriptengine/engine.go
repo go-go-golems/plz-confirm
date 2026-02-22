@@ -271,30 +271,32 @@ func runWithTimeout(
 	timeout time.Duration,
 	fn func() error,
 ) error {
-	errCh := make(chan error, 1)
+	runCtx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
+	stop := make(chan struct{})
+	defer close(stop)
+
 	go func() {
-		errCh <- fn()
+		select {
+		case <-runCtx.Done():
+			vm.Interrupt(runCtx.Err())
+		case <-stop:
+		}
 	}()
 
-	timer := time.NewTimer(timeout)
-	defer timer.Stop()
-
-	select {
-	case err := <-errCh:
-		return err
-	case <-ctx.Done():
-		vm.Interrupt(ctx.Err())
-		err := <-errCh
+	err := fn()
+	if runErr := runCtx.Err(); runErr != nil {
+		if errors.Is(runErr, context.DeadlineExceeded) {
+			if err != nil {
+				return fmt.Errorf("script execution timeout: %w", err)
+			}
+			return errors.New("script execution timeout")
+		}
 		if err != nil {
 			return fmt.Errorf("script execution cancelled: %w", err)
 		}
-		return ctx.Err()
-	case <-timer.C:
-		vm.Interrupt("script timeout")
-		err := <-errCh
-		if err != nil {
-			return fmt.Errorf("script execution timeout: %w", err)
-		}
-		return errors.New("script execution timeout")
+		return runErr
 	}
+	return err
 }

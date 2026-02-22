@@ -4,6 +4,7 @@ import (
 	"context"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/go-go-golems/plz-confirm/proto/generated/go/plz_confirm/v1"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -152,6 +153,105 @@ module.exports = {
 	}
 	if !strings.Contains(err.Error(), "timeout") {
 		t.Fatalf("expected timeout in error, got: %v", err)
+	}
+}
+
+func TestContextCancel(t *testing.T) {
+	t.Parallel()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	e := New()
+	_, err := e.InitAndView(ctx, &v1.ScriptInput{
+		Script: `
+module.exports = {
+  describe: function() { return { name: "cancel", version: "1" }; },
+  init: function() { while (true) {} },
+  view: function(s) { return { widgetType: "confirm", input: { title: "x" } }; },
+  update: function(s, e) { return s; }
+};
+`,
+		TimeoutMs: toPtr(int64(1000)),
+	})
+	if err == nil {
+		t.Fatalf("expected cancellation error")
+	}
+	if !strings.Contains(strings.ToLower(err.Error()), "cancel") {
+		t.Fatalf("expected cancelled in error, got: %v", err)
+	}
+}
+
+func TestSandboxHasNoHostBridge(t *testing.T) {
+	t.Parallel()
+
+	e := New()
+	out, err := e.InitAndView(context.Background(), &v1.ScriptInput{
+		Script: `
+module.exports = {
+  describe: function() {
+    return { name: "sandbox", version: "1.0.0" };
+  },
+  init: function(ctx) {
+    return {
+      noRequire: typeof require === "undefined",
+      noProcess: typeof process === "undefined"
+    };
+  },
+  view: function(state) {
+    return { widgetType: "confirm", input: { title: "sandbox" } };
+  },
+  update: function(state, event) {
+    return { done: true, result: state };
+  }
+};
+`,
+		TimeoutMs: toPtr(int64(100)),
+	})
+	if err != nil {
+		t.Fatalf("InitAndView returned error: %v", err)
+	}
+
+	if out.State["noRequire"] != true {
+		t.Fatalf("expected require to be unavailable, got: %v", out.State["noRequire"])
+	}
+	if out.State["noProcess"] != true {
+		t.Fatalf("expected process to be unavailable, got: %v", out.State["noProcess"])
+	}
+}
+
+func TestCancelPathReturnsQuickly(t *testing.T) {
+	t.Parallel()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	e := New()
+
+	done := make(chan error, 1)
+	go func() {
+		_, err := e.InitAndView(ctx, &v1.ScriptInput{
+			Script: `
+module.exports = {
+  describe: function() { return { name: "cancel-quick", version: "1" }; },
+  init: function() { while (true) {} },
+  view: function(s) { return { widgetType: "confirm", input: { title: "x" } }; },
+  update: function(s, e) { return s; }
+};
+`,
+			TimeoutMs: toPtr(int64(1000)),
+		})
+		done <- err
+	}()
+
+	time.Sleep(10 * time.Millisecond)
+	cancel()
+
+	select {
+	case err := <-done:
+		if err == nil {
+			t.Fatalf("expected cancellation error")
+		}
+	case <-time.After(500 * time.Millisecond):
+		t.Fatalf("expected cancellation path to return quickly")
 	}
 }
 
