@@ -50,9 +50,9 @@
 - [x] Normalize incoming proto payloads for script view/state in `agent-ui-system/client/src/proto/normalize.ts`
 - [x] Add UI affordances for runtime errors and recoverable retry states
 
-- [ ] Phase 6: CLI/client integration
+- [x] Phase 6: CLI/client integration
 - [x] Extend CLI request creation path for script input in `internal/client/client.go`
-- [ ] Add/adjust command wiring in `cmd/plz-confirm/main.go` and relevant `internal/cli/*.go`
+- [x] Add/adjust command wiring in `cmd/plz-confirm/main.go` and relevant `internal/cli/*.go`
 - [x] Ensure session scoping and timeout behavior are preserved for script flows
 - [x] Ensure non-script commands remain unchanged
 
@@ -65,7 +65,7 @@
 - [ ] Phase 8: Testing and validation
 - [x] Add unit tests for contract validation and runtime envelope decoding
 - [x] Add server tests for create/update/finalize lifecycle for script requests
-- [ ] Add websocket tests for incremental update events and ordering guarantees
+- [x] Add websocket tests for incremental update events and ordering guarantees
 - [ ] Add frontend tests for reducer + renderer behavior for script views
 - [x] Add smoke/e2e script that exercises end-to-end script progression
 - [x] Run full repo checks (`go test`, frontend checks) and capture known environment limitations

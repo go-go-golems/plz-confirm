@@ -10,12 +10,20 @@ DocType: reference
 Intent: long-term
 Owners: []
 RelatedFiles:
+    - Path: agent-ui-system/client/src/services/websocket.ts
+      Note: Diary step documents client-side stale update handling
+    - Path: cmd/plz-confirm/main.go
+      Note: Diary step documents Glazed v1 migration completion
     - Path: internal/scriptengine/engine.go
       Note: Diary steps document script runtime implementation details
     - Path: internal/server/script.go
       Note: Diary steps document script event lifecycle implementation
     - Path: internal/server/script_test.go
       Note: Diary steps document server lifecycle test coverage
+    - Path: internal/server/ws.go
+      Note: Diary step documents websocket write-safety hardening
+    - Path: internal/server/ws_test.go
+      Note: Diary step documents websocket ordering tests
     - Path: ttmp/2026/02/22/PC-01-ADD-JS-API--add-js-api-describe-extension/design-doc/01-implementation-plan-js-describe-extension.md
       Note: Diary step documents creation of final implementation plan
     - Path: ttmp/2026/02/22/PC-01-ADD-JS-API--add-js-api-describe-extension/scripts/goja-flow/main.go
@@ -28,6 +36,8 @@ RelatedFiles:
       Note: Diary tracks execution checklist completion and commit cadence
     - Path: ttmp/2026/02/22/PC-01-ADD-JS-API--add-js-api-describe-extension/various/pc01-script-flow-completed.png
       Note: Diary references browser proof screenshot
+    - Path: ttmp/2026/02/22/PC-01-ADD-JS-API--add-js-api-describe-extension/various/pc01-script-flow-hardened-completed.png
+      Note: Diary references browser validation evidence for hardening step
     - Path: ttmp/2026/02/22/PC-01-ADD-JS-API--add-js-api-describe-extension/various/script-demo.html
       Note: Diary steps document browser demo harness for Playwright
 ExternalSources: []
@@ -36,6 +46,7 @@ LastUpdated: 2026-02-22T15:39:48.380638079-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 
 
@@ -754,3 +765,161 @@ Because the main React app dependencies could not be installed in this environme
 - Playwright end state showed:
   - `Request status: completed`
   - `scriptOutput.result = { "approved": false, "env": "staging" }`
+
+## Step 11: Completed Glazed v1 Migration and Unblocked CLI Baseline
+
+I executed the requested dependency bump and then finished the Glazed v1 migration so the CLI compiles and tests cleanly again. The first run of `make bump-glazed` surfaced old API references (`cmds/layers`, `cmds/parameters`) and a temporary DNS issue against `proxy.golang.org`, so I moved to direct migration fixes and then re-ran the target with `GOPROXY=direct`.
+
+This step restored a stable baseline for subsequent feature work: command construction now uses Glazed v1 sections/values APIs, `make bump-glazed` completes, and full `go test ./...` passes.
+
+### Prompt Context
+
+**User prompt (verbatim):** "1. yes, run make bump-glazed. 
+2. then after 1, 2
+3. what's that ?"
+
+**Assistant interpretation:** Run the glazed bump first, make it actually pass by fixing compatibility issues, then continue with the second follow-up work item.
+
+**Inferred user intent:** Keep momentum by unblocking the dependency baseline before deeper hardening work.
+
+**Commit (code):** `2d04d7f` — "build(cli): migrate glazed command wiring to v1"
+
+### What I did
+- Ran `make bump-glazed`; captured failure due old imports and later DNS resolution issue.
+- Migrated command wiring to Glazed v1:
+  - `cmd/plz-confirm/main.go`
+  - `internal/cli/confirm.go`
+  - `internal/cli/select.go`
+  - `internal/cli/form.go`
+  - `internal/cli/table.go`
+  - `internal/cli/upload.go`
+  - `internal/cli/image.go`
+- Replaced old layers/parameters usage with v1 sections/values/fields APIs.
+- Fixed malformed import artifacts from the in-progress migration and ran `gofmt`.
+- Re-ran `make bump-glazed` successfully using `GOPROXY=direct`.
+- Ran full backend validation:
+  - `go test ./... -count=1`
+
+### Why
+- The CLI baseline had to be healthy before continuing websocket/frontend hardening and before any additional ticket tasks could be completed reliably.
+
+### What worked
+- Final `make bump-glazed` run succeeded.
+- Full repository Go tests passed after migration.
+- Task `42` (CLI command wiring) is now checked and backed by commit/test evidence.
+
+### What didn't work
+- Initial `make bump-glazed` run failed with:
+  - `module .../glazed@latest ... does not contain package .../cmds/layers`
+- A later run failed transiently with DNS/proxy error:
+  - `lookup proxy.golang.org ... server misbehaving`
+- Resolved via code migration + `GOPROXY=direct` for the bump command.
+
+### What I learned
+- The new Glazed v1 parser surface is section-first (`schema.DefaultSlug`, `values.Values`) and no longer supports legacy layer wiring used in this CLI.
+
+### What was tricky to build
+- The migration started from a partially edited state with malformed imports and mixed old/new APIs, so compile fixes had to be sequenced carefully before validating behavior.
+
+### What warrants a second pair of eyes
+- Confirm whether we still want explicit YAML output defaults at CLI level, since the v1 migration removed the previous custom output-layer default wiring.
+
+### What should be done in the future
+- Add a short migration note in dev docs for Glazed v1 command patterns to avoid reintroducing layer-based examples.
+
+### Code review instructions
+- Review migration delta in:
+  - `/home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/cmd/plz-confirm/main.go`
+  - `/home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/internal/cli/confirm.go`
+  - `/home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/internal/cli/select.go`
+  - `/home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/internal/cli/form.go`
+  - `/home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/internal/cli/table.go`
+  - `/home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/internal/cli/upload.go`
+  - `/home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/internal/cli/image.go`
+- Validate with:
+  - `GOPROXY=direct make bump-glazed`
+  - `go test ./... -count=1`
+
+### Technical details
+- Key API substitutions:
+  - old `ParsedLayers.InitializeStruct(layers.DefaultSlug, ...)`
+  - new `Values.DecodeSectionInto(schema.DefaultSlug, ...)`
+- Bumped deps persisted in `go.mod` / `go.sum` (glazed/clay and transitive upgrades).
+
+## Step 12: Hardened WebSocket/Event Ordering and Re-Verified in Browser
+
+After the dependency baseline was fixed, I implemented websocket/frontend hardening with explicit ordering and stale-update protections, then verified behavior in both tests and a real browser run.
+
+The backend now emits deterministic initial pending order and serializes websocket writes to avoid concurrent write hazards. The frontend websocket client now guards against out-of-order stale `request_updated` events after completion and upserts unknown updates safely.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 11)
+
+**Assistant interpretation:** Continue with the second follow-up item after glazed bump, with practical hardening and verification.
+
+**Inferred user intent:** Improve reliability and prove it with tests and browser evidence.
+
+**Commit (code):** `d9e65b9` — "feat(ws): harden event ordering and update handling"
+
+### What I did
+- Backend/store hardening:
+  - Added deterministic `CreatedAt` sort in pending query paths:
+    - `internal/store/store.go`
+  - Added serialized websocket write path (shared write mutex):
+    - `internal/server/ws.go`
+- Added websocket ordering tests:
+  - `internal/server/ws_test.go`
+  - Covers script lifecycle event sequence (`new_request` -> `request_updated` -> `request_completed`).
+  - Covers initial pending replay order on websocket connect.
+- Frontend websocket hardening:
+  - `agent-ui-system/client/src/services/websocket.ts`
+  - Ignore stale `request_updated` for already-completed IDs.
+  - Treat completed updates as completion events.
+  - Enqueue unknown updated requests instead of silently dropping them.
+- Restored frontend typecheck environment in this workspace:
+  - `pnpm -C agent-ui-system install --offline`
+  - `pnpm -C agent-ui-system run check`
+- Re-ran browser verification with Playwright using ticket harness and captured screenshot:
+  - `/home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/ttmp/2026/02/22/PC-01-ADD-JS-API--add-js-api-describe-extension/various/pc01-script-flow-hardened-completed.png`
+
+### Why
+- This directly targets reliability risks in live multi-event flows: message ordering assumptions, stale-event overwrites, and websocket writer concurrency safety.
+
+### What worked
+- `go test ./internal/server ./internal/store -count=1` passed.
+- `go test ./... -count=1` passed.
+- Frontend typecheck now passes in this environment.
+- Playwright browser run reached completed state with expected script output.
+- Task `53` (websocket tests for update ordering) is now checked.
+
+### What didn't work
+- Frontend typecheck initially failed due missing local type definitions (`node`, `vite/client`) until offline install was performed.
+
+### What I learned
+- The combination of deterministic server ordering + frontend stale-event filtering closes a concrete class of regressions where late `request_updated` payloads can overwrite completed state.
+
+### What was tricky to build
+- Hardening needed to cover both sides: backend ordering alone does not prevent stale client-side patching, and client filtering alone does not guarantee stable initial replay order.
+
+### What warrants a second pair of eyes
+- Confirm that global websocket write serialization is acceptable for expected throughput; if not, we should move to per-connection locks.
+
+### What should be done in the future
+- Add frontend unit tests for reducer/websocket behavior around stale `request_updated` events (task `54`).
+
+### Code review instructions
+- Start with:
+  - `/home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/internal/store/store.go`
+  - `/home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/internal/server/ws.go`
+  - `/home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/internal/server/ws_test.go`
+  - `/home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/agent-ui-system/client/src/services/websocket.ts`
+- Validate with:
+  - `go test ./internal/server ./internal/store -count=1`
+  - `go test ./... -count=1`
+  - `pnpm -C agent-ui-system run check`
+
+### Technical details
+- Browser proof path:
+  - `/home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/ttmp/2026/02/22/PC-01-ADD-JS-API--add-js-api-describe-extension/various/pc01-script-flow-hardened-completed.png`
+- Event ordering assertions were implemented at websocket payload level (`type` + parsed `UIRequest` status/id).

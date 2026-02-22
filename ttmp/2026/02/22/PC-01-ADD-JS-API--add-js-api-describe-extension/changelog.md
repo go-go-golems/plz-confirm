@@ -69,3 +69,16 @@ Implemented script widget runtime and lifecycle: protobuf schema updates, server
 - /home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/internal/server/script_test.go — Lifecycle test coverage for script flow
 - /home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/ttmp/2026/02/22/PC-01-ADD-JS-API--add-js-api-describe-extension/various/script-demo.html — Browser harness used for Playwright verification
 
+
+## 2026-02-22
+
+Completed Glazed v1 CLI migration and websocket/frontend hardening: make bump-glazed now passes, websocket ordering tests added, stale update handling tightened, and Playwright browser verification rerun.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/agent-ui-system/client/src/services/websocket.ts — Client-side stale update and unknown update handling
+- /home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/cmd/plz-confirm/main.go — Glazed v1 parser/command wiring migration
+- /home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/internal/server/ws.go — Serialized websocket writes for delivery safety
+- /home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/internal/server/ws_test.go — Websocket lifecycle/order regression coverage
+- /home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/ttmp/2026/02/22/PC-01-ADD-JS-API--add-js-api-describe-extension/various/pc01-script-flow-hardened-completed.png — Browser proof screenshot after hardening
+
