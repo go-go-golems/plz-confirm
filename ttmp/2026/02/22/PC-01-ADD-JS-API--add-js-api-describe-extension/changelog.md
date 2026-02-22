@@ -82,3 +82,14 @@ Completed Glazed v1 CLI migration and websocket/frontend hardening: make bump-gl
 - /home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/internal/server/ws_test.go — Websocket lifecycle/order regression coverage
 - /home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/ttmp/2026/02/22/PC-01-ADD-JS-API--add-js-api-describe-extension/various/pc01-script-flow-hardened-completed.png — Browser proof screenshot after hardening
 
+
+## 2026-02-22
+
+Ran full proto code generation successfully (Go + TS) and checked off Task 21; manual TS sync is no longer needed in current workspace state.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/agent-ui-system/client/src/proto/generated/plz_confirm/v1/request.ts — TS proto generation verified
+- /home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/proto/generated/go/plz_confirm/v1/request.pb.go — Go proto generation verified
+- /home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/ttmp/2026/02/22/PC-01-ADD-JS-API--add-js-api-describe-extension/tasks.md — Task 21 checked after successful codegen
+

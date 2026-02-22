@@ -923,3 +923,58 @@ The backend now emits deterministic initial pending order and serializes websock
 - Browser proof path:
   - `/home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/ttmp/2026/02/22/PC-01-ADD-JS-API--add-js-api-describe-extension/various/pc01-script-flow-hardened-completed.png`
 - Event ordering assertions were implemented at websocket payload level (`type` + parsed `UIRequest` status/id).
+
+## Step 13: Verified Full Proto Codegen and Checked Off Task 21
+
+I ran the full codegen path after stabilizing dependencies and frontend tooling, and both generators completed successfully: Go protobuf generation and TS proto generation in `agent-ui-system`.
+
+This closes a previously-open blocker from earlier network/tooling limitations where TS generated files were edited manually for progress.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 11)
+
+**Assistant interpretation:** Continue through open checklist items after completing step 1 and step 2 work blocks.
+
+**Inferred user intent:** Keep reducing open risk items by turning provisional/manual steps into reproducible, automated workflow.
+
+**Commit (code):** N/A
+
+### What I did
+- Ran `make codegen` from repo root.
+- Verified both commands succeeded:
+  - `protoc ... --go_out=proto/generated/go ...`
+  - `pnpm -C agent-ui-system run proto`
+- Checked off task `21` in ticket checklist.
+
+### Why
+- Task `21` explicitly requires regenerated Go and TS outputs to be verifiably reproducible, not only manually synchronized.
+
+### What worked
+- `make codegen` finished successfully without errors.
+- No additional generated diff remained after running codegen in current state.
+
+### What didn't work
+- N/A
+
+### What I learned
+- With offline frontend install completed, proto generation is now reliable in this workspace.
+
+### What was tricky to build
+- Earlier in the ticket, TS proto generation was blocked by package availability; this step confirmed that environment constraints were resolved and the workflow is now clean.
+
+### What warrants a second pair of eyes
+- Confirm CI environment has the same proto toolchain versions to avoid drift from local successful runs.
+
+### What should be done in the future
+- Keep `make codegen` as a required pre-commit check for future proto changes in this ticket.
+
+### Code review instructions
+- Re-run:
+  - `make codegen`
+- Inspect checklist update:
+  - `/home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/ttmp/2026/02/22/PC-01-ADD-JS-API--add-js-api-describe-extension/tasks.md`
+
+### Technical details
+- Task status updated:
+  - `[21] Run code generation and verify regenerated Go and TS outputs` => checked.

@@ -27,7 +27,7 @@
 - [x] Add/adjust widget enums and oneofs in `proto/plz_confirm/v1/request.proto`
 - [x] Add script-specific input/output/view/state message types in `proto/plz_confirm/v1/widgets.proto`
 - [x] Add websocket event(s) for incremental request updates in `proto/plz_confirm/v1/ws.proto` (or active event proto)
-- [ ] Run code generation and verify regenerated Go and TS outputs
+- [x] Run code generation and verify regenerated Go and TS outputs
 
 - [x] Phase 3: Server lifecycle integration
 - [x] Add request preflight validation for script requests in `internal/server/server.go`
