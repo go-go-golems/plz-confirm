@@ -6,8 +6,8 @@
 - [x] Add a new diary step documenting the task-management workflow and rationale
 - [x] Refresh ticket file relationships with `docmgr doc relate` (index + focused docs)
 - [x] Run ticket hygiene checks (`docmgr doctor` + targeted frontmatter validation) and record outcomes
-- [ ] Update changelog with this turn's tasking/checkoff progress
-- [ ] Commit each completed work block incrementally
+- [x] Update changelog with this turn's tasking/checkoff progress
+- [x] Commit each completed work block incrementally
 
 ## Implementation Backlog (Intern Start Checklist)
 
