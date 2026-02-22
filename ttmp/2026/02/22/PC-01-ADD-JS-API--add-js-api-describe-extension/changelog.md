@@ -93,3 +93,15 @@ Ran full proto code generation successfully (Go + TS) and checked off Task 21; m
 - /home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/proto/generated/go/plz_confirm/v1/request.pb.go — Go proto generation verified
 - /home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/ttmp/2026/02/22/PC-01-ADD-JS-API--add-js-api-describe-extension/tasks.md — Task 21 checked after successful codegen
 
+
+## 2026-02-22
+
+Added frontend Vitest coverage for script reducer and renderer behavior; checked off Task 54 and closed Phase 8 testing checklist.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/agent-ui-system/client/src/components/WidgetRenderer.test.ts — Renderer script-branch mapping and unsupported-widget coverage
+- /home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/agent-ui-system/client/src/store/store.test.ts — Reducer coverage for script transitions
+- /home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/agent-ui-system/client/src/store/store.ts — Store factory export for isolated frontend tests
+- /home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/ttmp/2026/02/22/PC-01-ADD-JS-API--add-js-api-describe-extension/tasks.md — Task 54 and Phase 8 checked
+

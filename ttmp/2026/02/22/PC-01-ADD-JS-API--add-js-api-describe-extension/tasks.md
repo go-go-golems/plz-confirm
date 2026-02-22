@@ -62,11 +62,11 @@
 - [ ] Validate module exposure and host bridge constraints for script API surface
 - [ ] Add runtime lifecycle cleanup hooks to avoid leaked goroutines/resources
 
-- [ ] Phase 8: Testing and validation
+- [x] Phase 8: Testing and validation
 - [x] Add unit tests for contract validation and runtime envelope decoding
 - [x] Add server tests for create/update/finalize lifecycle for script requests
 - [x] Add websocket tests for incremental update events and ordering guarantees
-- [ ] Add frontend tests for reducer + renderer behavior for script views
+- [x] Add frontend tests for reducer + renderer behavior for script views
 - [x] Add smoke/e2e script that exercises end-to-end script progression
 - [x] Run full repo checks (`go test`, frontend checks) and capture known environment limitations
 

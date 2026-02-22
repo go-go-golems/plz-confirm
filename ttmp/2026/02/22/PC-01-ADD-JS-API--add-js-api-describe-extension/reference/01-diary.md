@@ -10,8 +10,14 @@ DocType: reference
 Intent: long-term
 Owners: []
 RelatedFiles:
+    - Path: agent-ui-system/client/src/components/WidgetRenderer.test.ts
+      Note: Diary step documents renderer mapping coverage
     - Path: agent-ui-system/client/src/services/websocket.ts
       Note: Diary step documents client-side stale update handling
+    - Path: agent-ui-system/client/src/store/store.test.ts
+      Note: Diary step documents reducer test coverage
+    - Path: agent-ui-system/client/src/store/store.ts
+      Note: Diary step documents frontend store factory refactor for testability
     - Path: cmd/plz-confirm/main.go
       Note: Diary step documents Glazed v1 migration completion
     - Path: internal/scriptengine/engine.go
@@ -46,6 +52,7 @@ LastUpdated: 2026-02-22T15:39:48.380638079-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 
 
@@ -978,3 +985,73 @@ This closes a previously-open blocker from earlier network/tooling limitations w
 ### Technical details
 - Task status updated:
   - `[21] Run code generation and verify regenerated Go and TS outputs` => checked.
+
+## Step 14: Added Frontend Reducer/Renderer Test Coverage (Task 54)
+
+I implemented frontend test coverage for script flow behavior by adding focused Vitest tests for reducer transitions and widget renderer script-branch mapping.
+
+This closes task `54` and fully closes Phase 8 checklist coverage in the ticket.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 11)
+
+**Assistant interpretation:** Continue through remaining checklist items after step 1 and step 2 execution, with tests added as implementation hardening.
+
+**Inferred user intent:** Ensure script feature quality is backed by automated frontend tests, not only backend and browser demos.
+
+**Commit (code):** `a050c48` — "test(frontend): add script reducer and renderer coverage"
+
+### What I did
+- Refactored store construction for testability:
+  - `agent-ui-system/client/src/store/store.ts`
+  - added `createAppStore()` while preserving existing runtime singleton `store`.
+- Added reducer test coverage:
+  - `agent-ui-system/client/src/store/store.test.ts`
+  - verifies script request enqueue -> patch view transition -> completion into history.
+- Added renderer script-branch coverage:
+  - `agent-ui-system/client/src/components/WidgetRenderer.test.ts`
+  - verifies script `confirm` view mapping and unsupported widget error surface.
+- Ran frontend validation:
+  - `pnpm -C agent-ui-system run check`
+  - `pnpm -C agent-ui-system exec vitest run client/src/store/store.test.ts client/src/components/WidgetRenderer.test.ts`
+- Checked off tasks:
+  - `54` (frontend tests)
+  - `50` (Phase 8 heading)
+
+### Why
+- This was the largest remaining testing gap in the ticket after backend/ws/playwright coverage was already in place.
+
+### What worked
+- Both new test files pass consistently.
+- Pre-commit frontend check passes with new tests in repo.
+
+### What didn't work
+- N/A
+
+### What I learned
+- Exporting a store factory (`createAppStore`) allows isolated deterministic tests without changing app runtime behavior.
+
+### What was tricky to build
+- `WidgetRenderer` pulls many dialog components and runtime service imports; isolating script-branch behavior required test-time component mocking to keep tests focused and stable.
+
+### What warrants a second pair of eyes
+- Confirm whether we also want one integration-level frontend test that exercises real dialog components (without mocks) in jsdom.
+
+### What should be done in the future
+- Add a top-level npm script (e.g. `test:unit`) to run Vitest suites in CI alongside `tsc --noEmit`.
+
+### Code review instructions
+- Review:
+  - `/home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/agent-ui-system/client/src/store/store.ts`
+  - `/home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/agent-ui-system/client/src/store/store.test.ts`
+  - `/home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/agent-ui-system/client/src/components/WidgetRenderer.test.ts`
+- Re-run:
+  - `pnpm -C agent-ui-system run check`
+  - `pnpm -C agent-ui-system exec vitest run client/src/store/store.test.ts client/src/components/WidgetRenderer.test.ts`
+
+### Technical details
+- New tests added:
+  - `3` passing tests across `2` files.
+- Phase status:
+  - Phase 8 (Testing and validation) now fully checked.
