@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	stderrors "errors"
 	"fmt"
 	"io"
@@ -60,7 +61,7 @@ func (s *Server) handleScriptEvent(w http.ResponseWriter, r *http.Request, id st
 
 	updateResult, err := s.scripts.UpdateAndView(r.Context(), existingReq.GetScriptInput(), state, eventMap)
 	if err != nil {
-		http.Error(w, "script update failed: "+err.Error(), http.StatusBadRequest)
+		http.Error(w, "script update failed: "+err.Error(), statusForScriptError(err))
 		return
 	}
 
@@ -245,4 +246,32 @@ func mapToScriptDescribe(m map[string]any) (*v1.ScriptDescribe, error) {
 		}
 	}
 	return desc, nil
+}
+
+func statusForScriptError(err error) int {
+	if err == nil {
+		return http.StatusBadRequest
+	}
+	if stderrors.Is(err, context.DeadlineExceeded) {
+		return http.StatusGatewayTimeout
+	}
+	if stderrors.Is(err, context.Canceled) {
+		return http.StatusRequestTimeout
+	}
+
+	msg := strings.ToLower(err.Error())
+	switch {
+	case strings.Contains(msg, "timeout"):
+		return http.StatusGatewayTimeout
+	case strings.Contains(msg, "cancel"):
+		return http.StatusRequestTimeout
+	case strings.Contains(msg, "must export"),
+		strings.Contains(msg, "is required"),
+		strings.Contains(msg, "must be object"),
+		strings.Contains(msg, "invalid protojson"),
+		strings.Contains(msg, "script source"):
+		return http.StatusBadRequest
+	default:
+		return http.StatusUnprocessableEntity
+	}
 }

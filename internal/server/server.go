@@ -236,7 +236,7 @@ func (s *Server) handleCreateRequest(w http.ResponseWriter, r *http.Request) {
 	if reqProto.Type == v1.WidgetType_script {
 		initResult, err := s.scripts.InitAndView(r.Context(), reqProto.GetScriptInput())
 		if err != nil {
-			http.Error(w, "script init failed: "+err.Error(), http.StatusBadRequest)
+			http.Error(w, "script init failed: "+err.Error(), statusForScriptError(err))
 			return
 		}
 

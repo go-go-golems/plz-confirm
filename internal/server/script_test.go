@@ -108,6 +108,16 @@ func TestScriptRequestLifecycle(t *testing.T) {
 	if got := updated.GetScriptView().GetWidgetType(); got != "select" {
 		t.Fatalf("expected select view after first event, got %q", got)
 	}
+	pending := getRequest(t, h, created.Id)
+	if pending.Status != v1.RequestStatus_pending {
+		t.Fatalf("expected pending status on GET after patch, got %v", pending.Status)
+	}
+	if got := pending.GetScriptView().GetWidgetType(); got != "select" {
+		t.Fatalf("expected select view on GET after patch, got %q", got)
+	}
+	if step := pending.GetScriptState().AsMap()["step"]; step != "pick" {
+		t.Fatalf("unexpected persisted script state step after patch: %v", step)
+	}
 
 	// Second event: pick environment, complete flow.
 	secondEvent := &v1.ScriptEvent{
@@ -155,6 +165,83 @@ func TestScriptCreateRequiresDescribe(t *testing.T) {
 	}
 }
 
+func TestScriptCreateTimeoutMapsTo504(t *testing.T) {
+	t.Parallel()
+
+	s := New(store.New())
+	h := s.Handler()
+
+	slowScript := `
+module.exports = {
+  describe: function() { return { name: "slow", version: "1.0.0" }; },
+  init: function() { while (true) {} },
+  view: function() { return { widgetType: "confirm", input: { title: "x" } }; },
+  update: function(s) { return s; }
+};
+`
+	createReq := &v1.UIRequest{
+		Type:      v1.WidgetType_script,
+		SessionId: "global",
+		Input: &v1.UIRequest_ScriptInput{
+			ScriptInput: &v1.ScriptInput{Title: "Slow", Script: slowScript, TimeoutMs: toPtr(int64(25))},
+		},
+	}
+
+	body, err := protojson.Marshal(createReq)
+	if err != nil {
+		t.Fatalf("marshal create req: %v", err)
+	}
+	req := httptest.NewRequest(http.MethodPost, "/api/requests", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusGatewayTimeout {
+		t.Fatalf("expected 504 timeout mapping, got %d body=%s", rr.Code, rr.Body.String())
+	}
+}
+
+func TestScriptUpdateRuntimeFaultMapsTo422(t *testing.T) {
+	t.Parallel()
+
+	s := New(store.New())
+	h := s.Handler()
+
+	badUpdateScript := `
+module.exports = {
+  describe: function () { return { name: "faulty", version: "1.0.0" }; },
+  init: function () { return { step: "confirm" }; },
+  view: function () { return { widgetType: "confirm", input: { title: "x" } }; },
+  update: function () { throw new Error("boom"); }
+};
+`
+	createReq := &v1.UIRequest{
+		Type:      v1.WidgetType_script,
+		SessionId: "global",
+		Input: &v1.UIRequest_ScriptInput{
+			ScriptInput: &v1.ScriptInput{Title: "Faulty", Script: badUpdateScript},
+		},
+	}
+	created := postUIRequest(t, h, "/api/requests", createReq)
+
+	ev := &v1.ScriptEvent{
+		Type: "submit",
+		Data: mustStruct(t, map[string]any{"approved": true}),
+	}
+	body, err := protojson.Marshal(ev)
+	if err != nil {
+		t.Fatalf("marshal ScriptEvent: %v", err)
+	}
+	req := httptest.NewRequest(http.MethodPost, "/api/requests/"+created.Id+"/event", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusUnprocessableEntity {
+		t.Fatalf("expected 422 runtime mapping, got %d body=%s", rr.Code, rr.Body.String())
+	}
+}
+
 func postUIRequest(t *testing.T, h http.Handler, path string, reqProto *v1.UIRequest) *v1.UIRequest {
 	t.Helper()
 
@@ -197,6 +284,23 @@ func postScriptEvent(t *testing.T, h http.Handler, id string, ev *v1.ScriptEvent
 	return out
 }
 
+func getRequest(t *testing.T, h http.Handler, id string) *v1.UIRequest {
+	t.Helper()
+
+	req := httptest.NewRequest(http.MethodGet, "/api/requests/"+id, nil)
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, req)
+	if rr.Code < 200 || rr.Code >= 300 {
+		t.Fatalf("get request failed status=%d body=%s", rr.Code, rr.Body.String())
+	}
+
+	out := &v1.UIRequest{}
+	if err := protojson.Unmarshal(rr.Body.Bytes(), out); err != nil {
+		t.Fatalf("unmarshal get response: %v body=%s", err, rr.Body.String())
+	}
+	return out
+}
+
 func mustStruct(t *testing.T, m map[string]any) *structpb.Struct {
 	t.Helper()
 	st, err := structpb.NewStruct(m)
@@ -204,4 +308,8 @@ func mustStruct(t *testing.T, m map[string]any) *structpb.Struct {
 		t.Fatalf("structpb.NewStruct: %v", err)
 	}
 	return st
+}
+
+func toPtr[T any](v T) *T {
+	return &v
 }
