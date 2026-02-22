@@ -1,7 +1,7 @@
 import React from "react";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store/store";
-import { submitResponse, touchRequest } from "@/services/websocket";
+import { submitResponse, submitScriptEvent, touchRequest } from "@/services/websocket";
 import { ConfirmDialog } from "./widgets/ConfirmDialog";
 import { SelectDialog } from "./widgets/SelectDialog";
 import { TableDialog } from "./widgets/TableDialog";
@@ -107,6 +107,59 @@ export const WidgetRenderer: React.FC = () => {
     loading: loading,
   };
 
+  const handleScriptSubmit = async (output: any) => {
+    try {
+      await submitScriptEvent(active.id, {
+        type: "submit",
+        stepId: active.scriptView?.stepId,
+        data: output,
+      });
+    } catch (error) {
+      console.error("Failed to submit script event", error);
+    }
+  };
+
+  const renderScriptView = () => {
+    if (!active.scriptView) {
+      return (
+        <div className="p-8 border border-destructive/50 bg-destructive/10 text-destructive">
+          ERROR: SCRIPT_VIEW_MISSING
+        </div>
+      );
+    }
+
+    const widgetType = String(active.scriptView.widgetType || "")
+      .trim()
+      .toLowerCase();
+    const input = (active.scriptView.input ?? {}) as any;
+    const scriptCommonProps = {
+      requestId: active.id,
+      onSubmit: handleScriptSubmit,
+      loading: loading,
+    };
+
+    switch (widgetType) {
+      case "confirm":
+        return <ConfirmDialog {...scriptCommonProps} input={input} />;
+      case "select":
+        return <SelectDialog {...scriptCommonProps} input={input} />;
+      case "table":
+        return <TableDialog {...scriptCommonProps} input={input} />;
+      case "form":
+        return <FormDialog {...scriptCommonProps} input={input} />;
+      case "upload":
+        return <UploadDialog {...scriptCommonProps} input={input} />;
+      case "image":
+        return <ImageDialog {...scriptCommonProps} input={input} />;
+      default:
+        return (
+          <div className="p-8 border border-destructive/50 bg-destructive/10 text-destructive">
+            ERROR: UNSUPPORTED_SCRIPT_WIDGET [{widgetType || "unknown"}]
+          </div>
+        );
+    }
+  };
+
   const renderWidget = () => {
     const typeLabel = (WidgetType as any)[active.type] ?? "unknown";
     switch (active.type) {
@@ -134,6 +187,8 @@ export const WidgetRenderer: React.FC = () => {
         return active.imageInput ? (
           <ImageDialog {...commonProps} input={active.imageInput} />
         ) : null;
+      case WidgetType.script:
+        return renderScriptView();
       default:
         return (
           <div className="p-8 border border-destructive/50 bg-destructive/10 text-destructive">

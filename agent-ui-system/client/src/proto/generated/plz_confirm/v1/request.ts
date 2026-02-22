@@ -12,6 +12,10 @@ import type {
   FormOutput,
   ImageInput,
   ImageOutput,
+  ScriptDescribe,
+  ScriptInput,
+  ScriptOutput,
+  ScriptView,
   SelectInput,
   SelectOutput,
   TableInput,
@@ -49,6 +53,7 @@ export enum WidgetType {
   upload = 4,
   table = 5,
   image = 6,
+  script = 7,
   UNRECOGNIZED = -1,
 }
 
@@ -78,12 +83,14 @@ export interface UIRequest {
   uploadInput?: UploadInput | undefined;
   tableInput?: TableInput | undefined;
   imageInput?: ImageInput | undefined;
+  scriptInput?: ScriptInput | undefined;
   confirmOutput?: ConfirmOutput | undefined;
   selectOutput?: SelectOutput | undefined;
   formOutput?: FormOutput | undefined;
   uploadOutput?: UploadOutput | undefined;
   tableOutput?: TableOutput | undefined;
   imageOutput?: ImageOutput | undefined;
+  scriptOutput?: ScriptOutput | undefined;
   status: RequestStatus;
   /** RFC3339Nano timestamp */
   createdAt: string;
@@ -102,4 +109,7 @@ export interface UIRequest {
     | undefined;
   /** If true, server will not auto-complete on expires_at */
   expiryDisabled?: boolean | undefined;
+  scriptState?: { [key: string]: any } | undefined;
+  scriptView?: ScriptView | undefined;
+  scriptDescribe?: ScriptDescribe | undefined;
 }

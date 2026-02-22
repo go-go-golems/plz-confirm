@@ -134,3 +134,39 @@ export interface ImageOutputNumbers {
 export interface ImageOutputStrings {
   values: string[];
 }
+
+/** Script Widget */
+export interface ScriptInput {
+  title: string;
+  script: string;
+  props?: { [key: string]: any } | undefined;
+  timeoutMs?: number | undefined;
+}
+
+export interface ScriptOutput {
+  result?: { [key: string]: any } | undefined;
+  logs: string[];
+  error?: string | undefined;
+}
+
+export interface ScriptEvent {
+  type: string;
+  stepId?: string | undefined;
+  actionId?: string | undefined;
+  data?: { [key: string]: any } | undefined;
+}
+
+export interface ScriptView {
+  widgetType: string;
+  input?: { [key: string]: any } | undefined;
+  stepId?: string | undefined;
+  title?: string | undefined;
+  description?: string | undefined;
+}
+
+export interface ScriptDescribe {
+  name: string;
+  version: string;
+  apiVersion?: string | undefined;
+  capabilities: string[];
+}

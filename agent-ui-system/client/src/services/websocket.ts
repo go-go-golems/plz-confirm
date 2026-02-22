@@ -8,6 +8,7 @@ import {
 } from "@/store/store";
 import { browserNotificationService } from "./notifications";
 import {
+  RequestStatus,
   UIRequest,
   WidgetType,
 } from "@/proto/generated/plz_confirm/v1/request";
@@ -99,6 +100,9 @@ export const connectWebSocket = () => {
         if (completedIds.has(completedReq.id)) return;
         markCompleted(completedReq.id);
         store.dispatch(completeRequest(completedReq));
+      } else if (data.type === "request_updated") {
+        const updatedReq: UIRequest = normalizeUIRequest(data.request);
+        store.dispatch(patchRequest(updatedReq));
       }
     } catch (e) {
       console.error("Failed to parse WS message", e);
@@ -203,6 +207,45 @@ export const submitResponse = async (
     return completedReq;
   } catch (error) {
     console.error("Error submitting response:", error);
+    throw error;
+  }
+};
+
+export const submitScriptEvent = async (
+  requestId: string,
+  event: {
+    type: string;
+    stepId?: string;
+    actionId?: string;
+    data?: Record<string, any>;
+  }
+) => {
+  try {
+    const response = await fetch(`/api/requests/${requestId}/event`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(event),
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to submit script event");
+    }
+
+    const json = await response.json();
+    const req = normalizeUIRequest(json);
+    if (req.status === RequestStatus.completed) {
+      if (!completedIds.has(requestId)) {
+        markCompleted(requestId);
+      }
+      store.dispatch(completeRequest(req));
+    } else {
+      store.dispatch(patchRequest(req));
+    }
+    return req;
+  } catch (error) {
+    console.error("Error submitting script event:", error);
     throw error;
   }
 };
