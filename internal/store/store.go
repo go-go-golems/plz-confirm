@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"sort"
 	"sync"
 	"time"
 
@@ -108,6 +109,7 @@ func (s *Store) Pending(_ context.Context) []*v1.UIRequest {
 			out = append(out, e.req)
 		}
 	}
+	sortUIRequestsByCreatedAt(out)
 	return out
 }
 
@@ -125,7 +127,38 @@ func (s *Store) PendingForSession(_ context.Context, sessionID string) []*v1.UIR
 			out = append(out, e.req)
 		}
 	}
+	sortUIRequestsByCreatedAt(out)
 	return out
+}
+
+func sortUIRequestsByCreatedAt(requests []*v1.UIRequest) {
+	sort.SliceStable(requests, func(i, j int) bool {
+		return uiRequestCreatedAtLess(requests[i], requests[j])
+	})
+}
+
+func uiRequestCreatedAtLess(a, b *v1.UIRequest) bool {
+	if a == nil || b == nil {
+		return a != nil
+	}
+
+	at, aErr := time.Parse(time.RFC3339Nano, a.CreatedAt)
+	bt, bErr := time.Parse(time.RFC3339Nano, b.CreatedAt)
+	switch {
+	case aErr == nil && bErr == nil:
+		if !at.Equal(bt) {
+			return at.Before(bt)
+		}
+	case aErr == nil:
+		return true
+	case bErr == nil:
+		return false
+	}
+
+	if a.Id != b.Id {
+		return a.Id < b.Id
+	}
+	return a.CreatedAt < b.CreatedAt
 }
 
 func (s *Store) Expire(now time.Time) []*v1.UIRequest {

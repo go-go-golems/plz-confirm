@@ -48,6 +48,14 @@ const markTouchedConfirmed = (requestId: string) => {
   }
 };
 
+const isKnownRequest = (requestId: string): boolean => {
+  const requestState = store.getState().request;
+  if (requestState.active?.id === requestId) return true;
+  if (requestState.pending.some(r => r.id === requestId)) return true;
+  if (requestState.history.some(r => r.id === requestId)) return true;
+  return false;
+};
+
 export const connectWebSocket = () => {
   const state = store.getState();
   const sessionId = state.session.id;
@@ -102,7 +110,18 @@ export const connectWebSocket = () => {
         store.dispatch(completeRequest(completedReq));
       } else if (data.type === "request_updated") {
         const updatedReq: UIRequest = normalizeUIRequest(data.request);
-        store.dispatch(patchRequest(updatedReq));
+        if (completedIds.has(updatedReq.id)) return;
+        if (updatedReq.status === RequestStatus.completed) {
+          markCompleted(updatedReq.id);
+          store.dispatch(completeRequest(updatedReq));
+          return;
+        }
+
+        if (isKnownRequest(updatedReq.id)) {
+          store.dispatch(patchRequest(updatedReq));
+          return;
+        }
+        store.dispatch(enqueueRequest(updatedReq));
       }
     } catch (e) {
       console.error("Failed to parse WS message", e);
