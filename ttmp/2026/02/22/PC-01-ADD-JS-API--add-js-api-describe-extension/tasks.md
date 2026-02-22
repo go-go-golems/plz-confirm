@@ -1,6 +1,77 @@
 # Tasks
 
-## TODO
+## Execution Checklist (Current Turn)
 
-- [ ] Add tasks here
+- [x] Expand `tasks.md` into a detailed phased checklist for the JS describe extension
+- [ ] Add a new diary step documenting the task-management workflow and rationale
+- [ ] Refresh ticket file relationships with `docmgr doc relate` (index + focused docs)
+- [ ] Run ticket hygiene checks (`docmgr doctor` + targeted frontmatter validation) and record outcomes
+- [ ] Update changelog with this turn's tasking/checkoff progress
+- [ ] Commit each completed work block incrementally
 
+## Implementation Backlog (Intern Start Checklist)
+
+- [ ] Phase 0: Confirm scope and naming decisions
+- [ ] Decide whether canonical widget type name is `script` or `flow`
+- [ ] Decide whether script runtime state is persisted in `UIRequest` or server-only session memory
+- [ ] Finalize `describe` contract versioning and compatibility behavior
+
+- [ ] Phase 1: Define JS extension contract
+- [ ] Specify required `describe()` return shape (`name`, `version`, supported handlers)
+- [ ] Specify `init(input, context)` return envelope and error behavior
+- [ ] Specify `view(state, context)` return schema for renderable widget payloads
+- [ ] Specify `update(state, event, context)` transition semantics and idempotency expectations
+- [ ] Specify cancellation/timeout contract exposed to JS runtime
+
+- [ ] Phase 2: Protobuf and wire protocol updates
+- [ ] Add/adjust widget enums and oneofs in `proto/plz_confirm/v1/request.proto`
+- [ ] Add script-specific input/output/view/state message types in `proto/plz_confirm/v1/widgets.proto`
+- [ ] Add websocket event(s) for incremental request updates in `proto/plz_confirm/v1/ws.proto` (or active event proto)
+- [ ] Run code generation and verify regenerated Go and TS outputs
+
+- [ ] Phase 3: Server lifecycle integration
+- [ ] Add request preflight validation for script requests in `internal/server/server.go`
+- [ ] Implement runtime session initialization path (`describe` then `init`)
+- [ ] Implement event loop path for `update` and projection path for `view`
+- [ ] Implement request-update broadcast path over websocket
+- [ ] Ensure final submit path remains compatible with existing `wait`/`response` semantics
+- [ ] Add robust error mapping (validation error vs runtime fault vs timeout)
+
+- [ ] Phase 4: Store and persistence behavior
+- [ ] Decide persisted fields for script progression (`state`, `view`, metadata pointers)
+- [ ] Update store create/update clone behavior in `internal/store/store.go`
+- [ ] Ensure history queries remain stable with partially progressed script requests
+- [ ] Ensure backward compatibility for non-script request types
+
+- [ ] Phase 5: Frontend runtime and rendering
+- [ ] Add script widget rendering branch in `agent-ui-system/client/src/components/WidgetRenderer.tsx`
+- [ ] Add reducer handlers for request update events in `agent-ui-system/client/src/store/store.ts`
+- [ ] Add websocket client handling for new event type in `agent-ui-system/client/src/services/websocket.ts`
+- [ ] Normalize incoming proto payloads for script view/state in `agent-ui-system/client/src/proto/normalize.ts`
+- [ ] Add UI affordances for runtime errors and recoverable retry states
+
+- [ ] Phase 6: CLI/client integration
+- [ ] Extend CLI request creation path for script input in `internal/client/client.go`
+- [ ] Add/adjust command wiring in `cmd/plz-confirm/main.go` and relevant `internal/cli/*.go`
+- [ ] Ensure session scoping and timeout behavior are preserved for script flows
+- [ ] Ensure non-script commands remain unchanged
+
+- [ ] Phase 7: Runtime ownership and go-go-goja alignment
+- [ ] Choose integration strategy: direct `go-go-goja` engine usage vs thin local wrapper
+- [ ] Implement bounded execution/interrupt handling consistent with go-go-goja patterns
+- [ ] Validate module exposure and host bridge constraints for script API surface
+- [ ] Add runtime lifecycle cleanup hooks to avoid leaked goroutines/resources
+
+- [ ] Phase 8: Testing and validation
+- [ ] Add unit tests for contract validation and runtime envelope decoding
+- [ ] Add server tests for create/update/finalize lifecycle for script requests
+- [ ] Add websocket tests for incremental update events and ordering guarantees
+- [ ] Add frontend tests for reducer + renderer behavior for script views
+- [ ] Add smoke/e2e script that exercises end-to-end script progression
+- [ ] Run full repo checks (`go test`, frontend checks) and capture known environment limitations
+
+- [ ] Phase 9: Docs and rollout
+- [ ] Update user/developer docs with JS extension contract and examples
+- [ ] Add troubleshooting notes for runtime errors, timeouts, and interrupt handling
+- [ ] Define rollout strategy (feature flag or guarded command path)
+- [ ] Define post-rollout observability checks and regression watchpoints
