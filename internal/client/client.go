@@ -115,6 +115,12 @@ func (c *Client) CreateRequest(ctx context.Context, p CreateRequestParams) (*v1.
 			return nil, errors.New("input must be *v1.ImageInput for type=image")
 		}
 		reqProto.Input = &v1.UIRequest_ImageInput{ImageInput: in}
+	case v1.WidgetType_script:
+		in, ok := p.Input.(*v1.ScriptInput)
+		if !ok {
+			return nil, errors.New("input must be *v1.ScriptInput for type=script")
+		}
+		reqProto.Input = &v1.UIRequest_ScriptInput{ScriptInput: in}
 	default:
 		return nil, errors.New("invalid widget type")
 	}

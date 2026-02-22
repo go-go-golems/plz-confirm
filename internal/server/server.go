@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/go-go-golems/plz-confirm/internal/scriptengine"
 	"github.com/go-go-golems/plz-confirm/internal/store"
 	"github.com/go-go-golems/plz-confirm/proto/generated/go/plz_confirm/v1"
 	"golang.org/x/sync/errgroup"
@@ -21,9 +22,10 @@ import (
 )
 
 type Server struct {
-	store  *store.Store
-	ws     *wsBroadcaster
-	images *ImageStore
+	store   *store.Store
+	ws      *wsBroadcaster
+	images  *ImageStore
+	scripts *scriptengine.Engine
 }
 
 type Options struct {
@@ -36,9 +38,10 @@ func New(s *store.Store) *Server {
 		log.Printf("[IMG] failed to initialize image store, uploads disabled: %v", err)
 	}
 	return &Server{
-		store:  s,
-		ws:     newWSBroadcaster(),
-		images: imgStore,
+		store:   s,
+		ws:      newWSBroadcaster(),
+		images:  imgStore,
+		scripts: scriptengine.New(),
 	}
 }
 
@@ -220,6 +223,32 @@ func (s *Server) handleCreateRequest(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "missing required fields (type + widget input oneof)", http.StatusBadRequest)
 		return
 	}
+	inputType, ok := widgetTypeFromInputOneof(reqProto)
+	if !ok {
+		http.Error(w, "invalid input oneof for UIRequest", http.StatusBadRequest)
+		return
+	}
+	if inputType != reqProto.Type {
+		http.Error(w, "input widget type does not match request type", http.StatusBadRequest)
+		return
+	}
+
+	if reqProto.Type == v1.WidgetType_script {
+		initResult, err := s.scripts.InitAndView(r.Context(), reqProto.GetScriptInput())
+		if err != nil {
+			http.Error(w, "script init failed: "+err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		scriptState, scriptView, scriptDescribe, err := scriptInitResultToProto(initResult)
+		if err != nil {
+			http.Error(w, "script init result invalid: "+err.Error(), http.StatusBadRequest)
+			return
+		}
+		reqProto.ScriptState = scriptState
+		reqProto.ScriptView = scriptView
+		reqProto.ScriptDescribe = scriptDescribe
+	}
 	if reqProto.Metadata != nil || r.RemoteAddr != "" || r.UserAgent() != "" {
 		if reqProto.Metadata == nil {
 			reqProto.Metadata = &v1.RequestMetadata{}
@@ -295,6 +324,13 @@ func (s *Server) handleRequestsItem(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		s.handleSubmitResponse(w, r, id)
+		return
+	case "event":
+		if r.Method != http.MethodPost {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		s.handleScriptEvent(w, r, id)
 		return
 	case "touch":
 		if r.Method != http.MethodPost {
@@ -415,6 +451,29 @@ func widgetTypeFromOutputOneof(req *v1.UIRequest) (v1.WidgetType, bool) {
 		return v1.WidgetType_table, true
 	case *v1.UIRequest_ImageOutput:
 		return v1.WidgetType_image, true
+	case *v1.UIRequest_ScriptOutput:
+		return v1.WidgetType_script, true
+	default:
+		return v1.WidgetType_widget_type_unspecified, false
+	}
+}
+
+func widgetTypeFromInputOneof(req *v1.UIRequest) (v1.WidgetType, bool) {
+	switch req.Input.(type) {
+	case *v1.UIRequest_ConfirmInput:
+		return v1.WidgetType_confirm, true
+	case *v1.UIRequest_SelectInput:
+		return v1.WidgetType_select, true
+	case *v1.UIRequest_FormInput:
+		return v1.WidgetType_form, true
+	case *v1.UIRequest_UploadInput:
+		return v1.WidgetType_upload, true
+	case *v1.UIRequest_TableInput:
+		return v1.WidgetType_table, true
+	case *v1.UIRequest_ImageInput:
+		return v1.WidgetType_image, true
+	case *v1.UIRequest_ScriptInput:
+		return v1.WidgetType_script, true
 	default:
 		return v1.WidgetType_widget_type_unspecified, false
 	}

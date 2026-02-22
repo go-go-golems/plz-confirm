@@ -5,6 +5,7 @@ package plz_confirm.v1;
 option go_package = "github.com/go-go-golems/plz-confirm/proto/generated/go/plz_confirm/v1";
 
 import "plz_confirm/v1/widgets.proto";
+import "google/protobuf/struct.proto";
 
 message ProcessInfo {
   int64 pid = 1;
@@ -43,6 +44,7 @@ enum WidgetType {
   upload = 4;
   table = 5;
   image = 6;
+  script = 7;
 }
 
 // UIRequest - main request/response envelope
@@ -59,6 +61,7 @@ message UIRequest {
     UploadInput upload_input = 7;
     TableInput table_input = 8;
     ImageInput image_input = 9;
+    ScriptInput script_input = 24;
   }
   
   // Widget-specific output (oneof for type safety)
@@ -69,6 +72,7 @@ message UIRequest {
     UploadOutput upload_output = 13;
     TableOutput table_output = 14;
     ImageOutput image_output = 15;
+    ScriptOutput script_output = 25;
   }
   
   RequestStatus status = 16;
@@ -79,4 +83,7 @@ message UIRequest {
   optional RequestMetadata metadata = 21;
   optional string touched_at = 22; // RFC3339Nano timestamp (first UI interaction)
   optional bool expiry_disabled = 23; // If true, server will not auto-complete on expires_at
+  optional google.protobuf.Struct script_state = 26;
+  optional ScriptView script_view = 27;
+  optional ScriptDescribe script_describe = 28;
 }

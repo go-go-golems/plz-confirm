@@ -136,3 +136,38 @@ message ImageOutputStrings {
   repeated string values = 1;
 }
 
+// Script Widget
+message ScriptInput {
+  string title = 1;
+  string script = 2;
+  google.protobuf.Struct props = 3;
+  optional int64 timeout_ms = 4;
+}
+
+message ScriptOutput {
+  google.protobuf.Struct result = 1;
+  repeated string logs = 2;
+  optional string error = 3;
+}
+
+message ScriptEvent {
+  string type = 1;
+  optional string step_id = 2;
+  optional string action_id = 3;
+  google.protobuf.Struct data = 4;
+}
+
+message ScriptView {
+  string widget_type = 1;
+  google.protobuf.Struct input = 2;
+  optional string step_id = 3;
+  optional string title = 4;
+  optional string description = 5;
+}
+
+message ScriptDescribe {
+  string name = 1;
+  string version = 2;
+  optional string api_version = 3;
+  repeated string capabilities = 4;
+}
