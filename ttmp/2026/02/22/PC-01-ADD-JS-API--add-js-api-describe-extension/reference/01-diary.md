@@ -359,3 +359,56 @@ I completed the final operational requirements after drafting the implementation
   - `11 files changed, 2559 insertions(+), create mode ...`
 - Upload result:
   - `OK: uploaded 01-implementation-plan-js-describe-extension.pdf -> /ai/2026/02/22/PC-01-ADD-JS-API`
+
+## Step 5: Added Detailed Task Matrix and Started Incremental Checkoff Workflow
+
+I converted the ticket from a placeholder tasks file into a detailed phased task matrix and switched to an explicit checkoff workflow for this turn, with one commit per completed block.
+
+### Prompt Context
+
+**User prompt (verbatim):** "Create a detailed list of tasks in the ticket, check the moff as you work one by one, commit as you go, and continue keeping your diary."
+
+**Assistant interpretation:** Build a concrete task list inside ticket artifacts, execute/mark off items sequentially, commit incrementally, and keep extending the diary.
+
+**Inferred user intent:** Move from planning artifacts to a trackable execution workflow that is transparent and auditable in git history.
+
+**Commit (code):**
+- `67cfb73 docs(PC-01): add detailed phased task checklist`
+
+### What I did
+- Replaced placeholder `tasks.md` content with two sections:
+  - current-turn execution checklist (items to check off live)
+  - detailed implementation backlog (intern-ready phased checklist)
+- Marked the first execution item complete immediately after writing the detailed checklist.
+- Committed that first block before moving on to the next execution item.
+
+### Why
+- The ticket needed explicit structure so work can be tracked as “done/not done” and reviewed quickly.
+
+### What worked
+- A single authoritative checklist now exists in `tasks.md`, spanning scope decisions, protocol changes, server/store/frontend/CLI/runtime work, testing, and rollout.
+- Commit granularity now mirrors work granularity.
+
+### What didn't work
+- N/A
+
+### What I learned
+- Combining “live execution checklist” and “implementation backlog” in the same file keeps short-term progress and long-term plan synchronized.
+
+### What was tricky to build
+- Keeping the checklist detailed enough for intern onboarding without introducing assumptions that require code edits right now.
+
+### What warrants a second pair of eyes
+- Confirm the backlog granularity matches team preference (single-level checklist vs grouped sublists).
+
+### What should be done in the future
+- When coding starts, promote the first implementation phase items into the live execution checklist so checkoff stays actionable.
+
+### Code review instructions
+- Inspect task structure and phrasing:
+  - `/home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/ttmp/2026/02/22/PC-01-ADD-JS-API--add-js-api-describe-extension/tasks.md`
+- Verify first incremental commit:
+  - `git -C /home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm show --name-status --oneline 67cfb73`
+
+### Technical details
+- `tasks.md` now includes phased checkpoints for contract/proto/server/store/frontend/CLI/runtime/tests/docs rollout.

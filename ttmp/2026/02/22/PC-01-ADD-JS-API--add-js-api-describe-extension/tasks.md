@@ -3,7 +3,7 @@
 ## Execution Checklist (Current Turn)
 
 - [x] Expand `tasks.md` into a detailed phased checklist for the JS describe extension
-- [ ] Add a new diary step documenting the task-management workflow and rationale
+- [x] Add a new diary step documenting the task-management workflow and rationale
 - [ ] Refresh ticket file relationships with `docmgr doc relate` (index + focused docs)
 - [ ] Run ticket hygiene checks (`docmgr doctor` + targeted frontmatter validation) and record outcomes
 - [ ] Update changelog with this turn's tasking/checkoff progress
