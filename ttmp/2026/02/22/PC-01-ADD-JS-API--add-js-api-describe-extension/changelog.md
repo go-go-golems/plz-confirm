@@ -56,3 +56,16 @@ Added detailed phased task checklist, executed sequential checkoff workflow with
 - /home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/ttmp/2026/02/22/PC-01-ADD-JS-API--add-js-api-describe-extension/reference/01-diary.md — Step-by-step log of task checkoff workflow
 - /home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/ttmp/2026/02/22/PC-01-ADD-JS-API--add-js-api-describe-extension/tasks.md — Detailed execution checklist and intern implementation backlog
 
+
+## 2026-02-22
+
+Implemented script widget runtime and lifecycle: protobuf schema updates, server script engine, /event endpoint, request_updated websocket events, store script state/view persistence, backend tests, and browser harness + Playwright verification of pending->updated->completed flow.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/agent-ui-system/client/src/components/WidgetRenderer.tsx — Script widget rendering bridge to existing dialogs
+- /home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/internal/scriptengine/engine.go — Script runtime contract and timeout-bounded execution
+- /home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/internal/server/script.go — Script event endpoint and create/update/complete orchestration
+- /home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/internal/server/script_test.go — Lifecycle test coverage for script flow
+- /home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/ttmp/2026/02/22/PC-01-ADD-JS-API--add-js-api-describe-extension/various/script-demo.html — Browser harness used for Playwright verification
+

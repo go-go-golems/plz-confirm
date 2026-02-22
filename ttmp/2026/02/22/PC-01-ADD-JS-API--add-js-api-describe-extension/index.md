@@ -10,6 +10,10 @@ DocType: index
 Intent: long-term
 Owners: []
 RelatedFiles:
+    - Path: internal/scriptengine/engine.go
+      Note: Core script runtime contract implementation
+    - Path: internal/server/script.go
+      Note: Core server implementation for script event lifecycle
     - Path: ttmp/2026/02/22/PC-01-ADD-JS-API--add-js-api-describe-extension/changelog.md
       Note: Chronological record of analysis
     - Path: ttmp/2026/02/22/PC-01-ADD-JS-API--add-js-api-describe-extension/design-doc/01-implementation-plan-js-describe-extension.md
@@ -27,6 +31,7 @@ LastUpdated: 2026-02-22T15:39:51.039408596-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 
 

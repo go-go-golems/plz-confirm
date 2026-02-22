@@ -10,6 +10,12 @@ DocType: reference
 Intent: long-term
 Owners: []
 RelatedFiles:
+    - Path: internal/scriptengine/engine.go
+      Note: Diary steps document script runtime implementation details
+    - Path: internal/server/script.go
+      Note: Diary steps document script event lifecycle implementation
+    - Path: internal/server/script_test.go
+      Note: Diary steps document server lifecycle test coverage
     - Path: ttmp/2026/02/22/PC-01-ADD-JS-API--add-js-api-describe-extension/design-doc/01-implementation-plan-js-describe-extension.md
       Note: Diary step documents creation of final implementation plan
     - Path: ttmp/2026/02/22/PC-01-ADD-JS-API--add-js-api-describe-extension/scripts/goja-flow/main.go
@@ -20,12 +26,17 @@ RelatedFiles:
       Note: Diary captures protojson shape experiment
     - Path: ttmp/2026/02/22/PC-01-ADD-JS-API--add-js-api-describe-extension/tasks.md
       Note: Diary tracks execution checklist completion and commit cadence
+    - Path: ttmp/2026/02/22/PC-01-ADD-JS-API--add-js-api-describe-extension/various/pc01-script-flow-completed.png
+      Note: Diary references browser proof screenshot
+    - Path: ttmp/2026/02/22/PC-01-ADD-JS-API--add-js-api-describe-extension/various/script-demo.html
+      Note: Diary steps document browser demo harness for Playwright
 ExternalSources: []
 Summary: ""
 LastUpdated: 2026-02-22T15:39:48.380638079-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 
 
@@ -591,3 +602,155 @@ I updated ticket changelog with this turn's task/checkoff progress, closed the r
 
 ### Technical details
 - Incremental commits before this step: `67cfb73`, `9fd5fca`, `2f991ec`, `c5a30b0`.
+
+## Step 9: Implemented Script Runtime, Protocol, and Server Lifecycle
+
+I implemented the first full production slice of the JS describe extension in `plz-confirm`: protobuf schema updates, server-side script runtime, create/event/completion lifecycle, store persistence for script state/view, and backend tests. This moved the ticket from “design only” to a working flow that can advance through intermediate UI states and complete with final script output.
+
+The contract is now explicit and enforced at runtime: scripts must export `describe/init/view/update`, with `describe.name` and `describe.version` required. Request creation now runs `describe + init + view`, stores `script_state` + `script_view`, and emits `new_request`. Event submissions run `update`; the server either patches request state/view and emits `request_updated`, or completes with `script_output` and emits `request_completed`.
+
+### Prompt Context
+
+**User prompt (verbatim):** "ok, yes, go ahead. all the tasks, test as you go, stop when you need me to provide feedback"
+
+**Assistant interpretation:** Implement the plan in code incrementally, run validations continuously, and only stop where a real decision/blocker exists.
+
+**Inferred user intent:** Get a functioning script flow implementation, not only planning docs, with test evidence after each slice.
+
+**Commit (code):** `486742f` — "feat(script): add script widget runtime and server event lifecycle"
+
+### What I did
+- Updated protobuf schema:
+  - Added `WidgetType.script`.
+  - Added `ScriptInput`, `ScriptOutput`, `ScriptEvent`, `ScriptView`, `ScriptDescribe`.
+  - Extended `UIRequest` with script oneofs plus `script_state`, `script_view`, `script_describe`.
+- Regenerated Go protobuf code (`proto/generated/go/...`).
+- Added runtime package:
+  - `internal/scriptengine/engine.go`
+  - `internal/scriptengine/engine_test.go`
+  - Implements module-style export contract (`describe/init/view/update`) and bounded execution with interrupt timeout.
+- Added server script lifecycle:
+  - `internal/server/script.go`
+  - `POST /api/requests/{id}/event` for intermediate events.
+  - Create path now validates input oneof/type match and precomputes script init/view.
+- Added store support:
+  - `PatchScript` method in `internal/store/store.go`.
+  - `Create` now persists script fields.
+  - Timeout default output includes script branch.
+- Added/updated tests:
+  - `internal/server/script_test.go` for create -> update -> complete lifecycle.
+  - `internal/client/client_test.go` includes script create request coverage.
+
+### Why
+- The core blocker was missing intermediate event handling; one-shot completion endpoints were not enough for script state machines.
+
+### What worked
+- Targeted Go suites pass with both workspaces and standalone module mode for relevant packages:
+  - `go test ./internal/scriptengine ./internal/server ./internal/store ./internal/client -count=1`
+  - `GOWORK=off GOCACHE=/tmp/plz-confirm-gocache go test ./internal/scriptengine ./internal/server ./internal/store -count=1`
+
+### What didn't work
+- `make codegen` failed on TS generation due restricted npm registry access (`ENOTFOUND registry.npmjs.org`), so TS generated files were updated manually for this slice.
+- Full repo command path `go run ./cmd/plz-confirm serve` still fails because of existing glazed import mismatch unrelated to this ticket (`cmds/layers` and `cmds/parameters` packages not provided by current module graph).
+
+### What I learned
+- Regenerating Go protobufs is straightforward in this environment, but frontend codegen/install is constrained by network policy; practical fallback is manual TS type sync + browser demo harness.
+
+### What was tricky to build
+- The largest sharp edge was module/runtime dependency posture:
+  - Initial attempt used `go-go-goja/engine`, but standalone (`GOWORK=off`) behavior and dependency hygiene were better with direct `goja` usage in `internal/scriptengine`.
+  - I switched to plain `goja` and explicit timeout interrupts, then validated with `GOWORK=off` tests.
+
+### What warrants a second pair of eyes
+- Error taxonomy on script failures (`400` currently for runtime errors) may need explicit policy split for user-script errors vs server faults.
+- `script_state` storage semantics currently expect object-shaped state only; if we later allow primitive/array root states, conversion helpers should evolve.
+
+### What should be done in the future
+- Add websocket ordering tests for `new_request`/`request_updated`/`request_completed` under concurrent clients.
+
+### Code review instructions
+- Start here:
+  - `/home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/internal/scriptengine/engine.go`
+  - `/home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/internal/server/script.go`
+  - `/home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/internal/server/server.go`
+  - `/home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/internal/store/store.go`
+  - `/home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/proto/plz_confirm/v1/request.proto`
+  - `/home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/proto/plz_confirm/v1/widgets.proto`
+- Validate with:
+  - `go test ./internal/scriptengine ./internal/server ./internal/store ./internal/client -count=1`
+
+### Technical details
+- New API route: `POST /api/requests/{id}/event` with `protojson(ScriptEvent)`.
+- WS incremental event added: `request_updated` (reuses existing event envelope).
+
+## Step 10: Added Frontend Script Handling and Verified in Browser via Playwright
+
+I wired frontend script behavior and then verified the full interaction in a real browser session using Playwright. This included creation of a script request, intermediate update transition, and final completion rendering with `script_output.result`.
+
+Because the main React app dependencies could not be installed in this environment, I used a ticket-local browser harness (`script-demo.html`) against the real backend API to validate the exact wire behavior and state transitions end-to-end.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 9)
+
+**Assistant interpretation:** Continue implementation and prove behavior with browser-driven tests.
+
+**Inferred user intent:** See concrete, interactive evidence that the flow works in a browser, not just unit tests.
+
+**Commit (code):** `6b229bf` — "feat(script-ui): add script event handling and browser demo harness"
+
+### What I did
+- Frontend wiring:
+  - Added `request_updated` handling in websocket service.
+  - Added `submitScriptEvent()` API helper targeting `/api/requests/{id}/event`.
+  - Added script rendering branch in `WidgetRenderer.tsx` that maps `scriptView.widgetType` to existing widgets and submits events.
+- Updated generated TS proto type files manually for script fields/types:
+  - `agent-ui-system/client/src/proto/generated/plz_confirm/v1/request.ts`
+  - `agent-ui-system/client/src/proto/generated/plz_confirm/v1/widgets.ts`
+- Added browser harness assets:
+  - `/home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/ttmp/2026/02/22/PC-01-ADD-JS-API--add-js-api-describe-extension/various/script-demo.html`
+  - `/home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/ttmp/2026/02/22/PC-01-ADD-JS-API--add-js-api-describe-extension/scripts/run-dev-server/main.go`
+  - screenshot proof: `/home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/ttmp/2026/02/22/PC-01-ADD-JS-API--add-js-api-describe-extension/various/pc01-script-flow-completed.png`
+- Ran Playwright flow:
+  1. Opened `script-demo.html`.
+  2. Clicked “Create Script Request” (confirm view rendered).
+  3. Clicked “Choose env” (request transitioned to select view).
+  4. Clicked “Submit selection” (request transitioned to completed).
+
+### Why
+- Browser-level confirmation was explicitly requested, and this environment prevented full frontend dependency install/build.
+
+### What worked
+- Playwright snapshots showed correct state transitions and final result payload in the page.
+- Backend emitted/handled pending->pending->completed as expected.
+
+### What didn't work
+- `pnpm -C agent-ui-system run check` fails due missing type packages (`node`, `vite/client`) because dependency install could not reach npm in this environment.
+
+### What I learned
+- A ticket-local harness is effective for verifying protocol behavior when full app toolchain availability is constrained.
+
+### What was tricky to build
+- Running local servers under sandbox constraints initially failed with `socket: operation not permitted`; after environment reset to full permissions, the demo run succeeded.
+
+### What warrants a second pair of eyes
+- Manual TS generated-file edits should be replaced with normal proto generation once npm access is available.
+- The current script widget renderer supports the existing widget set; if we add custom script-only widgets, this mapping layer will need explicit expansion.
+
+### What should be done in the future
+- Add an app-level scripted e2e path once frontend dependencies are available so verification uses `agent-ui-system` directly.
+
+### Code review instructions
+- Frontend/browser entry points:
+  - `/home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/agent-ui-system/client/src/services/websocket.ts`
+  - `/home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/agent-ui-system/client/src/components/WidgetRenderer.tsx`
+  - `/home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/ttmp/2026/02/22/PC-01-ADD-JS-API--add-js-api-describe-extension/various/script-demo.html`
+- Re-run browser demo:
+  - `GOCACHE=/tmp/plz-confirm-gocache go run ./ttmp/2026/02/22/PC-01-ADD-JS-API--add-js-api-describe-extension/scripts/run-dev-server`
+  - `python3 -m http.server 3901` in ticket root
+  - Open `http://127.0.0.1:3901/various/script-demo.html`
+
+### Technical details
+- Playwright end state showed:
+  - `Request status: completed`
+  - `scriptOutput.result = { "approved": false, "env": "staging" }`
