@@ -12,7 +12,7 @@ Commands:
 IsTopLevel: true
 IsTemplate: false
 ShowPerDefault: true
-SectionType: Reference
+SectionType: GeneralTopic
 ---
 
 Most plz-confirm widgets are one-shot: you create a request, the user responds, done. Scripts are different. A script is a small JavaScript program that drives a **multi-step conversation** — showing one widget, reacting to the user's answer, then showing another widget (or finishing). Think of it as a wizard or flow builder that lives entirely in a single JS file.
