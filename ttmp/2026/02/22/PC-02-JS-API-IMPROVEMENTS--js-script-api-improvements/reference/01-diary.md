@@ -12,9 +12,17 @@ Intent: long-term
 Owners: []
 RelatedFiles:
     - Path: agent-ui-system/client/src/components/WidgetRenderer.test.ts
-      Note: Grid renderer mapping test
+      Note: |-
+        Grid renderer mapping test
+        Composite section renderer coverage
     - Path: agent-ui-system/client/src/components/WidgetRenderer.tsx
-      Note: Script renderer supports grid widget type
+      Note: |-
+        Script renderer supports grid widget type
+        Composite sections rendering in script branch
+    - Path: agent-ui-system/client/src/components/widgets/DisplayWidget.test.tsx
+      Note: Display widget rendering tests
+    - Path: agent-ui-system/client/src/components/widgets/DisplayWidget.tsx
+      Note: Read-only display section renderer
     - Path: agent-ui-system/client/src/components/widgets/GridDialog.test.tsx
       Note: Grid dialog component test
     - Path: agent-ui-system/client/src/components/widgets/GridDialog.tsx
@@ -28,15 +36,25 @@ RelatedFiles:
     - Path: internal/scriptengine/engine_test.go
       Note: Grid widget support test in engine init/view path
     - Path: internal/server/script.go
-      Note: Script view input validation now enforces grid contract
+      Note: |-
+        Script view input validation now enforces grid contract
+        Composite section parsing and validation in script view mapping
     - Path: internal/server/script_test.go
-      Note: Grid script lifecycle + invalid input validation tests
+      Note: |-
+        Grid script lifecycle + invalid input validation tests
+        Composite section lifecycle and invalid-shape tests
     - Path: pkg/doc/js-script-api.md
-      Note: Grid API documentation
+      Note: |-
+        Grid API documentation
+        Composite sections and display widget API docs
     - Path: pkg/doc/js-script-development.md
-      Note: Development guide updated for grid support
+      Note: |-
+        Development guide updated for grid support
+        Development guide updates for composite sections
     - Path: proto/plz_confirm/v1/widgets.proto
-      Note: Added GridInput/GridCell/GridSelection for proposal 2
+      Note: |-
+        Added GridInput/GridCell/GridSelection for proposal 2
+        ScriptView sections and DisplayInput schema additions
     - Path: ttmp/2026/02/22/PC-02-JS-API-IMPROVEMENTS--js-script-api-improvements/tasks.md
       Note: Proposal task tracking and checkoffs
 ExternalSources: []
@@ -45,6 +63,7 @@ LastUpdated: 2026-02-22T20:37:13.424677713-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 
 
@@ -218,3 +237,84 @@ I implemented both happy-path and failure-path coverage so malformed grid views 
 ### Technical details
 - Event payload emitted by grid clicks: `{ row, col, cellIndex }` (zero-based).
 - Validation cap is `rows * cols <= 400` to avoid unbounded payload/render cost.
+
+## Step 3: Proposal 3 - Composite/Multi-Widget Views
+
+This step introduced composite script views with ordered `sections`, enabling read-only context (`display`) plus one interactive widget in the same view render. The backend now validates this contract and the frontend renders section stacks in order.
+
+The compatibility path remains intact: existing single-widget `widgetType/input` views still render exactly as before when `sections` is absent.
+
+### Prompt Context
+
+**User prompt (verbatim):** (see Step 1)
+
+**Assistant interpretation:** Implement proposal 3 end-to-end with proto, server mapping, UI rendering, and guardrail tests.
+
+**Inferred user intent:** Expand script expressiveness for richer flows while preserving backward compatibility.
+
+**Commit (code):** 1a59f58479adb530240e649fc569fbc96b72bd27 - "feat(script): add composite sections with display widgets"
+
+### What I did
+- Added `ScriptViewSection` and `DisplayInput` messages, and `sections` on `ScriptView` in `proto/plz_confirm/v1/widgets.proto`.
+- Regenerated protobuf outputs (Go + TS).
+- Extended `mapToScriptView` in `internal/server/script.go` to:
+- parse `view.sections`,
+- validate each section input,
+- enforce exactly one interactive section,
+- derive top-level `widgetType/input` from interactive section when omitted,
+- reject mismatched top-level `widgetType` vs interactive section.
+- Added `display` validation (`content` required; `format` in `markdown|text|html`).
+- Added `DisplayWidget` frontend component for read-only section rendering.
+- Updated `WidgetRenderer` script branch to support section stacks:
+- render all `display` sections in order,
+- render one interactive section through existing widget mapping,
+- emit explicit UI error for invalid section composition.
+- Added frontend tests:
+- `DisplayWidget.test.tsx`
+- `WidgetRenderer.test.ts` cases for valid composite sections and invalid section layout.
+- Added backend tests in `internal/server/script_test.go`:
+- composite lifecycle success test,
+- invalid composite sections rejection test.
+- Updated API and development docs for composite sections and `display` widget usage.
+- Updated status classification in `statusForScriptError` so “must include” section-shape errors map to HTTP `400`.
+
+### Why
+- Many flows need contextual content adjacent to interactive controls; single-widget views force information loss or awkward title/message overloading.
+- Enforcing one interactive section keeps event payload handling deterministic.
+
+### What worked
+- Sections-only views now create successfully with derived top-level widget data.
+- Server rejects malformed composite views early with clear contract errors.
+- Frontend renders composite sections in-order and preserves existing single-view behavior.
+
+### What didn't work
+- While refactoring `WidgetRenderer`, I temporarily switched the main `active.type` switch to string literals (`"confirm"`, etc.), which would break enum matching.
+- I caught this during code inspection before test runs and corrected the switch back to `WidgetType.*` enum cases.
+
+### What I learned
+- Deriving top-level interactive fields from sections is a clean bridge for backward compatibility with existing frontend assumptions.
+- Keeping section parsing/validation centralized in `mapToScriptView` makes future proposal field additions easier.
+
+### What was tricky to build
+- The core tricky part was balancing backward compatibility with stricter section validation: sections introduce a richer model, but existing code paths expect top-level `widgetType/input`.
+- I solved this by normalizing composite input in server mapping: derive top-level fields if absent, but reject ambiguous/mismatched combinations.
+
+### What warrants a second pair of eyes
+- Current composite validation treats any non-`display` section as interactive; if we later add more read-only section types, this rule will need extension.
+- HTML display rendering uses `dangerouslySetInnerHTML` and assumes trusted script authors; this is acceptable for current trust model but worth explicit security review.
+
+### What should be done in the future
+- Add richer markdown rendering for `display` sections (currently plain text-style rendering for markdown format).
+
+### Code review instructions
+- Start at `internal/server/script.go` (`mapToScriptView`, section parsing, and validators).
+- Review `agent-ui-system/client/src/components/WidgetRenderer.tsx` for composite rendering logic.
+- Review `agent-ui-system/client/src/components/widgets/DisplayWidget.tsx` for display rendering behavior.
+- Validate with:
+- `go test ./internal/server ./internal/scriptengine -count=1`
+- `pnpm -C agent-ui-system run check`
+- `pnpm -C agent-ui-system exec vitest run client/src/components/WidgetRenderer.test.ts client/src/components/widgets/DisplayWidget.test.tsx client/src/components/widgets/GridDialog.test.tsx`
+
+### Technical details
+- Composite rule: exactly one non-`display` section is required.
+- If `view.widgetType` is absent and sections exist, server derives it from the interactive section.
