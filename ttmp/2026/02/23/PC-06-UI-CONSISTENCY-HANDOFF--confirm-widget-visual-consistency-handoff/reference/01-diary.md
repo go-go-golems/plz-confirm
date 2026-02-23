@@ -11,18 +11,25 @@ DocType: reference
 Intent: long-term
 Owners: []
 RelatedFiles:
-    - Path: /home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/plz-confirm/ttmp/2026/02/23/PC-06-UI-CONSISTENCY-HANDOFF--confirm-widget-visual-consistency-handoff/design-doc/01-designer-handoff-confirm-widget-inventory-stories-and-consistency-scenarios.md
-      Note: Primary designer handoff deliverable
-    - Path: /home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/go-go-os/packages/engine/src/components/widgets/SelectableList.stories.tsx
+    - Path: go-go-os/packages/engine/src/components/widgets/GridBoard.stories.tsx
+      Note: Step 3 story inventory reference
+    - Path: go-go-os/packages/engine/src/components/widgets/RatingPicker.stories.tsx
+      Note: Step 3 story inventory reference
+    - Path: go-go-os/packages/engine/src/components/widgets/RequestActionBar.stories.tsx
       Note: Story matrix reference included in handoff
-    - Path: /home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/go-go-os/packages/engine/src/components/widgets/RequestActionBar.stories.tsx
+    - Path: go-go-os/packages/engine/src/components/widgets/SelectableList.stories.tsx
       Note: Story matrix reference included in handoff
+    - Path: plz-confirm/ttmp/2026/02/23/PC-06-UI-CONSISTENCY-HANDOFF--confirm-widget-visual-consistency-handoff/design-doc/01-designer-handoff-confirm-widget-inventory-stories-and-consistency-scenarios.md
+      Note: |-
+        Primary designer handoff deliverable
+        Step 3 updates handoff inventory and scenarios for new widgets
 ExternalSources: []
-Summary: 'Chronological log for the UI consistency handoff ticket used by design collaborators.'
-LastUpdated: 2026-02-23T17:16:00.000000000-05:00
-WhatFor: 'Track preparation and updates to the designer-facing consistency documentation.'
-WhenToUse: 'Use when continuing or reviewing UI handoff documentation work for confirm widgets.'
+Summary: Chronological log for the UI consistency handoff ticket used by design collaborators.
+LastUpdated: 2026-02-23T17:16:00-05:00
+WhatFor: Track preparation and updates to the designer-facing consistency documentation.
+WhenToUse: Use when continuing or reviewing UI handoff documentation work for confirm widgets.
 ---
+
 
 # Diary
 
@@ -180,3 +187,70 @@ This step is important for designers because it defines where the composed reque
 - Window ids:
   - `window:confirm-queue`
   - `window:confirm:<requestId>`
+
+## Step 3: Expand handoff for new core widgets (`RatingPicker`, `GridBoard`) and updated script composition
+
+This step updates the UI-consistency handoff after introducing two additional core widgets in engine and wiring them into script rendering flows. The handoff now reflects eight core widgets rather than six, with corresponding story inventory and new consistency scenarios.
+
+### Prompt Context
+
+**User prompt (verbatim):** "store all scripts you write in the ticket's scripts/"
+
+**Assistant interpretation:** Keep operational reproducibility in ticket assets and continue development; for UI work, update the dedicated handoff ticket immediately.
+
+**Inferred user intent:** Ensure designers and implementers always have current, ticket-local documentation that matches newly added UI surfaces.
+
+**Commit (code):** Pending for this diary step.
+
+### What I did
+
+- Added two new core widget documents to the design handoff inventory:
+  - `RatingPicker`
+  - `GridBoard`
+- Added their Storybook story inventories to the handoff:
+  - `RatingPicker.stories.tsx` (`Numbers`, `Stars`, `Emoji`, `Slider`, `Interactive`)
+  - `GridBoard.stories.tsx` (`Medium`, `Small`, `Large`, `InteractiveSelection`)
+- Updated runtime mapping section to reflect current state:
+  - upload now uses `FilePickerDropzone` + `RequestActionBar` (not placeholder-only)
+  - script host now supports section-aware composition and interactive `rating`/`grid` widgets
+- Expanded scenario and backlog sections with widget-specific polish work for rating/grid.
+
+### Why
+
+- The design handoff must stay in lockstep with actual UI surface area; otherwise designers miss newly added components and story states.
+
+### What worked
+
+- The handoff now accurately reflects current widget/story scope and script composition behavior.
+
+### What didn't work
+
+- No blockers in this documentation-only update.
+
+### What I learned
+
+- UI handoff docs need immediate incremental updates when core widget count changes; otherwise scenario backlog quickly becomes stale.
+
+### What was tricky to build
+
+- The main challenge was ensuring references and scenario checklists were updated consistently across inventory, stories, current usage mapping, and future backlog sections.
+
+### What warrants a second pair of eyes
+
+- Confirm design team agrees with the new priority split between script-section polish and component-level polish for rating/grid.
+
+### What should be done in the future
+
+- Add a composite `confirm-runtime` Storybook set for full request-window script flows (display + interactive + back/progress) to complement primitive widget stories.
+
+### Code review instructions
+
+- Review updated handoff doc:
+  - `/home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/plz-confirm/ttmp/2026/02/23/PC-06-UI-CONSISTENCY-HANDOFF--confirm-widget-visual-consistency-handoff/design-doc/01-designer-handoff-confirm-widget-inventory-stories-and-consistency-scenarios.md`
+- Verify new story files exist in engine:
+  - `/home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/go-go-os/packages/engine/src/components/widgets/RatingPicker.stories.tsx`
+  - `/home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/go-go-os/packages/engine/src/components/widgets/GridBoard.stories.tsx`
+
+### Technical details
+
+- This step is documentation synchronization for UI handoff scope and does not change backend/runtime protocol contracts directly.

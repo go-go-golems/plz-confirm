@@ -157,3 +157,26 @@ Validation snapshots:
 - /home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/go-go-os/packages/confirm-runtime/src/proto/confirmProtoAdapter.ts — Script metadata + image bool mapping
 - /home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/go-go-os/packages/confirm-runtime/src/proto/confirmProtoAdapter.test.ts — Coverage for new adapter behavior
 - /home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/go-go-os/packages/confirm-runtime/src/types.ts — Script view type extensions
+
+## 2026-02-23
+
+Advanced core-first widget plan by adding two new engine primitives and wiring script usage:
+
+- Added `RatingPicker` and `GridBoard` to `packages/engine`.
+- Added Storybook stories for both components.
+- Exported both from engine widget barrel.
+- Updated `ConfirmRequestWindowHost` script composition to render and submit `rating` + `grid` flows.
+
+Validation snapshots:
+
+- `npm run storybook:check` (pass)
+- `npm run test -w packages/engine` (pass)
+- `npm exec vitest run packages/confirm-runtime/src/proto/confirmProtoAdapter.test.ts` (pass)
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/go-go-os/packages/engine/src/components/widgets/RatingPicker.tsx — New core rating widget
+- /home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/go-go-os/packages/engine/src/components/widgets/GridBoard.tsx — New core grid widget
+- /home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/go-go-os/packages/engine/src/components/widgets/RatingPicker.stories.tsx — Rating visual/state story matrix
+- /home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/go-go-os/packages/engine/src/components/widgets/GridBoard.stories.tsx — Grid visual/state story matrix
+- /home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/go-go-os/packages/confirm-runtime/src/components/ConfirmRequestWindowHost.tsx — Script integration path for rating/grid

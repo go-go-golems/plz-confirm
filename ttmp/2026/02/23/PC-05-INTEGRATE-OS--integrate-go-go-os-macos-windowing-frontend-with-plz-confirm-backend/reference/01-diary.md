@@ -48,8 +48,18 @@ RelatedFiles:
       Note: |-
         Desktop window-content adapter and orchestration analysis source
         Primary frontend shell analysis source in diary
+    - Path: go-go-os/packages/engine/src/components/widgets/GridBoard.stories.tsx
+      Note: Step 15 story coverage for grid widget
+    - Path: go-go-os/packages/engine/src/components/widgets/GridBoard.tsx
+      Note: Step 15 core widget addition for script grid flows
+    - Path: go-go-os/packages/engine/src/components/widgets/RatingPicker.stories.tsx
+      Note: Step 15 story coverage for rating widget
+    - Path: go-go-os/packages/engine/src/components/widgets/RatingPicker.tsx
+      Note: Step 15 core widget addition for script rating flows
     - Path: go-go-os/packages/engine/src/components/widgets/SelectableList.tsx
       Note: Diary step 7 implementation evidence
+    - Path: go-go-os/packages/engine/src/components/widgets/index.ts
+      Note: Step 15 engine export surface updated for rating/grid
     - Path: plz-confirm/cmd/plz-confirm/main.go
       Note: |-
         Diary step 12 switched serve command to public backend package
@@ -96,6 +106,7 @@ LastUpdated: 2026-02-23T19:20:00-05:00
 WhatFor: Allow any contributor, especially a new intern, to reconstruct exactly how the PC-05 architecture recommendation was derived.
 WhenToUse: Use when reviewing the blueprint rationale, validating the evidence trail, or resuming unfinished implementation tasks.
 ---
+
 
 
 
@@ -1307,3 +1318,80 @@ I treated this as one contiguous tranche because each part fed the next: CLI com
   - `/home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/go-go-os/packages/confirm-runtime/src/proto/confirmProtoAdapter.ts`
   - `/home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/go-go-os/packages/confirm-runtime/src/proto/confirmProtoAdapter.test.ts`
   - `/home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/go-go-os/packages/confirm-runtime/src/components/ConfirmRequestWindowHost.tsx`
+
+## Step 15: Add core `RatingPicker`/`GridBoard` widgets and wire script runtime usage
+
+After finishing protocol and script-event parity, I moved the remaining high-priority script UI primitives into engine-core so script rendering can stay package-light and reusable from day one. This step introduces `RatingPicker` and `GridBoard` in `packages/engine`, adds Storybook coverage for both, and wires them into `ConfirmRequestWindowHost` script rendering.
+
+### Prompt Context
+
+**User prompt (verbatim):** "(retroactively too). then continue"
+
+**Assistant interpretation:** Continue execution after archival requirements, including planned implementation work.
+
+**Inferred user intent:** Keep implementation momentum and close planned widget gaps, not just stabilize existing paths.
+
+**Commit (code):** Pending for this step (recorded pre-commit in diary).
+
+### What I did
+
+- Added new engine widgets:
+  - `go-go-os/packages/engine/src/components/widgets/RatingPicker.tsx`
+  - `go-go-os/packages/engine/src/components/widgets/GridBoard.tsx`
+- Added new Storybook stories:
+  - `go-go-os/packages/engine/src/components/widgets/RatingPicker.stories.tsx`
+  - `go-go-os/packages/engine/src/components/widgets/GridBoard.stories.tsx`
+- Exported new widgets from engine widget barrel:
+  - `go-go-os/packages/engine/src/components/widgets/index.ts`
+- Extended script renderer composition in confirm runtime:
+  - `go-go-os/packages/confirm-runtime/src/components/ConfirmRequestWindowHost.tsx`
+  - added `rating` + `grid` script widget rendering and submit payloads.
+
+### Why
+
+- `rating` and `grid` are script-level interactive types in plz-confirm docs/runtime. Keeping them in core engine avoids pushing generic UI primitives into confirm-specific package code.
+
+### What worked
+
+- Storybook taxonomy passed with new stories:
+  - `npm run storybook:check`
+- Engine tests passed with new widgets in tree:
+  - `npm run test -w packages/engine`
+- confirm-runtime adapter tests still passed after host updates:
+  - `npm exec vitest run packages/confirm-runtime/src/proto/confirmProtoAdapter.test.ts`
+
+### What didn't work
+
+- No new blockers in this step.
+
+### What I learned
+
+- Adding widgets to engine core first keeps confirm-runtime focused on composition/protocol, which matches the package-first architecture objective.
+
+### What was tricky to build
+
+- The key edge was keeping script-step selection state reset behavior stable while adding new interactive widget state (`rating`, `grid`) in the same host component.
+
+### What warrants a second pair of eyes
+
+- Review `GridBoard` style defaults and cell-label truncation behavior before design polish pass.
+- Review `RatingPicker` star/emoji density in constrained window widths.
+
+### What should be done in the future
+
+- Add composite confirm-runtime Storybook stories for script sections (display + rating/grid + back/progress states).
+
+### Code review instructions
+
+- Core widget additions:
+  - `/home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/go-go-os/packages/engine/src/components/widgets/RatingPicker.tsx`
+  - `/home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/go-go-os/packages/engine/src/components/widgets/GridBoard.tsx`
+- Host wiring:
+  - `/home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/go-go-os/packages/confirm-runtime/src/components/ConfirmRequestWindowHost.tsx`
+- Validation commands:
+  - `cd /home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/go-go-os && npm run storybook:check`
+  - `cd /home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/go-go-os && npm run test -w packages/engine`
+
+### Technical details
+
+- Added stories increased taxonomy inventory and now cover both primitive-level and interactive usage for rating/grid inputs.

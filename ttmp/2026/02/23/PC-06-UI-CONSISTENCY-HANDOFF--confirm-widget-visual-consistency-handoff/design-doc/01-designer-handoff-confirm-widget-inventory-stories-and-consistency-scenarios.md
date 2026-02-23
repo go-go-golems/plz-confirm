@@ -11,37 +11,49 @@ DocType: design-doc
 Intent: long-term
 Owners: []
 RelatedFiles:
-    - Path: ../../../../../../../go-go-os/apps/inventory/src/App.tsx
+    - Path: go-go-os/apps/inventory/src/App.tsx
       Note: Current in-context queue/request window UI host surfaces
-    - Path: ../../../../../../../go-go-os/apps/inventory/src/app/store.ts
+    - Path: go-go-os/apps/inventory/src/app/store.ts
       Note: confirmRuntime reducer integration point
-    - Path: ../../../../../../../go-go-os/packages/confirm-runtime/src/components/ConfirmRequestWindowHost.tsx
-      Note: Current package-level composition of widgets into confirm request UI
-    - Path: ../../../../../../../go-go-os/packages/engine/src/components/widgets/FilePickerDropzone.stories.tsx
+    - Path: go-go-os/packages/confirm-runtime/src/components/ConfirmRequestWindowHost.tsx
+      Note: |-
+        Current package-level composition of widgets into confirm request UI
+        Script composition now uses rating/grid widgets and section-aware rendering
+    - Path: go-go-os/packages/engine/src/components/widgets/FilePickerDropzone.stories.tsx
       Note: Story matrix for file picker/dropzone states
-    - Path: ../../../../../../../go-go-os/packages/engine/src/components/widgets/FilePickerDropzone.tsx
+    - Path: go-go-os/packages/engine/src/components/widgets/FilePickerDropzone.tsx
       Note: Upload/dropzone visual baseline for upload widgets
-    - Path: ../../../../../../../go-go-os/packages/engine/src/components/widgets/ImageChoiceGrid.stories.tsx
+    - Path: go-go-os/packages/engine/src/components/widgets/GridBoard.stories.tsx
+      Note: Story inventory for grid visual variants
+    - Path: go-go-os/packages/engine/src/components/widgets/GridBoard.tsx
+      Note: New core grid board widget for script flows
+    - Path: go-go-os/packages/engine/src/components/widgets/ImageChoiceGrid.stories.tsx
       Note: Story matrix for image mode variants and states
-    - Path: ../../../../../../../go-go-os/packages/engine/src/components/widgets/ImageChoiceGrid.tsx
+    - Path: go-go-os/packages/engine/src/components/widgets/ImageChoiceGrid.tsx
       Note: Image selection primitive for image request flows
-    - Path: ../../../../../../../go-go-os/packages/engine/src/components/widgets/RequestActionBar.stories.tsx
+    - Path: go-go-os/packages/engine/src/components/widgets/RatingPicker.stories.tsx
+      Note: Story inventory for rating visual variants
+    - Path: go-go-os/packages/engine/src/components/widgets/RatingPicker.tsx
+      Note: New core rating widget for script flows
+    - Path: go-go-os/packages/engine/src/components/widgets/RequestActionBar.stories.tsx
       Note: Story matrix for action bar behaviors
-    - Path: ../../../../../../../go-go-os/packages/engine/src/components/widgets/RequestActionBar.tsx
+    - Path: go-go-os/packages/engine/src/components/widgets/RequestActionBar.tsx
       Note: Shared footer action area with optional comment input
-    - Path: ../../../../../../../go-go-os/packages/engine/src/components/widgets/SchemaFormRenderer.stories.tsx
+    - Path: go-go-os/packages/engine/src/components/widgets/SchemaFormRenderer.stories.tsx
       Note: Story matrix for schema form behavior and field states
-    - Path: ../../../../../../../go-go-os/packages/engine/src/components/widgets/SchemaFormRenderer.tsx
+    - Path: go-go-os/packages/engine/src/components/widgets/SchemaFormRenderer.tsx
       Note: Schema-based form renderer for confirm/form flows
-    - Path: ../../../../../../../go-go-os/packages/engine/src/components/widgets/SelectableDataTable.stories.tsx
+    - Path: go-go-os/packages/engine/src/components/widgets/SelectableDataTable.stories.tsx
       Note: Story matrix for selectable data table visuals and interactions
-    - Path: ../../../../../../../go-go-os/packages/engine/src/components/widgets/SelectableDataTable.tsx
+    - Path: go-go-os/packages/engine/src/components/widgets/SelectableDataTable.tsx
       Note: New selectable table primitive used for table approval flows
-    - Path: ../../../../../../../go-go-os/packages/engine/src/components/widgets/SelectableList.stories.tsx
+    - Path: go-go-os/packages/engine/src/components/widgets/SelectableList.stories.tsx
       Note: Story matrix for selectable list visuals and interactions
-    - Path: ../../../../../../../go-go-os/packages/engine/src/components/widgets/SelectableList.tsx
+    - Path: go-go-os/packages/engine/src/components/widgets/SelectableList.tsx
       Note: New selectable list primitive used for confirm/select flows
-    - Path: ../../../../../../../go-go-os/tooling/vite/createHypercardViteConfig.ts
+    - Path: go-go-os/packages/engine/src/components/widgets/index.ts
+      Note: Widget export surface now includes rating/grid
+    - Path: go-go-os/tooling/vite/createHypercardViteConfig.ts
       Note: Dev proxy and alias behavior affecting UI integration
 ExternalSources: []
 Summary: Designer-facing handoff documenting all new confirm-related widgets, their stories, usage patterns, and the remaining scenario/style work needed to reach full visual consistency.
@@ -49,6 +61,7 @@ LastUpdated: 2026-02-23T17:14:00-05:00
 WhatFor: Enable a design colleague to immediately align the new confirm widgets with the established application visual language.
 WhenToUse: Use before any UI polish work on confirm widgets and as the canonical checklist for visual consistency scope.
 ---
+
 
 
 # Designer Handoff: Confirm Widget Inventory, Stories, and Consistency Scenarios
@@ -250,6 +263,61 @@ Typical usage:
 />
 ```
 
+### 7) RatingPicker
+
+Path: `/home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/go-go-os/packages/engine/src/components/widgets/RatingPicker.tsx`
+
+Purpose:
+
+1. Reusable Likert/rating control for script steps (`numbers`, `stars`, `emoji`, `slider`).
+
+Core behaviors:
+
+1. Scale clamped to `2..10`.
+2. Supports display styles `numbers`, `stars`, `emoji`, and `slider`.
+3. Supports low/high labels.
+4. Controlled `value` with `onChange`.
+
+Typical usage:
+
+```tsx
+<RatingPicker
+  scale={5}
+  style="stars"
+  value={rating}
+  onChange={setRating}
+  lowLabel="Low"
+  highLabel="High"
+/>
+```
+
+### 8) GridBoard
+
+Path: `/home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/go-go-os/packages/engine/src/components/widgets/GridBoard.tsx`
+
+Purpose:
+
+1. Reusable row/column board selector for script `grid` steps.
+
+Core behaviors:
+
+1. Renders fixed row/column board with per-cell labels/colors/disabled state.
+2. Supports cell sizes (`small`, `medium`, `large`).
+3. Emits normalized selection payload (`row`, `col`, `cellIndex`).
+4. Supports controlled selection highlight.
+
+Typical usage:
+
+```tsx
+<GridBoard
+  rows={3}
+  cols={3}
+  cells={cells}
+  selectedIndex={selectedCell}
+  onSelect={setSelection}
+/>
+```
+
 ## Storybook Inventory (All New Stories)
 
 ### SelectableList stories
@@ -324,6 +392,25 @@ Path: `/home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/go-go-os/package
 6. `ControlledComment`
 7. `Interactive`
 
+### RatingPicker stories
+
+Path: `/home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/go-go-os/packages/engine/src/components/widgets/RatingPicker.stories.tsx`
+
+1. `Numbers`
+2. `Stars`
+3. `Emoji`
+4. `Slider`
+5. `Interactive`
+
+### GridBoard stories
+
+Path: `/home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/go-go-os/packages/engine/src/components/widgets/GridBoard.stories.tsx`
+
+1. `Medium`
+2. `Small`
+3. `Large`
+4. `InteractiveSelection`
+
 ## Where Widgets Are Used Right Now
 
 Current package-level usage reference:
@@ -337,8 +424,13 @@ Current mapping:
 3. `form` -> `SchemaFormRenderer`
 4. `table` -> `SelectableDataTable` + `RequestActionBar`
 5. `image` -> `ImageChoiceGrid` + `RequestActionBar`
-6. `upload` -> placeholder content (full upload composition pending)
-7. `script` -> temporary minimal control view (full script section parity pending)
+6. `upload` -> `FilePickerDropzone` + `RequestActionBar`
+7. `script` -> section-aware composition with:
+   - `display` context sections,
+   - one interactive section validation,
+   - back action support,
+   - progress/title/description header support,
+   - interactive widgets including `rating` and `grid`.
 
 ### Inventory host surfaces now present
 
@@ -397,6 +489,14 @@ The following scenario groups are still needed for full consistency pass.
    - button hierarchy (primary vs secondary),
    - textarea style alignment,
    - busy-state affordance consistency.
+7. `RatingPicker`:
+   - selected-state hierarchy for each style variant,
+   - emoji/star sizing consistency vs surrounding typography,
+   - slider track/thumb styling alignment with app controls.
+8. `GridBoard`:
+   - per-cell selected/disabled style language,
+   - grid density and board spacing rhythm,
+   - cell label truncation/readability rules.
 
 ### D. Confirm-runtime composition scenarios
 
@@ -410,9 +510,9 @@ The following scenario groups are still needed for full consistency pass.
 Priority order for remaining visual work:
 
 1. Integrate confirm windows into inventory app shell and verify real in-context styling.
-2. Complete script sections visual layer (display + interactive sections, back/progress/toast).
+2. Complete script sections polish pass (display rendering fidelity, back/progress affordances, toast styling integration).
 3. Upgrade upload flow visuals from placeholder to full file lifecycle states.
-4. Add final design token adjustments across new widgets after designer pass.
+4. Add final design token adjustments across all eight widgets after designer pass.
 5. Add confirm-runtime story set (composite request-window stories) once host integration is in.
 
 ## Proposed Designer Workflow
@@ -445,3 +545,5 @@ Priority order for remaining visual work:
 6. `/home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/go-go-os/packages/engine/src/components/widgets/FilePickerDropzone.stories.tsx`
 7. `/home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/go-go-os/packages/engine/src/components/widgets/ImageChoiceGrid.stories.tsx`
 8. `/home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/go-go-os/packages/engine/src/components/widgets/RequestActionBar.stories.tsx`
+9. `/home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/go-go-os/packages/engine/src/components/widgets/RatingPicker.stories.tsx`
+10. `/home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/go-go-os/packages/engine/src/components/widgets/GridBoard.stories.tsx`
