@@ -179,6 +179,12 @@ allowBack: true,
 backLabel: "Back"
 ```
 
+- `toast` to show a transient message on view transition:
+
+```javascript
+toast: { message: "Saved!", durationMs: 2000, style: "success" }
+```
+
 ### `update(state, event, ctx)` — React to user input
 
 Called each time the user submits a response. You receive the current state and the event from the browser. Return either:

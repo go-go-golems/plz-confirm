@@ -215,6 +215,12 @@ message ScriptProgress {
   optional string label = 3;
 }
 
+message ScriptToast {
+  string message = 1;
+  optional int32 duration_ms = 2;
+  optional string style = 3; // "info" | "success" | "warning" | "error"
+}
+
 message ScriptView {
   string widget_type = 1;
   google.protobuf.Struct input = 2;
@@ -225,6 +231,7 @@ message ScriptView {
   optional ScriptProgress progress = 7;
   optional bool allow_back = 8;
   optional string back_label = 9;
+  optional ScriptToast toast = 10;
 }
 
 message ScriptDescribe {

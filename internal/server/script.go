@@ -257,6 +257,13 @@ func mapToScriptView(m map[string]any) (*v1.ScriptView, error) {
 	if backLabel, ok := m["backLabel"].(string); ok && strings.TrimSpace(backLabel) != "" {
 		view.BackLabel = &backLabel
 	}
+	toastCfg, err := mapToScriptToast(m["toast"])
+	if err != nil {
+		return nil, err
+	}
+	if toastCfg != nil {
+		view.Toast = toastCfg
+	}
 	return view, nil
 }
 
@@ -544,6 +551,61 @@ func mapToScriptProgress(raw any) (*v1.ScriptProgress, error) {
 		progress.Label = &label
 	}
 	return progress, nil
+}
+
+func mapToScriptToast(raw any) (*v1.ScriptToast, error) {
+	if raw == nil {
+		return nil, nil
+	}
+	toastMap, ok := raw.(map[string]any)
+	if !ok {
+		return nil, fmt.Errorf("view.toast must be object")
+	}
+	message, _ := toastMap["message"].(string)
+	if strings.TrimSpace(message) == "" {
+		return nil, fmt.Errorf("view.toast.message is required")
+	}
+
+	toast := &v1.ScriptToast{
+		Message: message,
+	}
+	if rawDuration, ok := toastMap["duration"]; ok {
+		d, ok := numberAsInt(rawDuration)
+		if !ok {
+			return nil, fmt.Errorf("view.toast.duration must be integer")
+		}
+		if d <= 0 || d > 30000 {
+			return nil, fmt.Errorf("view.toast.duration must be between 1 and 30000")
+		}
+		duration := int32(d)
+		toast.DurationMs = &duration
+	}
+	if rawDuration, ok := toastMap["durationMs"]; ok {
+		d, ok := numberAsInt(rawDuration)
+		if !ok {
+			return nil, fmt.Errorf("view.toast.durationMs must be integer")
+		}
+		if d <= 0 || d > 30000 {
+			return nil, fmt.Errorf("view.toast.durationMs must be between 1 and 30000")
+		}
+		duration := int32(d)
+		toast.DurationMs = &duration
+	}
+	if rawStyle, ok := toastMap["style"]; ok {
+		style, ok := rawStyle.(string)
+		if !ok {
+			return nil, fmt.Errorf("view.toast.style must be string")
+		}
+		switch strings.ToLower(strings.TrimSpace(style)) {
+		case "", "info", "success", "warning", "error":
+		default:
+			return nil, fmt.Errorf("view.toast.style must be info, success, warning, or error")
+		}
+		if strings.TrimSpace(style) != "" {
+			toast.Style = &style
+		}
+	}
+	return toast, nil
 }
 
 func mapToScriptDescribe(m map[string]any) (*v1.ScriptDescribe, error) {

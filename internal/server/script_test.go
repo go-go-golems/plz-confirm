@@ -728,6 +728,99 @@ module.exports = {
 	}
 }
 
+func TestScriptCreateMapsToastFields(t *testing.T) {
+	t.Parallel()
+
+	s := New(store.New())
+	h := s.Handler()
+
+	toastScript := `
+module.exports = {
+  describe: function () { return { name: "toast-demo", version: "1.0.0" }; },
+  init: function () { return { step: "x" }; },
+  view: function () {
+    return {
+      widgetType: "confirm",
+      input: { title: "Toast step" },
+      toast: { message: "Saved", durationMs: 1200, style: "success" }
+    };
+  },
+  update: function (state) { return state; }
+};
+`
+
+	createReq := &v1.UIRequest{
+		Type:      v1.WidgetType_script,
+		SessionId: "global",
+		Input: &v1.UIRequest_ScriptInput{
+			ScriptInput: &v1.ScriptInput{
+				Title:  "Toast demo",
+				Script: toastScript,
+			},
+		},
+	}
+
+	created := postUIRequest(t, h, "/api/requests", createReq)
+	toast := created.GetScriptView().GetToast()
+	if toast == nil {
+		t.Fatalf("expected toast on script view")
+	}
+	if toast.GetMessage() != "Saved" {
+		t.Fatalf("unexpected toast message: %q", toast.GetMessage())
+	}
+	if toast.GetDurationMs() != 1200 {
+		t.Fatalf("unexpected toast duration: %d", toast.GetDurationMs())
+	}
+}
+
+func TestScriptCreateRejectsInvalidToastStyle(t *testing.T) {
+	t.Parallel()
+
+	s := New(store.New())
+	h := s.Handler()
+
+	invalidToastScript := `
+module.exports = {
+  describe: function () { return { name: "toast-bad", version: "1.0.0" }; },
+  init: function () { return { step: "x" }; },
+  view: function () {
+    return {
+      widgetType: "confirm",
+      input: { title: "Toast step" },
+      toast: { message: "Saved", style: "bad" }
+    };
+  },
+  update: function (state) { return state; }
+};
+`
+
+	createReq := &v1.UIRequest{
+		Type:      v1.WidgetType_script,
+		SessionId: "global",
+		Input: &v1.UIRequest_ScriptInput{
+			ScriptInput: &v1.ScriptInput{
+				Title:  "Toast bad",
+				Script: invalidToastScript,
+			},
+		},
+	}
+	body, err := protojson.Marshal(createReq)
+	if err != nil {
+		t.Fatalf("marshal create req: %v", err)
+	}
+	req := httptest.NewRequest(http.MethodPost, "/api/requests", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400 for invalid toast style, got %d body=%s", rr.Code, rr.Body.String())
+	}
+	if !bytes.Contains(rr.Body.Bytes(), []byte("toast.style")) {
+		t.Fatalf("expected toast style validation message, got body=%s", rr.Body.String())
+	}
+}
+
 func postUIRequest(t *testing.T, h http.Handler, path string, reqProto *v1.UIRequest) *v1.UIRequest {
 	t.Helper()
 

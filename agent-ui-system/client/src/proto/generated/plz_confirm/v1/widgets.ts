@@ -218,6 +218,15 @@ export interface ScriptProgress {
   label?: string | undefined;
 }
 
+export interface ScriptToast {
+  message: string;
+  durationMs?:
+    | number
+    | undefined;
+  /** "info" | "success" | "warning" | "error" */
+  style?: string | undefined;
+}
+
 export interface ScriptView {
   widgetType: string;
   input?: { [key: string]: any } | undefined;
@@ -228,6 +237,7 @@ export interface ScriptView {
   progress?: ScriptProgress | undefined;
   allowBack?: boolean | undefined;
   backLabel?: string | undefined;
+  toast?: ScriptToast | undefined;
 }
 
 export interface ScriptDescribe {

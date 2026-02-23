@@ -14,10 +14,12 @@ import { RatingDialog } from "./widgets/RatingDialog";
 import { Loader2 } from "lucide-react";
 import { WidgetType } from "@/proto/generated/plz_confirm/v1/request";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 export const WidgetRenderer: React.FC = () => {
   const { active, loading } = useSelector((state: RootState) => state.request);
   const lastTouchedId = React.useRef<string | null>(null);
+  const lastToastKey = React.useRef<string>("");
   const [nowMs, setNowMs] = React.useState(() => Date.now());
 
   React.useEffect(() => {
@@ -27,6 +29,42 @@ export const WidgetRenderer: React.FC = () => {
     const t = setInterval(() => setNowMs(Date.now()), 1000);
     return () => clearInterval(t);
   }, [active?.id, active?.expiryDisabled]);
+
+  React.useEffect(() => {
+    if (!active || active.type !== WidgetType.script) return;
+    const scriptToast = active.scriptView?.toast;
+    if (!scriptToast?.message) return;
+
+    const style = String(scriptToast.style || "info").toLowerCase();
+    const duration = Number(scriptToast.durationMs ?? 3000);
+    const toastKey = `${active.id}:${active.scriptView?.stepId || ""}:${
+      scriptToast.message
+    }:${style}:${duration}`;
+    if (lastToastKey.current === toastKey) return;
+    lastToastKey.current = toastKey;
+
+    switch (style) {
+      case "success":
+        toast.success(scriptToast.message, { duration });
+        break;
+      case "warning":
+        toast.warning(scriptToast.message, { duration });
+        break;
+      case "error":
+        toast.error(scriptToast.message, { duration });
+        break;
+      default:
+        toast(scriptToast.message, { duration });
+        break;
+    }
+  }, [
+    active?.id,
+    active?.type,
+    active?.scriptView?.stepId,
+    active?.scriptView?.toast?.message,
+    active?.scriptView?.toast?.style,
+    active?.scriptView?.toast?.durationMs,
+  ]);
 
   if (!active) {
     return (
