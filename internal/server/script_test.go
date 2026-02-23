@@ -624,6 +624,110 @@ module.exports = {
 	}
 }
 
+func TestScriptLifecycleWithRatingWidget(t *testing.T) {
+	t.Parallel()
+
+	s := New(store.New())
+	h := s.Handler()
+
+	ratingScript := `
+module.exports = {
+  describe: function () { return { name: "rating-demo", version: "1.0.0" }; },
+  init: function () { return { step: "rate" }; },
+  view: function () {
+    return {
+      widgetType: "rating",
+      stepId: "rate",
+      input: {
+        title: "Rate this flow",
+        scale: 5,
+        style: "stars",
+        labels: { low: "poor", high: "great" }
+      }
+    };
+  },
+  update: function (state, event) {
+    return { done: true, result: { value: event.data ? event.data.value : 0 } };
+  }
+};
+`
+
+	createReq := &v1.UIRequest{
+		Type:      v1.WidgetType_script,
+		SessionId: "global",
+		Input: &v1.UIRequest_ScriptInput{
+			ScriptInput: &v1.ScriptInput{
+				Title:  "Rating demo",
+				Script: ratingScript,
+			},
+		},
+	}
+	created := postUIRequest(t, h, "/api/requests", createReq)
+	if got := created.GetScriptView().GetWidgetType(); got != "rating" {
+		t.Fatalf("expected rating widget type, got %q", got)
+	}
+
+	event := &v1.ScriptEvent{
+		Type:   "submit",
+		StepId: toPtr("rate"),
+		Data:   mustStruct(t, map[string]any{"value": 4}),
+	}
+	completed := postScriptEvent(t, h, created.Id, event)
+	if completed.GetStatus() != v1.RequestStatus_completed {
+		t.Fatalf("expected completed status, got %v", completed.GetStatus())
+	}
+}
+
+func TestScriptCreateRejectsInvalidRatingStyle(t *testing.T) {
+	t.Parallel()
+
+	s := New(store.New())
+	h := s.Handler()
+
+	invalidRatingScript := `
+module.exports = {
+  describe: function () { return { name: "rating-bad", version: "1.0.0" }; },
+  init: function () { return { step: "rate" }; },
+  view: function () {
+    return {
+      widgetType: "rating",
+      input: {
+        title: "Rate this flow",
+        style: "bad-style"
+      }
+    };
+  },
+  update: function (state) { return state; }
+};
+`
+
+	createReq := &v1.UIRequest{
+		Type:      v1.WidgetType_script,
+		SessionId: "global",
+		Input: &v1.UIRequest_ScriptInput{
+			ScriptInput: &v1.ScriptInput{
+				Title:  "Rating bad",
+				Script: invalidRatingScript,
+			},
+		},
+	}
+	body, err := protojson.Marshal(createReq)
+	if err != nil {
+		t.Fatalf("marshal create req: %v", err)
+	}
+	req := httptest.NewRequest(http.MethodPost, "/api/requests", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400 for invalid rating style, got %d body=%s", rr.Code, rr.Body.String())
+	}
+	if !bytes.Contains(rr.Body.Bytes(), []byte("style must be")) {
+		t.Fatalf("expected rating style validation message, got body=%s", rr.Body.String())
+	}
+}
+
 func postUIRequest(t *testing.T, h http.Handler, path string, reqProto *v1.UIRequest) *v1.UIRequest {
 	t.Helper()
 

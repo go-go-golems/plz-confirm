@@ -10,6 +10,7 @@ import { UploadDialog } from "./widgets/UploadDialog";
 import { ImageDialog } from "./widgets/ImageDialog";
 import { GridDialog } from "./widgets/GridDialog";
 import { DisplayWidget } from "./widgets/DisplayWidget";
+import { RatingDialog } from "./widgets/RatingDialog";
 import { Loader2 } from "lucide-react";
 import { WidgetType } from "@/proto/generated/plz_confirm/v1/request";
 import { Button } from "@/components/ui/button";
@@ -180,6 +181,8 @@ export const WidgetRenderer: React.FC = () => {
           return <ImageDialog {...scriptCommonProps} input={input} />;
         case "grid":
           return <GridDialog {...scriptCommonProps} input={input} />;
+        case "rating":
+          return <RatingDialog {...scriptCommonProps} input={input} />;
         default:
           return (
             <div className="p-8 border border-destructive/50 bg-destructive/10 text-destructive">

@@ -569,6 +569,187 @@ func (x *GridSelection) GetCellIndex() int32 {
 	return 0
 }
 
+// Rating Widget (script view extension)
+type RatingLabels struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Low           *string                `protobuf:"bytes,1,opt,name=low,proto3,oneof" json:"low,omitempty"`
+	High          *string                `protobuf:"bytes,2,opt,name=high,proto3,oneof" json:"high,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RatingLabels) Reset() {
+	*x = RatingLabels{}
+	mi := &file_plz_confirm_v1_widgets_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RatingLabels) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RatingLabels) ProtoMessage() {}
+
+func (x *RatingLabels) ProtoReflect() protoreflect.Message {
+	mi := &file_plz_confirm_v1_widgets_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RatingLabels.ProtoReflect.Descriptor instead.
+func (*RatingLabels) Descriptor() ([]byte, []int) {
+	return file_plz_confirm_v1_widgets_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *RatingLabels) GetLow() string {
+	if x != nil && x.Low != nil {
+		return *x.Low
+	}
+	return ""
+}
+
+func (x *RatingLabels) GetHigh() string {
+	if x != nil && x.High != nil {
+		return *x.High
+	}
+	return ""
+}
+
+type RatingInput struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Title         string                 `protobuf:"bytes,1,opt,name=title,proto3" json:"title,omitempty"`
+	Scale         *int32                 `protobuf:"varint,2,opt,name=scale,proto3,oneof" json:"scale,omitempty"`
+	Labels        *RatingLabels          `protobuf:"bytes,3,opt,name=labels,proto3,oneof" json:"labels,omitempty"`
+	Style         *string                `protobuf:"bytes,4,opt,name=style,proto3,oneof" json:"style,omitempty"` // "stars" | "numbers" | "emoji" | "slider"
+	DefaultValue  *int32                 `protobuf:"varint,5,opt,name=default_value,json=defaultValue,proto3,oneof" json:"default_value,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RatingInput) Reset() {
+	*x = RatingInput{}
+	mi := &file_plz_confirm_v1_widgets_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RatingInput) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RatingInput) ProtoMessage() {}
+
+func (x *RatingInput) ProtoReflect() protoreflect.Message {
+	mi := &file_plz_confirm_v1_widgets_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RatingInput.ProtoReflect.Descriptor instead.
+func (*RatingInput) Descriptor() ([]byte, []int) {
+	return file_plz_confirm_v1_widgets_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *RatingInput) GetTitle() string {
+	if x != nil {
+		return x.Title
+	}
+	return ""
+}
+
+func (x *RatingInput) GetScale() int32 {
+	if x != nil && x.Scale != nil {
+		return *x.Scale
+	}
+	return 0
+}
+
+func (x *RatingInput) GetLabels() *RatingLabels {
+	if x != nil {
+		return x.Labels
+	}
+	return nil
+}
+
+func (x *RatingInput) GetStyle() string {
+	if x != nil && x.Style != nil {
+		return *x.Style
+	}
+	return ""
+}
+
+func (x *RatingInput) GetDefaultValue() int32 {
+	if x != nil && x.DefaultValue != nil {
+		return *x.DefaultValue
+	}
+	return 0
+}
+
+type RatingOutput struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Value         int32                  `protobuf:"varint,1,opt,name=value,proto3" json:"value,omitempty"`
+	Comment       *string                `protobuf:"bytes,2,opt,name=comment,proto3,oneof" json:"comment,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RatingOutput) Reset() {
+	*x = RatingOutput{}
+	mi := &file_plz_confirm_v1_widgets_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RatingOutput) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RatingOutput) ProtoMessage() {}
+
+func (x *RatingOutput) ProtoReflect() protoreflect.Message {
+	mi := &file_plz_confirm_v1_widgets_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RatingOutput.ProtoReflect.Descriptor instead.
+func (*RatingOutput) Descriptor() ([]byte, []int) {
+	return file_plz_confirm_v1_widgets_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *RatingOutput) GetValue() int32 {
+	if x != nil {
+		return x.Value
+	}
+	return 0
+}
+
+func (x *RatingOutput) GetComment() string {
+	if x != nil && x.Comment != nil {
+		return *x.Comment
+	}
+	return ""
+}
+
 // Form Widget
 type FormInput struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -581,7 +762,7 @@ type FormInput struct {
 
 func (x *FormInput) Reset() {
 	*x = FormInput{}
-	mi := &file_plz_confirm_v1_widgets_proto_msgTypes[8]
+	mi := &file_plz_confirm_v1_widgets_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -593,7 +774,7 @@ func (x *FormInput) String() string {
 func (*FormInput) ProtoMessage() {}
 
 func (x *FormInput) ProtoReflect() protoreflect.Message {
-	mi := &file_plz_confirm_v1_widgets_proto_msgTypes[8]
+	mi := &file_plz_confirm_v1_widgets_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -606,7 +787,7 @@ func (x *FormInput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use FormInput.ProtoReflect.Descriptor instead.
 func (*FormInput) Descriptor() ([]byte, []int) {
-	return file_plz_confirm_v1_widgets_proto_rawDescGZIP(), []int{8}
+	return file_plz_confirm_v1_widgets_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *FormInput) GetTitle() string {
@@ -634,7 +815,7 @@ type FormOutput struct {
 
 func (x *FormOutput) Reset() {
 	*x = FormOutput{}
-	mi := &file_plz_confirm_v1_widgets_proto_msgTypes[9]
+	mi := &file_plz_confirm_v1_widgets_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -646,7 +827,7 @@ func (x *FormOutput) String() string {
 func (*FormOutput) ProtoMessage() {}
 
 func (x *FormOutput) ProtoReflect() protoreflect.Message {
-	mi := &file_plz_confirm_v1_widgets_proto_msgTypes[9]
+	mi := &file_plz_confirm_v1_widgets_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -659,7 +840,7 @@ func (x *FormOutput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use FormOutput.ProtoReflect.Descriptor instead.
 func (*FormOutput) Descriptor() ([]byte, []int) {
-	return file_plz_confirm_v1_widgets_proto_rawDescGZIP(), []int{9}
+	return file_plz_confirm_v1_widgets_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *FormOutput) GetData() *structpb.Struct {
@@ -690,7 +871,7 @@ type UploadInput struct {
 
 func (x *UploadInput) Reset() {
 	*x = UploadInput{}
-	mi := &file_plz_confirm_v1_widgets_proto_msgTypes[10]
+	mi := &file_plz_confirm_v1_widgets_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -702,7 +883,7 @@ func (x *UploadInput) String() string {
 func (*UploadInput) ProtoMessage() {}
 
 func (x *UploadInput) ProtoReflect() protoreflect.Message {
-	mi := &file_plz_confirm_v1_widgets_proto_msgTypes[10]
+	mi := &file_plz_confirm_v1_widgets_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -715,7 +896,7 @@ func (x *UploadInput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UploadInput.ProtoReflect.Descriptor instead.
 func (*UploadInput) Descriptor() ([]byte, []int) {
-	return file_plz_confirm_v1_widgets_proto_rawDescGZIP(), []int{10}
+	return file_plz_confirm_v1_widgets_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *UploadInput) GetTitle() string {
@@ -763,7 +944,7 @@ type UploadOutput struct {
 
 func (x *UploadOutput) Reset() {
 	*x = UploadOutput{}
-	mi := &file_plz_confirm_v1_widgets_proto_msgTypes[11]
+	mi := &file_plz_confirm_v1_widgets_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -775,7 +956,7 @@ func (x *UploadOutput) String() string {
 func (*UploadOutput) ProtoMessage() {}
 
 func (x *UploadOutput) ProtoReflect() protoreflect.Message {
-	mi := &file_plz_confirm_v1_widgets_proto_msgTypes[11]
+	mi := &file_plz_confirm_v1_widgets_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -788,7 +969,7 @@ func (x *UploadOutput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UploadOutput.ProtoReflect.Descriptor instead.
 func (*UploadOutput) Descriptor() ([]byte, []int) {
-	return file_plz_confirm_v1_widgets_proto_rawDescGZIP(), []int{11}
+	return file_plz_confirm_v1_widgets_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *UploadOutput) GetFiles() []*UploadedFile {
@@ -817,7 +998,7 @@ type UploadedFile struct {
 
 func (x *UploadedFile) Reset() {
 	*x = UploadedFile{}
-	mi := &file_plz_confirm_v1_widgets_proto_msgTypes[12]
+	mi := &file_plz_confirm_v1_widgets_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -829,7 +1010,7 @@ func (x *UploadedFile) String() string {
 func (*UploadedFile) ProtoMessage() {}
 
 func (x *UploadedFile) ProtoReflect() protoreflect.Message {
-	mi := &file_plz_confirm_v1_widgets_proto_msgTypes[12]
+	mi := &file_plz_confirm_v1_widgets_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -842,7 +1023,7 @@ func (x *UploadedFile) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UploadedFile.ProtoReflect.Descriptor instead.
 func (*UploadedFile) Descriptor() ([]byte, []int) {
-	return file_plz_confirm_v1_widgets_proto_rawDescGZIP(), []int{12}
+	return file_plz_confirm_v1_widgets_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *UploadedFile) GetName() string {
@@ -888,7 +1069,7 @@ type TableInput struct {
 
 func (x *TableInput) Reset() {
 	*x = TableInput{}
-	mi := &file_plz_confirm_v1_widgets_proto_msgTypes[13]
+	mi := &file_plz_confirm_v1_widgets_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -900,7 +1081,7 @@ func (x *TableInput) String() string {
 func (*TableInput) ProtoMessage() {}
 
 func (x *TableInput) ProtoReflect() protoreflect.Message {
-	mi := &file_plz_confirm_v1_widgets_proto_msgTypes[13]
+	mi := &file_plz_confirm_v1_widgets_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -913,7 +1094,7 @@ func (x *TableInput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TableInput.ProtoReflect.Descriptor instead.
 func (*TableInput) Descriptor() ([]byte, []int) {
-	return file_plz_confirm_v1_widgets_proto_rawDescGZIP(), []int{13}
+	return file_plz_confirm_v1_widgets_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *TableInput) GetTitle() string {
@@ -967,7 +1148,7 @@ type TableOutput struct {
 
 func (x *TableOutput) Reset() {
 	*x = TableOutput{}
-	mi := &file_plz_confirm_v1_widgets_proto_msgTypes[14]
+	mi := &file_plz_confirm_v1_widgets_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -979,7 +1160,7 @@ func (x *TableOutput) String() string {
 func (*TableOutput) ProtoMessage() {}
 
 func (x *TableOutput) ProtoReflect() protoreflect.Message {
-	mi := &file_plz_confirm_v1_widgets_proto_msgTypes[14]
+	mi := &file_plz_confirm_v1_widgets_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -992,7 +1173,7 @@ func (x *TableOutput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TableOutput.ProtoReflect.Descriptor instead.
 func (*TableOutput) Descriptor() ([]byte, []int) {
-	return file_plz_confirm_v1_widgets_proto_rawDescGZIP(), []int{14}
+	return file_plz_confirm_v1_widgets_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *TableOutput) GetSelected() isTableOutput_Selected {
@@ -1052,7 +1233,7 @@ type TableOutputMulti struct {
 
 func (x *TableOutputMulti) Reset() {
 	*x = TableOutputMulti{}
-	mi := &file_plz_confirm_v1_widgets_proto_msgTypes[15]
+	mi := &file_plz_confirm_v1_widgets_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1064,7 +1245,7 @@ func (x *TableOutputMulti) String() string {
 func (*TableOutputMulti) ProtoMessage() {}
 
 func (x *TableOutputMulti) ProtoReflect() protoreflect.Message {
-	mi := &file_plz_confirm_v1_widgets_proto_msgTypes[15]
+	mi := &file_plz_confirm_v1_widgets_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1077,7 +1258,7 @@ func (x *TableOutputMulti) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TableOutputMulti.ProtoReflect.Descriptor instead.
 func (*TableOutputMulti) Descriptor() ([]byte, []int) {
-	return file_plz_confirm_v1_widgets_proto_rawDescGZIP(), []int{15}
+	return file_plz_confirm_v1_widgets_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *TableOutputMulti) GetValues() []*structpb.Struct {
@@ -1100,7 +1281,7 @@ type ImageItem struct {
 
 func (x *ImageItem) Reset() {
 	*x = ImageItem{}
-	mi := &file_plz_confirm_v1_widgets_proto_msgTypes[16]
+	mi := &file_plz_confirm_v1_widgets_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1112,7 +1293,7 @@ func (x *ImageItem) String() string {
 func (*ImageItem) ProtoMessage() {}
 
 func (x *ImageItem) ProtoReflect() protoreflect.Message {
-	mi := &file_plz_confirm_v1_widgets_proto_msgTypes[16]
+	mi := &file_plz_confirm_v1_widgets_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1125,7 +1306,7 @@ func (x *ImageItem) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ImageItem.ProtoReflect.Descriptor instead.
 func (*ImageItem) Descriptor() ([]byte, []int) {
-	return file_plz_confirm_v1_widgets_proto_rawDescGZIP(), []int{16}
+	return file_plz_confirm_v1_widgets_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *ImageItem) GetSrc() string {
@@ -1170,7 +1351,7 @@ type ImageInput struct {
 
 func (x *ImageInput) Reset() {
 	*x = ImageInput{}
-	mi := &file_plz_confirm_v1_widgets_proto_msgTypes[17]
+	mi := &file_plz_confirm_v1_widgets_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1182,7 +1363,7 @@ func (x *ImageInput) String() string {
 func (*ImageInput) ProtoMessage() {}
 
 func (x *ImageInput) ProtoReflect() protoreflect.Message {
-	mi := &file_plz_confirm_v1_widgets_proto_msgTypes[17]
+	mi := &file_plz_confirm_v1_widgets_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1195,7 +1376,7 @@ func (x *ImageInput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ImageInput.ProtoReflect.Descriptor instead.
 func (*ImageInput) Descriptor() ([]byte, []int) {
-	return file_plz_confirm_v1_widgets_proto_rawDescGZIP(), []int{17}
+	return file_plz_confirm_v1_widgets_proto_rawDescGZIP(), []int{20}
 }
 
 func (x *ImageInput) GetTitle() string {
@@ -1260,7 +1441,7 @@ type ImageOutput struct {
 
 func (x *ImageOutput) Reset() {
 	*x = ImageOutput{}
-	mi := &file_plz_confirm_v1_widgets_proto_msgTypes[18]
+	mi := &file_plz_confirm_v1_widgets_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1272,7 +1453,7 @@ func (x *ImageOutput) String() string {
 func (*ImageOutput) ProtoMessage() {}
 
 func (x *ImageOutput) ProtoReflect() protoreflect.Message {
-	mi := &file_plz_confirm_v1_widgets_proto_msgTypes[18]
+	mi := &file_plz_confirm_v1_widgets_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1285,7 +1466,7 @@ func (x *ImageOutput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ImageOutput.ProtoReflect.Descriptor instead.
 func (*ImageOutput) Descriptor() ([]byte, []int) {
-	return file_plz_confirm_v1_widgets_proto_rawDescGZIP(), []int{18}
+	return file_plz_confirm_v1_widgets_proto_rawDescGZIP(), []int{21}
 }
 
 func (x *ImageOutput) GetSelected() isImageOutput_Selected {
@@ -1397,7 +1578,7 @@ type ImageOutputNumbers struct {
 
 func (x *ImageOutputNumbers) Reset() {
 	*x = ImageOutputNumbers{}
-	mi := &file_plz_confirm_v1_widgets_proto_msgTypes[19]
+	mi := &file_plz_confirm_v1_widgets_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1409,7 +1590,7 @@ func (x *ImageOutputNumbers) String() string {
 func (*ImageOutputNumbers) ProtoMessage() {}
 
 func (x *ImageOutputNumbers) ProtoReflect() protoreflect.Message {
-	mi := &file_plz_confirm_v1_widgets_proto_msgTypes[19]
+	mi := &file_plz_confirm_v1_widgets_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1422,7 +1603,7 @@ func (x *ImageOutputNumbers) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ImageOutputNumbers.ProtoReflect.Descriptor instead.
 func (*ImageOutputNumbers) Descriptor() ([]byte, []int) {
-	return file_plz_confirm_v1_widgets_proto_rawDescGZIP(), []int{19}
+	return file_plz_confirm_v1_widgets_proto_rawDescGZIP(), []int{22}
 }
 
 func (x *ImageOutputNumbers) GetValues() []int64 {
@@ -1441,7 +1622,7 @@ type ImageOutputStrings struct {
 
 func (x *ImageOutputStrings) Reset() {
 	*x = ImageOutputStrings{}
-	mi := &file_plz_confirm_v1_widgets_proto_msgTypes[20]
+	mi := &file_plz_confirm_v1_widgets_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1453,7 +1634,7 @@ func (x *ImageOutputStrings) String() string {
 func (*ImageOutputStrings) ProtoMessage() {}
 
 func (x *ImageOutputStrings) ProtoReflect() protoreflect.Message {
-	mi := &file_plz_confirm_v1_widgets_proto_msgTypes[20]
+	mi := &file_plz_confirm_v1_widgets_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1466,7 +1647,7 @@ func (x *ImageOutputStrings) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ImageOutputStrings.ProtoReflect.Descriptor instead.
 func (*ImageOutputStrings) Descriptor() ([]byte, []int) {
-	return file_plz_confirm_v1_widgets_proto_rawDescGZIP(), []int{20}
+	return file_plz_confirm_v1_widgets_proto_rawDescGZIP(), []int{23}
 }
 
 func (x *ImageOutputStrings) GetValues() []string {
@@ -1489,7 +1670,7 @@ type ScriptInput struct {
 
 func (x *ScriptInput) Reset() {
 	*x = ScriptInput{}
-	mi := &file_plz_confirm_v1_widgets_proto_msgTypes[21]
+	mi := &file_plz_confirm_v1_widgets_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1501,7 +1682,7 @@ func (x *ScriptInput) String() string {
 func (*ScriptInput) ProtoMessage() {}
 
 func (x *ScriptInput) ProtoReflect() protoreflect.Message {
-	mi := &file_plz_confirm_v1_widgets_proto_msgTypes[21]
+	mi := &file_plz_confirm_v1_widgets_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1514,7 +1695,7 @@ func (x *ScriptInput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ScriptInput.ProtoReflect.Descriptor instead.
 func (*ScriptInput) Descriptor() ([]byte, []int) {
-	return file_plz_confirm_v1_widgets_proto_rawDescGZIP(), []int{21}
+	return file_plz_confirm_v1_widgets_proto_rawDescGZIP(), []int{24}
 }
 
 func (x *ScriptInput) GetTitle() string {
@@ -1556,7 +1737,7 @@ type ScriptOutput struct {
 
 func (x *ScriptOutput) Reset() {
 	*x = ScriptOutput{}
-	mi := &file_plz_confirm_v1_widgets_proto_msgTypes[22]
+	mi := &file_plz_confirm_v1_widgets_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1568,7 +1749,7 @@ func (x *ScriptOutput) String() string {
 func (*ScriptOutput) ProtoMessage() {}
 
 func (x *ScriptOutput) ProtoReflect() protoreflect.Message {
-	mi := &file_plz_confirm_v1_widgets_proto_msgTypes[22]
+	mi := &file_plz_confirm_v1_widgets_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1581,7 +1762,7 @@ func (x *ScriptOutput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ScriptOutput.ProtoReflect.Descriptor instead.
 func (*ScriptOutput) Descriptor() ([]byte, []int) {
-	return file_plz_confirm_v1_widgets_proto_rawDescGZIP(), []int{22}
+	return file_plz_confirm_v1_widgets_proto_rawDescGZIP(), []int{25}
 }
 
 func (x *ScriptOutput) GetResult() *structpb.Struct {
@@ -1617,7 +1798,7 @@ type ScriptEvent struct {
 
 func (x *ScriptEvent) Reset() {
 	*x = ScriptEvent{}
-	mi := &file_plz_confirm_v1_widgets_proto_msgTypes[23]
+	mi := &file_plz_confirm_v1_widgets_proto_msgTypes[26]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1629,7 +1810,7 @@ func (x *ScriptEvent) String() string {
 func (*ScriptEvent) ProtoMessage() {}
 
 func (x *ScriptEvent) ProtoReflect() protoreflect.Message {
-	mi := &file_plz_confirm_v1_widgets_proto_msgTypes[23]
+	mi := &file_plz_confirm_v1_widgets_proto_msgTypes[26]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1642,7 +1823,7 @@ func (x *ScriptEvent) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ScriptEvent.ProtoReflect.Descriptor instead.
 func (*ScriptEvent) Descriptor() ([]byte, []int) {
-	return file_plz_confirm_v1_widgets_proto_rawDescGZIP(), []int{23}
+	return file_plz_confirm_v1_widgets_proto_rawDescGZIP(), []int{26}
 }
 
 func (x *ScriptEvent) GetType() string {
@@ -1683,7 +1864,7 @@ type ScriptViewSection struct {
 
 func (x *ScriptViewSection) Reset() {
 	*x = ScriptViewSection{}
-	mi := &file_plz_confirm_v1_widgets_proto_msgTypes[24]
+	mi := &file_plz_confirm_v1_widgets_proto_msgTypes[27]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1695,7 +1876,7 @@ func (x *ScriptViewSection) String() string {
 func (*ScriptViewSection) ProtoMessage() {}
 
 func (x *ScriptViewSection) ProtoReflect() protoreflect.Message {
-	mi := &file_plz_confirm_v1_widgets_proto_msgTypes[24]
+	mi := &file_plz_confirm_v1_widgets_proto_msgTypes[27]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1708,7 +1889,7 @@ func (x *ScriptViewSection) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ScriptViewSection.ProtoReflect.Descriptor instead.
 func (*ScriptViewSection) Descriptor() ([]byte, []int) {
-	return file_plz_confirm_v1_widgets_proto_rawDescGZIP(), []int{24}
+	return file_plz_confirm_v1_widgets_proto_rawDescGZIP(), []int{27}
 }
 
 func (x *ScriptViewSection) GetWidgetType() string {
@@ -1735,7 +1916,7 @@ type DisplayInput struct {
 
 func (x *DisplayInput) Reset() {
 	*x = DisplayInput{}
-	mi := &file_plz_confirm_v1_widgets_proto_msgTypes[25]
+	mi := &file_plz_confirm_v1_widgets_proto_msgTypes[28]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1747,7 +1928,7 @@ func (x *DisplayInput) String() string {
 func (*DisplayInput) ProtoMessage() {}
 
 func (x *DisplayInput) ProtoReflect() protoreflect.Message {
-	mi := &file_plz_confirm_v1_widgets_proto_msgTypes[25]
+	mi := &file_plz_confirm_v1_widgets_proto_msgTypes[28]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1760,7 +1941,7 @@ func (x *DisplayInput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DisplayInput.ProtoReflect.Descriptor instead.
 func (*DisplayInput) Descriptor() ([]byte, []int) {
-	return file_plz_confirm_v1_widgets_proto_rawDescGZIP(), []int{25}
+	return file_plz_confirm_v1_widgets_proto_rawDescGZIP(), []int{28}
 }
 
 func (x *DisplayInput) GetContent() string {
@@ -1788,7 +1969,7 @@ type ScriptProgress struct {
 
 func (x *ScriptProgress) Reset() {
 	*x = ScriptProgress{}
-	mi := &file_plz_confirm_v1_widgets_proto_msgTypes[26]
+	mi := &file_plz_confirm_v1_widgets_proto_msgTypes[29]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1800,7 +1981,7 @@ func (x *ScriptProgress) String() string {
 func (*ScriptProgress) ProtoMessage() {}
 
 func (x *ScriptProgress) ProtoReflect() protoreflect.Message {
-	mi := &file_plz_confirm_v1_widgets_proto_msgTypes[26]
+	mi := &file_plz_confirm_v1_widgets_proto_msgTypes[29]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1813,7 +1994,7 @@ func (x *ScriptProgress) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ScriptProgress.ProtoReflect.Descriptor instead.
 func (*ScriptProgress) Descriptor() ([]byte, []int) {
-	return file_plz_confirm_v1_widgets_proto_rawDescGZIP(), []int{26}
+	return file_plz_confirm_v1_widgets_proto_rawDescGZIP(), []int{29}
 }
 
 func (x *ScriptProgress) GetCurrent() int32 {
@@ -1854,7 +2035,7 @@ type ScriptView struct {
 
 func (x *ScriptView) Reset() {
 	*x = ScriptView{}
-	mi := &file_plz_confirm_v1_widgets_proto_msgTypes[27]
+	mi := &file_plz_confirm_v1_widgets_proto_msgTypes[30]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1866,7 +2047,7 @@ func (x *ScriptView) String() string {
 func (*ScriptView) ProtoMessage() {}
 
 func (x *ScriptView) ProtoReflect() protoreflect.Message {
-	mi := &file_plz_confirm_v1_widgets_proto_msgTypes[27]
+	mi := &file_plz_confirm_v1_widgets_proto_msgTypes[30]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1879,7 +2060,7 @@ func (x *ScriptView) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ScriptView.ProtoReflect.Descriptor instead.
 func (*ScriptView) Descriptor() ([]byte, []int) {
-	return file_plz_confirm_v1_widgets_proto_rawDescGZIP(), []int{27}
+	return file_plz_confirm_v1_widgets_proto_rawDescGZIP(), []int{30}
 }
 
 func (x *ScriptView) GetWidgetType() string {
@@ -1957,7 +2138,7 @@ type ScriptDescribe struct {
 
 func (x *ScriptDescribe) Reset() {
 	*x = ScriptDescribe{}
-	mi := &file_plz_confirm_v1_widgets_proto_msgTypes[28]
+	mi := &file_plz_confirm_v1_widgets_proto_msgTypes[31]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1969,7 +2150,7 @@ func (x *ScriptDescribe) String() string {
 func (*ScriptDescribe) ProtoMessage() {}
 
 func (x *ScriptDescribe) ProtoReflect() protoreflect.Message {
-	mi := &file_plz_confirm_v1_widgets_proto_msgTypes[28]
+	mi := &file_plz_confirm_v1_widgets_proto_msgTypes[31]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1982,7 +2163,7 @@ func (x *ScriptDescribe) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ScriptDescribe.ProtoReflect.Descriptor instead.
 func (*ScriptDescribe) Descriptor() ([]byte, []int) {
-	return file_plz_confirm_v1_widgets_proto_rawDescGZIP(), []int{28}
+	return file_plz_confirm_v1_widgets_proto_rawDescGZIP(), []int{31}
 }
 
 func (x *ScriptDescribe) GetName() string {
@@ -2075,7 +2256,27 @@ const file_plz_confirm_v1_widgets_proto_rawDesc = "" +
 	"\x03row\x18\x01 \x01(\x05R\x03row\x12\x10\n" +
 	"\x03col\x18\x02 \x01(\x05R\x03col\x12\x1d\n" +
 	"\n" +
-	"cell_index\x18\x03 \x01(\x05R\tcellIndex\"R\n" +
+	"cell_index\x18\x03 \x01(\x05R\tcellIndex\"O\n" +
+	"\fRatingLabels\x12\x15\n" +
+	"\x03low\x18\x01 \x01(\tH\x00R\x03low\x88\x01\x01\x12\x17\n" +
+	"\x04high\x18\x02 \x01(\tH\x01R\x04high\x88\x01\x01B\x06\n" +
+	"\x04_lowB\a\n" +
+	"\x05_high\"\xef\x01\n" +
+	"\vRatingInput\x12\x14\n" +
+	"\x05title\x18\x01 \x01(\tR\x05title\x12\x19\n" +
+	"\x05scale\x18\x02 \x01(\x05H\x00R\x05scale\x88\x01\x01\x129\n" +
+	"\x06labels\x18\x03 \x01(\v2\x1c.plz_confirm.v1.RatingLabelsH\x01R\x06labels\x88\x01\x01\x12\x19\n" +
+	"\x05style\x18\x04 \x01(\tH\x02R\x05style\x88\x01\x01\x12(\n" +
+	"\rdefault_value\x18\x05 \x01(\x05H\x03R\fdefaultValue\x88\x01\x01B\b\n" +
+	"\x06_scaleB\t\n" +
+	"\a_labelsB\b\n" +
+	"\x06_styleB\x10\n" +
+	"\x0e_default_value\"O\n" +
+	"\fRatingOutput\x12\x14\n" +
+	"\x05value\x18\x01 \x01(\x05R\x05value\x12\x1d\n" +
+	"\acomment\x18\x02 \x01(\tH\x00R\acomment\x88\x01\x01B\n" +
+	"\n" +
+	"\b_comment\"R\n" +
 	"\tFormInput\x12\x14\n" +
 	"\x05title\x18\x01 \x01(\tR\x05title\x12/\n" +
 	"\x06schema\x18\x02 \x01(\v2\x17.google.protobuf.StructR\x06schema\"d\n" +
@@ -2236,7 +2437,7 @@ func file_plz_confirm_v1_widgets_proto_rawDescGZIP() []byte {
 	return file_plz_confirm_v1_widgets_proto_rawDescData
 }
 
-var file_plz_confirm_v1_widgets_proto_msgTypes = make([]protoimpl.MessageInfo, 29)
+var file_plz_confirm_v1_widgets_proto_msgTypes = make([]protoimpl.MessageInfo, 32)
 var file_plz_confirm_v1_widgets_proto_goTypes = []any{
 	(*ConfirmInput)(nil),       // 0: plz_confirm.v1.ConfirmInput
 	(*ConfirmOutput)(nil),      // 1: plz_confirm.v1.ConfirmOutput
@@ -2246,54 +2447,58 @@ var file_plz_confirm_v1_widgets_proto_goTypes = []any{
 	(*GridCell)(nil),           // 5: plz_confirm.v1.GridCell
 	(*GridInput)(nil),          // 6: plz_confirm.v1.GridInput
 	(*GridSelection)(nil),      // 7: plz_confirm.v1.GridSelection
-	(*FormInput)(nil),          // 8: plz_confirm.v1.FormInput
-	(*FormOutput)(nil),         // 9: plz_confirm.v1.FormOutput
-	(*UploadInput)(nil),        // 10: plz_confirm.v1.UploadInput
-	(*UploadOutput)(nil),       // 11: plz_confirm.v1.UploadOutput
-	(*UploadedFile)(nil),       // 12: plz_confirm.v1.UploadedFile
-	(*TableInput)(nil),         // 13: plz_confirm.v1.TableInput
-	(*TableOutput)(nil),        // 14: plz_confirm.v1.TableOutput
-	(*TableOutputMulti)(nil),   // 15: plz_confirm.v1.TableOutputMulti
-	(*ImageItem)(nil),          // 16: plz_confirm.v1.ImageItem
-	(*ImageInput)(nil),         // 17: plz_confirm.v1.ImageInput
-	(*ImageOutput)(nil),        // 18: plz_confirm.v1.ImageOutput
-	(*ImageOutputNumbers)(nil), // 19: plz_confirm.v1.ImageOutputNumbers
-	(*ImageOutputStrings)(nil), // 20: plz_confirm.v1.ImageOutputStrings
-	(*ScriptInput)(nil),        // 21: plz_confirm.v1.ScriptInput
-	(*ScriptOutput)(nil),       // 22: plz_confirm.v1.ScriptOutput
-	(*ScriptEvent)(nil),        // 23: plz_confirm.v1.ScriptEvent
-	(*ScriptViewSection)(nil),  // 24: plz_confirm.v1.ScriptViewSection
-	(*DisplayInput)(nil),       // 25: plz_confirm.v1.DisplayInput
-	(*ScriptProgress)(nil),     // 26: plz_confirm.v1.ScriptProgress
-	(*ScriptView)(nil),         // 27: plz_confirm.v1.ScriptView
-	(*ScriptDescribe)(nil),     // 28: plz_confirm.v1.ScriptDescribe
-	(*structpb.Struct)(nil),    // 29: google.protobuf.Struct
+	(*RatingLabels)(nil),       // 8: plz_confirm.v1.RatingLabels
+	(*RatingInput)(nil),        // 9: plz_confirm.v1.RatingInput
+	(*RatingOutput)(nil),       // 10: plz_confirm.v1.RatingOutput
+	(*FormInput)(nil),          // 11: plz_confirm.v1.FormInput
+	(*FormOutput)(nil),         // 12: plz_confirm.v1.FormOutput
+	(*UploadInput)(nil),        // 13: plz_confirm.v1.UploadInput
+	(*UploadOutput)(nil),       // 14: plz_confirm.v1.UploadOutput
+	(*UploadedFile)(nil),       // 15: plz_confirm.v1.UploadedFile
+	(*TableInput)(nil),         // 16: plz_confirm.v1.TableInput
+	(*TableOutput)(nil),        // 17: plz_confirm.v1.TableOutput
+	(*TableOutputMulti)(nil),   // 18: plz_confirm.v1.TableOutputMulti
+	(*ImageItem)(nil),          // 19: plz_confirm.v1.ImageItem
+	(*ImageInput)(nil),         // 20: plz_confirm.v1.ImageInput
+	(*ImageOutput)(nil),        // 21: plz_confirm.v1.ImageOutput
+	(*ImageOutputNumbers)(nil), // 22: plz_confirm.v1.ImageOutputNumbers
+	(*ImageOutputStrings)(nil), // 23: plz_confirm.v1.ImageOutputStrings
+	(*ScriptInput)(nil),        // 24: plz_confirm.v1.ScriptInput
+	(*ScriptOutput)(nil),       // 25: plz_confirm.v1.ScriptOutput
+	(*ScriptEvent)(nil),        // 26: plz_confirm.v1.ScriptEvent
+	(*ScriptViewSection)(nil),  // 27: plz_confirm.v1.ScriptViewSection
+	(*DisplayInput)(nil),       // 28: plz_confirm.v1.DisplayInput
+	(*ScriptProgress)(nil),     // 29: plz_confirm.v1.ScriptProgress
+	(*ScriptView)(nil),         // 30: plz_confirm.v1.ScriptView
+	(*ScriptDescribe)(nil),     // 31: plz_confirm.v1.ScriptDescribe
+	(*structpb.Struct)(nil),    // 32: google.protobuf.Struct
 }
 var file_plz_confirm_v1_widgets_proto_depIdxs = []int32{
 	4,  // 0: plz_confirm.v1.SelectOutput.selected_multi:type_name -> plz_confirm.v1.SelectOutputMulti
 	5,  // 1: plz_confirm.v1.GridInput.cells:type_name -> plz_confirm.v1.GridCell
-	29, // 2: plz_confirm.v1.FormInput.schema:type_name -> google.protobuf.Struct
-	29, // 3: plz_confirm.v1.FormOutput.data:type_name -> google.protobuf.Struct
-	12, // 4: plz_confirm.v1.UploadOutput.files:type_name -> plz_confirm.v1.UploadedFile
-	29, // 5: plz_confirm.v1.TableInput.data:type_name -> google.protobuf.Struct
-	29, // 6: plz_confirm.v1.TableOutput.selected_single:type_name -> google.protobuf.Struct
-	15, // 7: plz_confirm.v1.TableOutput.selected_multi:type_name -> plz_confirm.v1.TableOutputMulti
-	29, // 8: plz_confirm.v1.TableOutputMulti.values:type_name -> google.protobuf.Struct
-	16, // 9: plz_confirm.v1.ImageInput.images:type_name -> plz_confirm.v1.ImageItem
-	19, // 10: plz_confirm.v1.ImageOutput.selected_numbers:type_name -> plz_confirm.v1.ImageOutputNumbers
-	20, // 11: plz_confirm.v1.ImageOutput.selected_strings:type_name -> plz_confirm.v1.ImageOutputStrings
-	29, // 12: plz_confirm.v1.ScriptInput.props:type_name -> google.protobuf.Struct
-	29, // 13: plz_confirm.v1.ScriptOutput.result:type_name -> google.protobuf.Struct
-	29, // 14: plz_confirm.v1.ScriptEvent.data:type_name -> google.protobuf.Struct
-	29, // 15: plz_confirm.v1.ScriptViewSection.input:type_name -> google.protobuf.Struct
-	29, // 16: plz_confirm.v1.ScriptView.input:type_name -> google.protobuf.Struct
-	24, // 17: plz_confirm.v1.ScriptView.sections:type_name -> plz_confirm.v1.ScriptViewSection
-	26, // 18: plz_confirm.v1.ScriptView.progress:type_name -> plz_confirm.v1.ScriptProgress
-	19, // [19:19] is the sub-list for method output_type
-	19, // [19:19] is the sub-list for method input_type
-	19, // [19:19] is the sub-list for extension type_name
-	19, // [19:19] is the sub-list for extension extendee
-	0,  // [0:19] is the sub-list for field type_name
+	8,  // 2: plz_confirm.v1.RatingInput.labels:type_name -> plz_confirm.v1.RatingLabels
+	32, // 3: plz_confirm.v1.FormInput.schema:type_name -> google.protobuf.Struct
+	32, // 4: plz_confirm.v1.FormOutput.data:type_name -> google.protobuf.Struct
+	15, // 5: plz_confirm.v1.UploadOutput.files:type_name -> plz_confirm.v1.UploadedFile
+	32, // 6: plz_confirm.v1.TableInput.data:type_name -> google.protobuf.Struct
+	32, // 7: plz_confirm.v1.TableOutput.selected_single:type_name -> google.protobuf.Struct
+	18, // 8: plz_confirm.v1.TableOutput.selected_multi:type_name -> plz_confirm.v1.TableOutputMulti
+	32, // 9: plz_confirm.v1.TableOutputMulti.values:type_name -> google.protobuf.Struct
+	19, // 10: plz_confirm.v1.ImageInput.images:type_name -> plz_confirm.v1.ImageItem
+	22, // 11: plz_confirm.v1.ImageOutput.selected_numbers:type_name -> plz_confirm.v1.ImageOutputNumbers
+	23, // 12: plz_confirm.v1.ImageOutput.selected_strings:type_name -> plz_confirm.v1.ImageOutputStrings
+	32, // 13: plz_confirm.v1.ScriptInput.props:type_name -> google.protobuf.Struct
+	32, // 14: plz_confirm.v1.ScriptOutput.result:type_name -> google.protobuf.Struct
+	32, // 15: plz_confirm.v1.ScriptEvent.data:type_name -> google.protobuf.Struct
+	32, // 16: plz_confirm.v1.ScriptViewSection.input:type_name -> google.protobuf.Struct
+	32, // 17: plz_confirm.v1.ScriptView.input:type_name -> google.protobuf.Struct
+	27, // 18: plz_confirm.v1.ScriptView.sections:type_name -> plz_confirm.v1.ScriptViewSection
+	29, // 19: plz_confirm.v1.ScriptView.progress:type_name -> plz_confirm.v1.ScriptProgress
+	20, // [20:20] is the sub-list for method output_type
+	20, // [20:20] is the sub-list for method input_type
+	20, // [20:20] is the sub-list for extension type_name
+	20, // [20:20] is the sub-list for extension extendee
+	0,  // [0:20] is the sub-list for field type_name
 }
 
 func init() { file_plz_confirm_v1_widgets_proto_init() }
@@ -2310,37 +2515,40 @@ func file_plz_confirm_v1_widgets_proto_init() {
 	}
 	file_plz_confirm_v1_widgets_proto_msgTypes[5].OneofWrappers = []any{}
 	file_plz_confirm_v1_widgets_proto_msgTypes[6].OneofWrappers = []any{}
+	file_plz_confirm_v1_widgets_proto_msgTypes[8].OneofWrappers = []any{}
 	file_plz_confirm_v1_widgets_proto_msgTypes[9].OneofWrappers = []any{}
 	file_plz_confirm_v1_widgets_proto_msgTypes[10].OneofWrappers = []any{}
-	file_plz_confirm_v1_widgets_proto_msgTypes[11].OneofWrappers = []any{}
+	file_plz_confirm_v1_widgets_proto_msgTypes[12].OneofWrappers = []any{}
 	file_plz_confirm_v1_widgets_proto_msgTypes[13].OneofWrappers = []any{}
-	file_plz_confirm_v1_widgets_proto_msgTypes[14].OneofWrappers = []any{
+	file_plz_confirm_v1_widgets_proto_msgTypes[14].OneofWrappers = []any{}
+	file_plz_confirm_v1_widgets_proto_msgTypes[16].OneofWrappers = []any{}
+	file_plz_confirm_v1_widgets_proto_msgTypes[17].OneofWrappers = []any{
 		(*TableOutput_SelectedSingle)(nil),
 		(*TableOutput_SelectedMulti)(nil),
 	}
-	file_plz_confirm_v1_widgets_proto_msgTypes[16].OneofWrappers = []any{}
-	file_plz_confirm_v1_widgets_proto_msgTypes[17].OneofWrappers = []any{}
-	file_plz_confirm_v1_widgets_proto_msgTypes[18].OneofWrappers = []any{
+	file_plz_confirm_v1_widgets_proto_msgTypes[19].OneofWrappers = []any{}
+	file_plz_confirm_v1_widgets_proto_msgTypes[20].OneofWrappers = []any{}
+	file_plz_confirm_v1_widgets_proto_msgTypes[21].OneofWrappers = []any{
 		(*ImageOutput_SelectedNumber)(nil),
 		(*ImageOutput_SelectedNumbers)(nil),
 		(*ImageOutput_SelectedBool)(nil),
 		(*ImageOutput_SelectedString)(nil),
 		(*ImageOutput_SelectedStrings)(nil),
 	}
-	file_plz_confirm_v1_widgets_proto_msgTypes[21].OneofWrappers = []any{}
-	file_plz_confirm_v1_widgets_proto_msgTypes[22].OneofWrappers = []any{}
-	file_plz_confirm_v1_widgets_proto_msgTypes[23].OneofWrappers = []any{}
+	file_plz_confirm_v1_widgets_proto_msgTypes[24].OneofWrappers = []any{}
 	file_plz_confirm_v1_widgets_proto_msgTypes[25].OneofWrappers = []any{}
 	file_plz_confirm_v1_widgets_proto_msgTypes[26].OneofWrappers = []any{}
-	file_plz_confirm_v1_widgets_proto_msgTypes[27].OneofWrappers = []any{}
 	file_plz_confirm_v1_widgets_proto_msgTypes[28].OneofWrappers = []any{}
+	file_plz_confirm_v1_widgets_proto_msgTypes[29].OneofWrappers = []any{}
+	file_plz_confirm_v1_widgets_proto_msgTypes[30].OneofWrappers = []any{}
+	file_plz_confirm_v1_widgets_proto_msgTypes[31].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_plz_confirm_v1_widgets_proto_rawDesc), len(file_plz_confirm_v1_widgets_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   29,
+			NumMessages:   32,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

@@ -32,6 +32,9 @@ vi.mock("@/components/widgets/ImageDialog", () => ({
 vi.mock("@/components/widgets/GridDialog", () => ({
   GridDialog: ({ input }: any) => `MOCK_GRID:${input?.title ?? ""}`,
 }));
+vi.mock("@/components/widgets/RatingDialog", () => ({
+  RatingDialog: ({ input }: any) => `MOCK_RATING:${input?.title ?? ""}`,
+}));
 vi.mock("@/components/widgets/DisplayWidget", () => ({
   DisplayWidget: ({ input }: any) =>
     `MOCK_DISPLAY:${input?.content ?? ""}:${input?.format ?? ""}`,
@@ -204,5 +207,23 @@ describe("WidgetRenderer script branch", () => {
       })
     );
     expect(html).toContain("GO_BACK");
+  });
+
+  it("renders rating script views via RatingDialog mapping", () => {
+    const html = renderWithStore(
+      buildScriptRequest({
+        id: "req-render-rating",
+        scriptView: {
+          widgetType: "rating",
+          input: {
+            title: "How was this flow?",
+            scale: 5,
+            style: "stars",
+          },
+          stepId: "rating-step",
+        },
+      })
+    );
+    expect(html).toContain("MOCK_RATING:How was this flow?");
   });
 });

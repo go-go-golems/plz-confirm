@@ -158,7 +158,7 @@ The return object supports two modes:
 - **Single-widget mode (backward compatible):** include `widgetType` and `input`.
 - **Composite mode:** include `sections`, where each section has its own `widgetType` + `input`. In composite mode, exactly one section must be interactive and any additional sections should be `display`.
 
-Single-widget `widgetType` values are `confirm`, `select`, `grid`, `form`, `table`, `upload`, or `image`. See the Widget Type Reference below for details.
+Single-widget `widgetType` values are `confirm`, `select`, `grid`, `rating`, `form`, `table`, `upload`, or `image`. See the Widget Type Reference below for details.
 
 You can also include:
 
@@ -317,6 +317,28 @@ Used in composite `sections` mode to show formatted context above or between int
 | `format` | string | `"markdown"` | One of `"markdown"`, `"text"`, `"html"` |
 
 `display` sections are read-only and do not produce `event.data`.
+
+### `rating` — Likert/Rating Input
+
+Renders a dedicated rating control (numbers, stars, emoji, or slider).
+
+**What you put in `input`:**
+
+| Field | Type | Default | Description |
+|---|---|---|---|
+| `title` | string | (required) | Prompt shown above the rating control |
+| `scale` | number | `5` | Number of points, constrained to `2..10` |
+| `style` | string | `"numbers"` | One of `"stars"`, `"numbers"`, `"emoji"`, `"slider"` |
+| `labels.low` | string | — | Optional left-side label |
+| `labels.high` | string | — | Optional right-side label |
+| `defaultValue` | number | midpoint | Optional initial selected value |
+
+**What you get back in `event.data`:**
+
+| Field | Type | Description |
+|---|---|---|
+| `value` | number | Selected rating value |
+| `comment` | string? | Optional free-text comment |
 
 ### `form` — Dynamic Form
 
@@ -645,7 +667,7 @@ These are the issues that come up most often when writing scripts. Each one has 
 | You forgot one of the four required exports (`describe`, `init`, `view`, `update`) | `400` on create | Make sure `module.exports` has all four functions |
 | `init` or `view` returned a string, number, or array instead of a plain object | `400` — "invalid return shape" | Always return `{}` objects, even if they're simple like `{ step: "start" }` |
 | You returned `{ done: true }` but `result` isn't an object (or is missing) | `400` — invalid terminal shape | Use `{ done: true, result: { ... } }` — result must be a `{}` |
-| `view` returned a `widgetType` that doesn't exist | Browser shows "unsupported widget" error | Use one of: `confirm`, `select`, `grid`, `table`, `form`, `upload`, `image` |
+| `view` returned a `widgetType` that doesn't exist | Browser shows "unsupported widget" error | Use one of: `confirm`, `select`, `grid`, `rating`, `table`, `form`, `upload`, `image` |
 | Your script has a tight loop or expensive computation | `504` timeout after `timeoutMs` | Keep callbacks lightweight. If you need more time, increase `timeoutMs` |
 | You accessed `event.data.approved` without checking if `event.data` exists | `422` runtime error — script crashed | Guard with `event.data && event.data.approved` |
 

@@ -64,6 +64,28 @@ export interface GridSelection {
   cellIndex: number;
 }
 
+/** Rating Widget (script view extension) */
+export interface RatingLabels {
+  low?: string | undefined;
+  high?: string | undefined;
+}
+
+export interface RatingInput {
+  title: string;
+  scale?: number | undefined;
+  labels?:
+    | RatingLabels
+    | undefined;
+  /** "stars" | "numbers" | "emoji" | "slider" */
+  style?: string | undefined;
+  defaultValue?: number | undefined;
+}
+
+export interface RatingOutput {
+  value: number;
+  comment?: string | undefined;
+}
+
 /** Form Widget */
 export interface FormInput {
   title: string;

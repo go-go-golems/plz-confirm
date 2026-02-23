@@ -338,6 +338,8 @@ func validateScriptViewInput(widgetType string, input map[string]any) error {
 		return validateGridInput(input)
 	case "display":
 		return validateDisplayInput(input)
+	case "rating":
+		return validateRatingInput(input)
 	default:
 		return nil
 	}
@@ -408,6 +410,65 @@ func validateGridInput(input map[string]any) error {
 		}
 	}
 
+	return nil
+}
+
+func validateRatingInput(input map[string]any) error {
+	title, _ := input["title"].(string)
+	if strings.TrimSpace(title) == "" {
+		return fmt.Errorf("view.input.title is required for rating widget")
+	}
+
+	scale := 5
+	if rawScale, ok := input["scale"]; ok {
+		n, ok := numberAsInt(rawScale)
+		if !ok {
+			return fmt.Errorf("view.input.scale must be integer for rating widget")
+		}
+		if n < 2 || n > 10 {
+			return fmt.Errorf("view.input.scale must be between 2 and 10 for rating widget")
+		}
+		scale = n
+	}
+
+	if rawStyle, ok := input["style"]; ok {
+		style, ok := rawStyle.(string)
+		if !ok {
+			return fmt.Errorf("view.input.style must be string for rating widget")
+		}
+		switch strings.ToLower(strings.TrimSpace(style)) {
+		case "", "stars", "numbers", "emoji", "slider":
+		default:
+			return fmt.Errorf("view.input.style must be stars, numbers, emoji, or slider for rating widget")
+		}
+	}
+
+	if rawLabels, ok := input["labels"]; ok {
+		labels, ok := rawLabels.(map[string]any)
+		if !ok {
+			return fmt.Errorf("view.input.labels must be object for rating widget")
+		}
+		if low, ok := labels["low"]; ok {
+			if _, ok := low.(string); !ok {
+				return fmt.Errorf("view.input.labels.low must be string for rating widget")
+			}
+		}
+		if high, ok := labels["high"]; ok {
+			if _, ok := high.(string); !ok {
+				return fmt.Errorf("view.input.labels.high must be string for rating widget")
+			}
+		}
+	}
+
+	if rawDefault, ok := input["defaultValue"]; ok {
+		n, ok := numberAsInt(rawDefault)
+		if !ok {
+			return fmt.Errorf("view.input.defaultValue must be integer for rating widget")
+		}
+		if n < 1 || n > scale {
+			return fmt.Errorf("view.input.defaultValue must be between 1 and scale for rating widget")
+		}
+	}
 	return nil
 }
 

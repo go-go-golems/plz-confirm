@@ -185,7 +185,7 @@ When `WidgetRenderer.tsx` detects that the active request has a `scriptView`, it
 2. Reads `scriptView.input` as the widget props.
 3. If `scriptView.progress` is present, renders a progress indicator above the widget card.
 4. If `scriptView.sections` is present, renders composite sections in order (`DisplayWidget` plus exactly one interactive widget). Otherwise, renders the single widget from `scriptView.widgetType`.
-5. Renders the matching interactive widget component (`ConfirmDialog`, `SelectDialog`, `GridDialog`, `TableDialog`, `FormDialog`, `UploadDialog`, or `ImageDialog`).
+5. Renders the matching interactive widget component (`ConfirmDialog`, `SelectDialog`, `GridDialog`, `RatingDialog`, `TableDialog`, `FormDialog`, `UploadDialog`, or `ImageDialog`).
 6. When the user submits, it calls `submitScriptEvent(requestId, { type: "submit", stepId, data: output })` instead of the regular `/response` endpoint. If `allowBack` is enabled and the user clicks back, it sends `{ type: "back", stepId }`.
 
 This means script widgets look and behave exactly like regular widgets from the user's perspective — the only difference is what happens when they submit.
@@ -246,7 +246,7 @@ When something goes wrong in the script engine, the symptoms usually point to a 
 | `400` on create with "invalid return shape" | `init` or `view` returned a non-object (string, number, array) | Check what your script functions return. Look at shape validation in `engine.go`. |
 | `422` on event submission | Script threw an unhandled exception during `update` or the subsequent `view` call | Check script logic — most commonly, `event.data` is undefined and the script accesses a property on it. |
 | `504` on create or event | A script function took longer than `timeoutMs` | Simplify the callback logic or increase the timeout. Check `runWithTimeout` in `engine.go`. |
-| Browser shows "unsupported widget" | `view()` returned a `widgetType` that's not in the renderer's switch statement | Check `WidgetRenderer.tsx` — supported types are `confirm`, `select`, `grid`, `table`, `form`, `upload`, `image`. |
+| Browser shows "unsupported widget" | `view()` returned a `widgetType` that's not in the renderer's switch statement | Check `WidgetRenderer.tsx` — supported types are `confirm`, `select`, `grid`, `rating`, `table`, `form`, `upload`, `image`. |
 | Request is stuck in pending forever | `update` keeps returning non-terminal states and never returns `{ done: true }` | Walk through the script's update logic and verify the terminal condition. |
 | WebSocket events arrive in wrong order | Concurrent writes to the same WS connection, or client reconnected mid-flow | Check `ws.go` write mutex. Check `websocket.ts` stale-update guard. |
 | A `request_updated` event overwrites completed state in the UI | A stale update arrived after the request was already completed | The `websocket.ts` client should be ignoring these — check the completion guard logic. |
