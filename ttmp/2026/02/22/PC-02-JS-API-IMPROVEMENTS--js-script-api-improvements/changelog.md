@@ -47,3 +47,12 @@ Step 4: Implemented Proposal 4 ScriptView progress indicators with backend valid
 - /home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/agent-ui-system/client/src/components/WidgetRenderer.tsx — Progress UI
 - /home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/internal/server/script.go — Progress parsing/validation
 
+
+## 2026-02-22
+
+Step 5: Implemented Proposal 5 back navigation controls (allowBack/backLabel) with back event wiring (commit e0d3e8ae8293820093c388b294888c6550a72473)
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/agent-ui-system/client/src/components/WidgetRenderer.tsx — Back control UI + event sender
+- /home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/internal/server/script.go — Back fields mapping

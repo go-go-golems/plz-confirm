@@ -16,11 +16,13 @@ RelatedFiles:
         Grid renderer mapping test
         Composite section renderer coverage
         Progress rendering coverage
+        Back button render test
     - Path: agent-ui-system/client/src/components/WidgetRenderer.tsx
       Note: |-
         Script renderer supports grid widget type
         Composite sections rendering in script branch
         Script progress bar rendering
+        Back button rendering and back event dispatch
     - Path: agent-ui-system/client/src/components/widgets/DisplayWidget.test.tsx
       Note: Display widget rendering tests
     - Path: agent-ui-system/client/src/components/widgets/DisplayWidget.tsx
@@ -42,11 +44,13 @@ RelatedFiles:
         Script view input validation now enforces grid contract
         Composite section parsing and validation in script view mapping
         Progress mapping and validation
+        Maps allowBack/showBack and backLabel from script view
     - Path: internal/server/script_test.go
       Note: |-
         Grid script lifecycle + invalid input validation tests
         Composite section lifecycle and invalid-shape tests
         Progress mapping and invalid-shape tests
+        Back navigation field mapping test
     - Path: pkg/doc/js-script-api.md
       Note: |-
         Grid API documentation
@@ -60,6 +64,7 @@ RelatedFiles:
         Added GridInput/GridCell/GridSelection for proposal 2
         ScriptView sections and DisplayInput schema additions
         Added ScriptProgress field on ScriptView
+        Added allow_back/back_label fields on ScriptView
     - Path: ttmp/2026/02/22/PC-02-JS-API-IMPROVEMENTS--js-script-api-improvements/tasks.md
       Note: Proposal task tracking and checkoffs
 ExternalSources: []
@@ -68,6 +73,7 @@ LastUpdated: 2026-02-22T20:37:13.424677713-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 
 
@@ -388,3 +394,70 @@ This was intentionally implemented as an optional additive field so existing scr
 
 ### Technical details
 - Fallback progress label in UI: `STEP {current} OF {total}` when `label` is absent.
+
+## Step 5: Proposal 5 - Back/Undo Navigation
+
+This step added view-level back-navigation controls so scripts can opt into a Back button and receive `event.type = "back"` through the existing script event endpoint. I implemented both `allowBack` (proposal naming) and `showBack` (task wording compatibility) on the server mapping path.
+
+The behavior remains script-managed: the engine/server do not auto-undo state; scripts decide how to handle the back event in `update`.
+
+### Prompt Context
+
+**User prompt (verbatim):** (see Step 1)
+
+**Assistant interpretation:** Implement proposal 5 contract and UI wiring so scripts can render and handle a back action.
+
+**Inferred user intent:** Reduce forward-only friction in multi-step script flows.
+
+**Commit (code):** e0d3e8ae8293820093c388b294888c6550a72473 - "feat(script): add back navigation controls for script views"
+
+### What I did
+- Added `allow_back` and `back_label` fields to `ScriptView` in proto.
+- Regenerated Go and TypeScript protobuf files.
+- Updated `mapToScriptView` server mapping:
+- reads `allowBack` and `showBack` booleans from script-returned view,
+- reads optional `backLabel`,
+- maps those to `ScriptView.allow_back` / `ScriptView.back_label`.
+- Updated `WidgetRenderer` script path:
+- added reusable script-event sender for both `submit` and `back`,
+- renders Back button when `scriptView.allowBack` is true,
+- uses `scriptView.backLabel` with `BACK` fallback.
+- Added backend test `TestScriptCreateMapsBackNavigationFields`.
+- Added frontend renderer test to assert back button rendering.
+- Updated script docs to include back-navigation fields and `event.type = "back"` semantics.
+
+### Why
+- Back navigation is a core wizard affordance and fits naturally as opt-in view metadata.
+- Keeping undo logic script-owned avoids hidden server state semantics.
+
+### What worked
+- Back metadata flows from script return object to frontend UI reliably.
+- Back button renders and posts `back` events via existing endpoint.
+- Pre-commit checks passed across backend/frontend.
+
+### What didn't work
+- No blockers in this step.
+
+### What I learned
+- Supporting both `allowBack` and `showBack` at mapping time provides smooth migration between naming variants without affecting frontend behavior.
+
+### What was tricky to build
+- The tricky part was preserving current submit flow while introducing another event type. I resolved this by refactoring to a generic `submitScriptWidgetEvent(eventType, data)` helper and reusing it for both submit/back paths.
+
+### What warrants a second pair of eyes
+- Back button placement is currently above script content for both single and composite views; UX may prefer in-widget placement for some widgets.
+
+### What should be done in the future
+- Pair this with a lightweight script helper in examples/docs showing recommended back-state handling patterns.
+
+### Code review instructions
+- Review `proto/plz_confirm/v1/widgets.proto` for back fields.
+- Review `internal/server/script.go` for `allowBack`/`showBack` mapping behavior.
+- Review `agent-ui-system/client/src/components/WidgetRenderer.tsx` for event dispatch and back-control rendering.
+- Validate with:
+- `go test ./internal/server -count=1`
+- `pnpm -C agent-ui-system run check`
+- `pnpm -C agent-ui-system exec vitest run client/src/components/WidgetRenderer.test.ts`
+
+### Technical details
+- Back event payload: `{ type: "back", stepId }` with no `data` payload.
