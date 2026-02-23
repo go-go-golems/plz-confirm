@@ -88,3 +88,13 @@ Step 8: Implemented Proposal 9 ScriptView toast notifications with backend valid
 - /home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/agent-ui-system/client/src/components/WidgetRenderer.tsx — Toast effect
 - /home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/internal/server/script.go — Toast mapper
 
+
+## 2026-02-22
+
+Step 9: Implemented Proposal 14 seeded randomness helpers (ctx.seed/random/randomInt) with deterministic lifecycle behavior (commit 6cfaea5ab9623983a8f0fd1ae462e0a94938248e)
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/internal/scriptengine/engine.go — Seeded random context helpers
+- /home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/internal/server/script.go — Seed persistence plumbing
+

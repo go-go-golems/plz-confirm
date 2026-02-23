@@ -59,8 +59,12 @@ RelatedFiles:
       Note: Unit coverage for script request sidebar mapping
     - Path: agent-ui-system/client/src/pages/homeRequestHistoryDisplay.ts
       Note: Request history display mapping helper for script metadata/badges
+    - Path: internal/scriptengine/engine.go
+      Note: ctx.seed/ctx.random/ctx.randomInt runtime helpers
     - Path: internal/scriptengine/engine_test.go
-      Note: Grid widget support test in engine init/view path
+      Note: |-
+        Grid widget support test in engine init/view path
+        Deterministic seeded random test
     - Path: internal/server/script.go
       Note: |-
         Script view input validation now enforces grid contract
@@ -69,6 +73,7 @@ RelatedFiles:
         Maps allowBack/showBack and backLabel from script view
         Rating input validation in script view mapper
         Toast mapping and validation
+        Seed persistence and seed-aware script update path
     - Path: internal/server/script_test.go
       Note: |-
         Grid script lifecycle + invalid input validation tests
@@ -77,6 +82,9 @@ RelatedFiles:
         Back navigation field mapping test
         Rating lifecycle and invalid-style tests
         Toast mapping and invalid style tests
+        Lifecycle seed persistence test
+    - Path: internal/server/server.go
+      Note: Seed allocation and seed-aware script input injection at create time
     - Path: pkg/doc/js-script-api.md
       Note: |-
         Grid API documentation
@@ -101,6 +109,7 @@ LastUpdated: 2026-02-22T20:37:13.424677713-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 
 
@@ -696,3 +705,78 @@ I wired the toast contract from server mapping into frontend Sonner notification
 
 ### Technical details
 - Supported toast styles: `info`, `success`, `warning`, `error`.
+
+## Step 9: Proposal 14 - Seeded Randomness via ctx
+
+This step introduced deterministic per-request randomness through `ctx.seed`, `ctx.random()`, and `ctx.randomInt(min,max)`. Seed allocation now happens server-side at request creation and persists through the script lifecycle.
+
+The implementation keeps deterministic behavior tied to request seed while preserving script sandbox isolation.
+
+### Prompt Context
+
+**User prompt (verbatim):** (see Step 1)
+
+**Assistant interpretation:** Implement proposal 14 with runtime helpers and reproducibility tests.
+
+**Inferred user intent:** Enable deterministic/randomized script flows without ad-hoc seeding hacks in user scripts.
+
+**Commit (code):** 6cfaea5ab9623983a8f0fd1ae462e0a94938248e - "feat(script): add deterministic seeded random context helpers"
+
+### What I did
+- Added server-side seed management:
+- allocate seed once per script request at create time,
+- store in script state (`__pc_seed`),
+- inject into script props for both init and update execution paths.
+- Added helper functions in `internal/server/script.go`:
+- seed generation,
+- seed extraction/persistence in state,
+- seed-aware script input cloning via `proto.Clone`.
+- Updated `handleCreateRequest` and `handleScriptEvent` to use seeded script input.
+- Extended script engine context (`defaultScriptContext`) with:
+- `ctx.seed`,
+- `ctx.random()` deterministic float,
+- `ctx.randomInt(min,max)` deterministic inclusive integer.
+- Added tests:
+- `internal/scriptengine/engine_test.go` deterministic seed behavior for repeated runs with same seed.
+- `internal/server/script_test.go` seed persistence across request lifecycle.
+- Updated docs in `js-script-api` and `js-script-development` to document new ctx fields.
+
+### Why
+- Fresh VM-per-call execution makes `Math.random()` unreliable for deterministic flows; explicit seeded helpers are needed for games/surveys and reproducible debugging.
+
+### What worked
+- Seed is stable from init through update for a request.
+- Deterministic random outputs repeat when seed is fixed.
+- Lint/test/pre-commit checks passed after minor fixes.
+
+### What didn't work
+- Initial commit attempt failed lint:
+- `govet` flagged copying proto structs with embedded mutex when cloning `ScriptInput`.
+- `predeclared` flagged `min` parameter name in `randomInt` helper.
+- Fixes:
+- replaced struct copy with `proto.Clone(...)`,
+- renamed params to `low/high`,
+- reran gofmt and tests.
+
+### What I learned
+- Proto messages should always be cloned through protobuf helpers, not copied by value, to avoid mutex-copy issues.
+
+### What was tricky to build
+- The tricky part was preserving a stable seed across create/update while keeping engine API unchanged. I solved this by injecting seed through script input props and persisting it in script state, so both init and update paths read the same seed without adding new wire fields.
+
+### What warrants a second pair of eyes
+- Seed persistence currently uses reserved state key `__pc_seed`; if user scripts intentionally manipulate this key, determinism guarantees can be altered.
+
+### What should be done in the future
+- Consider reserving internal state namespaces formally in docs (`__pc_*`).
+
+### Code review instructions
+- Review `internal/server/server.go` and `internal/server/script.go` seed injection/persistence flow.
+- Review `internal/scriptengine/engine.go` context random helpers.
+- Review `internal/scriptengine/engine_test.go` + `internal/server/script_test.go` seeded tests.
+- Validate with:
+- `go test ./internal/scriptengine ./internal/server -count=1`
+- `pnpm -C agent-ui-system run check`
+
+### Technical details
+- Seed key: `__pc_seed` in script state/props.
