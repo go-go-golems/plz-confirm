@@ -332,6 +332,7 @@ type UIRequest struct {
 	ScriptState    *structpb.Struct   `protobuf:"bytes,26,opt,name=script_state,json=scriptState,proto3,oneof" json:"script_state,omitempty"`
 	ScriptView     *ScriptView        `protobuf:"bytes,27,opt,name=script_view,json=scriptView,proto3,oneof" json:"script_view,omitempty"`
 	ScriptDescribe *ScriptDescribe    `protobuf:"bytes,28,opt,name=script_describe,json=scriptDescribe,proto3,oneof" json:"script_describe,omitempty"`
+	ScriptLogs     []string           `protobuf:"bytes,29,rep,name=script_logs,json=scriptLogs,proto3" json:"script_logs,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -604,6 +605,13 @@ func (x *UIRequest) GetScriptDescribe() *ScriptDescribe {
 	return nil
 }
 
+func (x *UIRequest) GetScriptLogs() []string {
+	if x != nil {
+		return x.ScriptLogs
+	}
+	return nil
+}
+
 type isUIRequest_Input interface {
 	isUIRequest_Input()
 }
@@ -719,7 +727,7 @@ const file_plz_confirm_v1_request_proto_rawDesc = "" +
 	"\x04_cwdB\a\n" +
 	"\x05_selfB\x0e\n" +
 	"\f_remote_addrB\r\n" +
-	"\v_user_agent\"\xb9\r\n" +
+	"\v_user_agent\"\xda\r\n" +
 	"\tUIRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12.\n" +
 	"\x04type\x18\x02 \x01(\x0e2\x1a.plz_confirm.v1.WidgetTypeR\x04type\x12\x1d\n" +
@@ -758,7 +766,9 @@ const file_plz_confirm_v1_request_proto_rawDesc = "" +
 	"\fscript_state\x18\x1a \x01(\v2\x17.google.protobuf.StructH\aR\vscriptState\x88\x01\x01\x12@\n" +
 	"\vscript_view\x18\x1b \x01(\v2\x1a.plz_confirm.v1.ScriptViewH\bR\n" +
 	"scriptView\x88\x01\x01\x12L\n" +
-	"\x0fscript_describe\x18\x1c \x01(\v2\x1e.plz_confirm.v1.ScriptDescribeH\tR\x0escriptDescribe\x88\x01\x01B\a\n" +
+	"\x0fscript_describe\x18\x1c \x01(\v2\x1e.plz_confirm.v1.ScriptDescribeH\tR\x0escriptDescribe\x88\x01\x01\x12\x1f\n" +
+	"\vscript_logs\x18\x1d \x03(\tR\n" +
+	"scriptLogsB\a\n" +
 	"\x05inputB\b\n" +
 	"\x06outputB\x0f\n" +
 	"\r_completed_atB\b\n" +
