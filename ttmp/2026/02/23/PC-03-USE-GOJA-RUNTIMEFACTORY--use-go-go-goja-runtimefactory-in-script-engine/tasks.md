@@ -25,12 +25,20 @@
 - [x] E10. Update docs (`pkg/doc/js-script-development.md` and `pkg/doc/js-script-api.md`) to reflect new runtime and `scriptLogs` semantics.
 - [x] E11. Run validation test set and record results in diary and changelog.
 
+## Post-Implementation Stabilization (Build Pipeline)
+
+- [x] S1. Reproduce `make build`/`ui-build` hang and capture the blocking interactive pnpm prompt in the Dagger frontend build step.
+- [x] S2. Update `internal/server/generate_build.go` to remove prompt conditions and force non-interactive install semantics.
+- [x] S3. Re-validate `make ui-build` and full `make build` on branch `task/use-runtime-factory` and record results.
+
 ## Commit Plan
 
 - [x] C1. Commit schema + codegen changes (E1-E2).
 - [x] C2. Commit runtime and server/store plumbing changes (E3-E8).
 - [x] C3. Commit tests and docs updates (E9-E11).
 - [x] C4. Commit ticket diary/changelog/task updates if separated from code commits.
+- [x] C5. Commit build-pipeline stabilization fix for non-interactive Dagger pnpm install (S2).
+- [x] C6. Commit ticket task/diary/changelog updates for stabilization work (S1-S3).
 
 ## Documentation and Delivery
 
