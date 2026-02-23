@@ -53,11 +53,16 @@ func main() {
 		fatalf("mkdir %s: %v", embedDir, err)
 	}
 
-	uiDir := client.Host().Directory(frontendDir)
+	uiDir := client.Host().Directory(frontendDir, dagger.HostDirectoryOpts{
+		Exclude: []string{
+			"node_modules",
+		},
+	})
 	ctr := client.Container().From(builderImage).
 		WithWorkdir("/src").
 		WithMountedDirectory("/src", uiDir).
-		WithEnvVariable("PNPM_HOME", "/pnpm")
+		WithEnvVariable("PNPM_HOME", "/pnpm").
+		WithEnvVariable("CI", "true")
 
 	analyticsEndpoint := os.Getenv("VITE_ANALYTICS_ENDPOINT")
 	analyticsWebsiteID := os.Getenv("VITE_ANALYTICS_WEBSITE_ID")
@@ -83,7 +88,7 @@ func main() {
 
 	ctr = ctr.
 		WithExec([]string{"sh", "-lc", "pnpm --version"}).
-		WithExec([]string{"sh", "-lc", "pnpm install --reporter=append-only"}).
+		WithExec([]string{"sh", "-lc", "pnpm install --frozen-lockfile --config.confirmModulesPurge=false --reporter=append-only"}).
 		WithExec([]string{"sh", "-lc", "pnpm build"})
 
 	dist := ctr.Directory("/src/dist/public")
