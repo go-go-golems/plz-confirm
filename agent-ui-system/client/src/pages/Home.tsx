@@ -6,13 +6,21 @@ import { RootState, enqueueRequest } from "@/store/store";
 import { MOCK_REQUESTS } from "@/services/mockData";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Clock, CheckCircle, XCircle, Terminal, TimerOff } from "lucide-react";
+import {
+  Clock,
+  CheckCircle,
+  XCircle,
+  Terminal,
+  TimerOff,
+  Code2,
+} from "lucide-react";
 import { nanoid } from "nanoid";
 import {
   RequestStatus,
   WidgetType,
   UIRequest,
 } from "@/proto/generated/plz_confirm/v1/request";
+import { getRequestHistoryDisplay } from "@/pages/homeRequestHistoryDisplay";
 
 export default function Home() {
   const dispatch = useDispatch();
@@ -163,89 +171,105 @@ export default function Home() {
                 </div>
               ) : (
                 <div className="divide-y divide-border/50">
-                  {history.map(req => (
-                    <div
-                      key={req.id}
-                      className="p-4 hover:bg-primary/5 transition-colors group"
-                    >
-                      <div className="flex items-start justify-between mb-1">
-                        <span className="font-mono text-xs text-primary font-bold uppercase">
-                          {String((WidgetType as any)[req.type] ?? req.type)}
-                        </span>
-                        <span className="font-mono text-[10px] text-muted-foreground">
-                          {new Date(
-                            req.completedAt || req.createdAt
-                          ).toLocaleTimeString()}
-                        </span>
-                      </div>
-                      <div className="text-sm font-mono mb-2 line-clamp-1">
-                        {req.confirmInput?.title ||
-                          req.selectInput?.title ||
-                          req.formInput?.title ||
-                          req.uploadInput?.title ||
-                          req.tableInput?.title ||
-                          req.imageInput?.title ||
-                          "UNKNOWN_REQUEST"}
-                      </div>
-                      {(req.metadata?.cwd || req.metadata?.self?.comm) && (
-                        <div className="text-[10px] text-muted-foreground font-mono mb-2 line-clamp-1">
-                          <span
-                            title={[
-                              req.metadata?.cwd
-                                ? `cwd: ${req.metadata.cwd}`
-                                : "",
-                              req.metadata?.self?.comm
-                                ? `self: ${req.metadata.self.comm}`
-                                : "",
-                              req.metadata?.parents?.length
-                                ? `parents: ${req.metadata.parents
-                                    .map(
-                                      p =>
-                                        p.comm ?? (p.pid ? String(p.pid) : "")
-                                    )
-                                    .filter(Boolean)
-                                    .join(" <- ")}`
-                                : "",
-                            ]
-                              .filter(Boolean)
-                              .join("\n")}
-                          >
-                            {(req.metadata?.self?.comm ?? "proc") +
-                              (req.metadata?.cwd
-                                ? ` @ ${req.metadata.cwd}`
-                                : "")}
+                  {history.map(req => {
+                    const display = getRequestHistoryDisplay(req);
+                    return (
+                      <div
+                        key={req.id}
+                        className="p-4 hover:bg-primary/5 transition-colors group"
+                      >
+                        <div className="flex items-start justify-between mb-1">
+                          <div className="flex items-center gap-2">
+                            {display.isScript && (
+                              <Code2 className="h-3 w-3 text-cyan-400" />
+                            )}
+                            <span
+                              className={`font-mono text-xs font-bold uppercase ${
+                                display.isScript ? "text-cyan-400" : "text-primary"
+                              }`}
+                            >
+                              {display.typeLabel}
+                            </span>
+                            {display.scriptWidgetBadge && (
+                              <span className="rounded border border-cyan-500/30 bg-cyan-500/10 px-1.5 py-0.5 text-[10px] font-mono uppercase text-cyan-300">
+                                {display.scriptWidgetBadge}
+                              </span>
+                            )}
+                          </div>
+                          <span className="font-mono text-[10px] text-muted-foreground">
+                            {new Date(
+                              req.completedAt || req.createdAt
+                            ).toLocaleTimeString()}
                           </span>
                         </div>
-                      )}
-                      <div className="flex items-center gap-2">
-                        {req.status === RequestStatus.completed &&
-                        getOutputComment(req) === AUTO_TIMEOUT_COMMENT ? (
-                          <div className="flex items-center text-[10px] text-yellow-500">
-                            <TimerOff className="h-3 w-3 mr-1" />
-                            TIMEOUT
-                          </div>
-                        ) : req.status === RequestStatus.completed ? (
-                          <div className="flex items-center text-[10px] text-green-500">
-                            <CheckCircle className="h-3 w-3 mr-1" />
-                            COMPLETED
-                          </div>
-                        ) : req.status === RequestStatus.timeout ? (
-                          <div className="flex items-center text-[10px] text-yellow-500">
-                            <TimerOff className="h-3 w-3 mr-1" />
-                            TIMEOUT
-                          </div>
-                        ) : (
-                          <div className="flex items-center text-[10px] text-red-500">
-                            <XCircle className="h-3 w-3 mr-1" />
-                            FAILED
+                        <div className="text-sm font-mono mb-1 line-clamp-1">
+                          {display.title}
+                        </div>
+                        {display.scriptCompletedMeta && (
+                          <div className="text-[10px] text-cyan-300/90 font-mono mb-2 line-clamp-1">
+                            {display.scriptCompletedMeta}
                           </div>
                         )}
-                        <span className="text-[10px] text-muted-foreground/50 font-mono ml-auto">
-                          ID: {req.id.substring(0, 6)}
-                        </span>
+                        {(req.metadata?.cwd || req.metadata?.self?.comm) && (
+                          <div className="text-[10px] text-muted-foreground font-mono mb-2 line-clamp-1">
+                            <span
+                              title={[
+                                req.metadata?.cwd
+                                  ? `cwd: ${req.metadata.cwd}`
+                                  : "",
+                                req.metadata?.self?.comm
+                                  ? `self: ${req.metadata.self.comm}`
+                                  : "",
+                                req.metadata?.parents?.length
+                                  ? `parents: ${req.metadata.parents
+                                      .map(
+                                        p =>
+                                          p.comm ?? (p.pid ? String(p.pid) : "")
+                                      )
+                                      .filter(Boolean)
+                                      .join(" <- ")}`
+                                  : "",
+                              ]
+                                .filter(Boolean)
+                                .join("\n")}
+                            >
+                              {(req.metadata?.self?.comm ?? "proc") +
+                                (req.metadata?.cwd
+                                  ? ` @ ${req.metadata.cwd}`
+                                  : "")}
+                            </span>
+                          </div>
+                        )}
+                        <div className="flex items-center gap-2">
+                          {req.status === RequestStatus.completed &&
+                          getOutputComment(req) === AUTO_TIMEOUT_COMMENT ? (
+                            <div className="flex items-center text-[10px] text-yellow-500">
+                              <TimerOff className="h-3 w-3 mr-1" />
+                              TIMEOUT
+                            </div>
+                          ) : req.status === RequestStatus.completed ? (
+                            <div className="flex items-center text-[10px] text-green-500">
+                              <CheckCircle className="h-3 w-3 mr-1" />
+                              COMPLETED
+                            </div>
+                          ) : req.status === RequestStatus.timeout ? (
+                            <div className="flex items-center text-[10px] text-yellow-500">
+                              <TimerOff className="h-3 w-3 mr-1" />
+                              TIMEOUT
+                            </div>
+                          ) : (
+                            <div className="flex items-center text-[10px] text-red-500">
+                              <XCircle className="h-3 w-3 mr-1" />
+                              FAILED
+                            </div>
+                          )}
+                          <span className="text-[10px] text-muted-foreground/50 font-mono ml-auto">
+                            ID: {req.id.substring(0, 6)}
+                          </span>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </ScrollArea>
