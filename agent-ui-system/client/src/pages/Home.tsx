@@ -102,6 +102,7 @@ export default function Home() {
                       status: RequestStatus.pending,
                       createdAt: new Date().toISOString(),
                       expiresAt: new Date(Date.now() + 300000).toISOString(),
+                      scriptLogs: [],
                       formInput: {
                         title: "CONFIGURE_DATABASE",
                         schema: {
@@ -138,6 +139,7 @@ export default function Home() {
                       status: RequestStatus.pending,
                       createdAt: new Date().toISOString(),
                       expiresAt: new Date(Date.now() + 300000).toISOString(),
+                      scriptLogs: [],
                       uploadInput: {
                         title: "UPLOAD_LOGS",
                         accept: [".log", ".txt"],

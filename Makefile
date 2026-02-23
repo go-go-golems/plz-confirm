@@ -95,6 +95,7 @@ release:
 bump-glazed:
 	go get github.com/go-go-golems/glazed@latest
 	go get github.com/go-go-golems/clay@latest
+	go get github.com/go-go-golems/go-go-goja@latest
 	go mod tidy
 
 PLZ_CONFIRM_BINARY=$(shell which plz-confirm)

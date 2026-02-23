@@ -86,4 +86,5 @@ message UIRequest {
   optional google.protobuf.Struct script_state = 26;
   optional ScriptView script_view = 27;
   optional ScriptDescribe script_describe = 28;
+  repeated string script_logs = 29;
 }

@@ -16,7 +16,8 @@ export const MOCK_REQUESTS: UIRequest[] = [
     },
     status: RequestStatus.pending,
     createdAt: new Date().toISOString(),
-    expiresAt: new Date(Date.now() + 300000).toISOString() // 5 mins
+    expiresAt: new Date(Date.now() + 300000).toISOString(), // 5 mins
+    scriptLogs: [],
   },
   {
     id: nanoid(),
@@ -32,7 +33,8 @@ export const MOCK_REQUESTS: UIRequest[] = [
     selectOutput: { selectedSingle: "staging" },
     createdAt: new Date(Date.now() - 3600000).toISOString(),
     completedAt: new Date(Date.now() - 3500000).toISOString(),
-    expiresAt: new Date(Date.now() - 3300000).toISOString()
+    expiresAt: new Date(Date.now() - 3300000).toISOString(),
+    scriptLogs: [],
   },
   {
     id: nanoid(),
@@ -53,7 +55,8 @@ export const MOCK_REQUESTS: UIRequest[] = [
     },
     status: RequestStatus.pending,
     createdAt: new Date().toISOString(),
-    expiresAt: new Date(Date.now() + 600000).toISOString()
+    expiresAt: new Date(Date.now() + 600000).toISOString(),
+    scriptLogs: [],
   }
 ];
 

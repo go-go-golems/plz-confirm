@@ -2,6 +2,7 @@ package scriptengine
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"testing"
 	"time"
@@ -296,8 +297,8 @@ module.exports = {
 	if err == nil {
 		t.Fatalf("expected timeout error")
 	}
-	if !strings.Contains(err.Error(), "timeout") {
-		t.Fatalf("expected timeout in error, got: %v", err)
+	if !errors.Is(err, ErrScriptTimeout) {
+		t.Fatalf("expected ErrScriptTimeout, got: %v", err)
 	}
 }
 
@@ -322,12 +323,12 @@ module.exports = {
 	if err == nil {
 		t.Fatalf("expected cancellation error")
 	}
-	if !strings.Contains(strings.ToLower(err.Error()), "cancel") {
-		t.Fatalf("expected cancelled in error, got: %v", err)
+	if !errors.Is(err, ErrScriptCancelled) {
+		t.Fatalf("expected ErrScriptCancelled, got: %v", err)
 	}
 }
 
-func TestSandboxHasNoHostBridge(t *testing.T) {
+func TestSandboxAllowsRequireAndConsole(t *testing.T) {
 	t.Parallel()
 
 	e := New()
@@ -339,7 +340,8 @@ module.exports = {
   },
   init: function(ctx) {
     return {
-      noRequire: typeof require === "undefined",
+      hasRequire: typeof require === "function",
+      hasConsole: typeof console === "object",
       noProcess: typeof process === "undefined"
     };
   },
@@ -357,11 +359,86 @@ module.exports = {
 		t.Fatalf("InitAndView returned error: %v", err)
 	}
 
-	if out.State["noRequire"] != true {
-		t.Fatalf("expected require to be unavailable, got: %v", out.State["noRequire"])
+	if out.State["hasRequire"] != true {
+		t.Fatalf("expected require to be available, got: %v", out.State["hasRequire"])
+	}
+	if out.State["hasConsole"] != true {
+		t.Fatalf("expected console to be available, got: %v", out.State["hasConsole"])
 	}
 	if out.State["noProcess"] != true {
 		t.Fatalf("expected process to be unavailable, got: %v", out.State["noProcess"])
+	}
+}
+
+func TestConsoleLogsCapturedFromScriptRun(t *testing.T) {
+	t.Parallel()
+
+	e := New()
+	out, err := e.InitAndView(context.Background(), &v1.ScriptInput{
+		Script: `
+module.exports = {
+  describe: function() {
+    console.log("describe-start", 1);
+    return { name: "logs", version: "1.0.0" };
+  },
+  init: function() {
+    console.warn("init-warn");
+    return { step: "confirm" };
+  },
+  view: function() {
+    console.error("view-error");
+    return { widgetType: "confirm", input: { title: "x" } };
+  },
+  update: function(state, event) {
+    return { done: true, result: { ok: true } };
+  }
+};
+`,
+	})
+	if err != nil {
+		t.Fatalf("InitAndView returned error: %v", err)
+	}
+	if len(out.Logs) < 3 {
+		t.Fatalf("expected at least 3 logs, got %d (%v)", len(out.Logs), out.Logs)
+	}
+	if !strings.Contains(strings.Join(out.Logs, "\n"), "describe-start") {
+		t.Fatalf("expected describe-start log, got %v", out.Logs)
+	}
+	if !strings.Contains(strings.Join(out.Logs, "\n"), "init-warn") {
+		t.Fatalf("expected init-warn log, got %v", out.Logs)
+	}
+	if !strings.Contains(strings.Join(out.Logs, "\n"), "view-error") {
+		t.Fatalf("expected view-error log, got %v", out.Logs)
+	}
+}
+
+func TestConsoleLogsAreTruncatedWhenOverLimit(t *testing.T) {
+	t.Parallel()
+
+	e := New()
+	out, err := e.InitAndView(context.Background(), &v1.ScriptInput{
+		Script: `
+module.exports = {
+  describe: function() { return { name: "truncate", version: "1.0.0" }; },
+  init: function() {
+    for (var i = 0; i < 500; i++) {
+      console.log("line-" + i);
+    }
+    return { step: "confirm" };
+  },
+  view: function() { return { widgetType: "confirm", input: { title: "x" } }; },
+  update: function(state, event) { return { done: true, result: { ok: true } }; }
+};
+`,
+	})
+	if err != nil {
+		t.Fatalf("InitAndView returned error: %v", err)
+	}
+	if len(out.Logs) == 0 {
+		t.Fatalf("expected logs to be captured")
+	}
+	if !strings.Contains(out.Logs[len(out.Logs)-1], scriptLogTruncatedLine) {
+		t.Fatalf("expected truncation sentinel at end, got %q", out.Logs[len(out.Logs)-1])
 	}
 }
 

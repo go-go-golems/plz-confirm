@@ -112,4 +112,5 @@ export interface UIRequest {
   scriptState?: { [key: string]: any } | undefined;
   scriptView?: ScriptView | undefined;
   scriptDescribe?: ScriptDescribe | undefined;
+  scriptLogs: string[];
 }

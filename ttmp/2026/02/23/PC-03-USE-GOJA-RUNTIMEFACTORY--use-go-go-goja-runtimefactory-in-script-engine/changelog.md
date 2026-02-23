@@ -1,0 +1,45 @@
+# Changelog
+
+## 2026-02-23
+
+- Initial workspace created.
+- Added exhaustive migration impact analysis:
+  - `analysis/01-runtimefactory-migration-implications-for-plz-confirm-script-engine.md`
+- Added initial phased implementation design document:
+  - `design-doc/01-refactor-plan-adopt-go-go-goja-runtimefactory-in-script-engine.md`
+- Updated ticket index with concrete scope, links, and related files.
+- Replaced placeholder tasks with execution-ready backlog and validation checklist.
+- Captured empirical runtime surface check showing default factory globals:
+  - `typeof require => function`
+  - `typeof process => undefined`
+  - `typeof console => object`
+- Uploaded bundled ticket package to reMarkable:
+  - Name: `PC-03 RuntimeFactory Migration Analysis and Refactor Plan`
+  - Remote path: `/ai/2026/02/23/PC-03-USE-GOJA-RUNTIMEFACTORY`
+- Added updated no-compat implementation plan based on revised requirements (allow `require`, capture and return console logs):
+  - `design-doc/02-implementation-plan-factory-hard-cut-with-require-and-console-log-capture.md`
+- Updated index and tasks to make hard-cut plan the primary execution track.
+- Uploaded refreshed reMarkable bundle containing the new hard-cut plan:
+  - Name: `PC-03 RuntimeFactory Hard-Cut Plan (require + console logs)`
+  - Remote path: `/ai/2026/02/23/PC-03-USE-GOJA-RUNTIMEFACTORY`
+- Implemented `scriptLogs` API contract and generated types (commit `e460038`):
+  - Added `script_logs` to `UIRequest` in `proto/plz_confirm/v1/request.proto`
+  - Regenerated Go + TS protobuf artifacts
+  - Updated frontend `UIRequest` literals requiring `scriptLogs`
+- Implemented core hard-cut runtime and logging pipeline (commit `c943016`):
+  - Factory-owned script runtime setup in `internal/scriptengine`
+  - Per-run console capture with bounded collector and truncation marker
+  - Top-level `scriptLogs` plumbing for create/update/complete responses
+  - Terminal log mirroring into `scriptOutput.logs`
+  - `errors.Is`-first status mapping with typed script-engine errors
+  - New runtime/server tests for require availability, console capture, and truncation
+- Validation run results:
+  - `go test ./internal/scriptengine ./internal/server ./internal/store -count=1` passed
+  - `pnpm -C agent-ui-system run check` passed
+- Updated documentation for the new runtime and response contract (commit `5fd50e4`):
+  - `pkg/doc/js-script-api.md`
+  - `pkg/doc/js-script-development.md`
+- Recorded implementation work and detailed execution diary in ticket docs (commit `197cab8`).
+- Uploaded final implementation bundle to reMarkable:
+  - Name: `PC-03 RuntimeFactory Implementation (require + logs)`
+  - Remote path: `/ai/2026/02/23/PC-03-USE-GOJA-RUNTIMEFACTORY`

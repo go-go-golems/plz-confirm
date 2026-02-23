@@ -261,6 +261,7 @@ func (s *Server) handleCreateRequest(w http.ResponseWriter, r *http.Request) {
 		reqProto.ScriptState = scriptState
 		reqProto.ScriptView = scriptView
 		reqProto.ScriptDescribe = scriptDescribe
+		reqProto.ScriptLogs = append([]string(nil), initResult.Logs...)
 	}
 	if reqProto.Metadata != nil || r.RemoteAddr != "" || r.UserAgent() != "" {
 		if reqProto.Metadata == nil {
