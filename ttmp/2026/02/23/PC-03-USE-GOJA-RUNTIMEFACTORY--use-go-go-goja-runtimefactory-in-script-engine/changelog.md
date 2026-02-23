@@ -50,3 +50,6 @@
 - Validation results for stabilization:
   - `make ui-build` passed (no interactive prompt; frontend dist exported)
   - `make build` passed end-to-end on `task/use-runtime-factory`
+- Uploaded refreshed ticket bundle including build-stabilization notes:
+  - Name: `PC-03 RuntimeFactory Implementation (require + logs + build stabilization)`
+  - Remote path: `/ai/2026/02/23/PC-03-USE-GOJA-RUNTIMEFACTORY`

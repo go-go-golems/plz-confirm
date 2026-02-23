@@ -41,7 +41,7 @@ RelatedFiles:
       Note: Detailed execution checklist that this diary tracks step-by-step.
 ExternalSources: []
 Summary: Step-by-step implementation diary for PC-03 hard-cut RuntimeFactory migration with require-enabled sandbox and console log capture.
-LastUpdated: 2026-02-23T12:48:00-05:00
+LastUpdated: 2026-02-23T12:50:00-05:00
 WhatFor: Track implementation progress, decisions, failures, and validation for reviewers and handoff.
 WhenToUse: Use during active implementation and review of PC-03.
 ---
@@ -451,3 +451,7 @@ The fix was applied at the Dagger build script level so it is deterministic acro
 - Validation outputs observed:
   - `make ui-build`: success, frontend build finished and `internal/server/embed/public` exported.
   - `make build`: success, ran proto generation, TS proto generation, Dagger UI build, and `go build -tags embed ./...`.
+- Refreshed reMarkable upload command:
+  - `remarquee upload bundle ttmp/2026/02/23/PC-03-USE-GOJA-RUNTIMEFACTORY--use-go-go-goja-runtimefactory-in-script-engine --name "PC-03 RuntimeFactory Implementation (require + logs + build stabilization)" --remote-dir "/ai/2026/02/23/PC-03-USE-GOJA-RUNTIMEFACTORY" --toc-depth 3 --non-interactive`
+- Upload result:
+  - `OK: uploaded PC-03 RuntimeFactory Implementation (require + logs + build stabilization).pdf -> /ai/2026/02/23/PC-03-USE-GOJA-RUNTIMEFACTORY`
