@@ -426,6 +426,7 @@ func (s *Server) handleSubmitResponse(w http.ResponseWriter, r *http.Request, id
 		Type:   existingReq.Type,
 		Output: incoming.Output,
 	}
+	ensureOutputTimestamps(outputReq, time.Now().UTC())
 
 	req, err := s.store.Complete(r.Context(), id, outputReq)
 	if err != nil {
@@ -451,6 +452,29 @@ func (s *Server) handleSubmitResponse(w http.ResponseWriter, r *http.Request, id
 	// #nosec G706 -- req.Id is server-generated and quoted for log safety.
 	log.Printf("[API] Request %q completed", req.Id)
 	writeProtoJSON(w, http.StatusOK, req)
+}
+
+func ensureOutputTimestamps(req *v1.UIRequest, now time.Time) {
+	if req == nil || req.Output == nil {
+		return
+	}
+
+	switch output := req.Output.(type) {
+	case *v1.UIRequest_ConfirmOutput:
+		if output.ConfirmOutput == nil {
+			return
+		}
+		if strings.TrimSpace(output.ConfirmOutput.Timestamp) == "" {
+			output.ConfirmOutput.Timestamp = now.Format(time.RFC3339Nano)
+		}
+	case *v1.UIRequest_ImageOutput:
+		if output.ImageOutput == nil {
+			return
+		}
+		if strings.TrimSpace(output.ImageOutput.Timestamp) == "" {
+			output.ImageOutput.Timestamp = now.Format(time.RFC3339Nano)
+		}
+	}
 }
 
 func widgetTypeFromOutputOneof(req *v1.UIRequest) (v1.WidgetType, bool) {
