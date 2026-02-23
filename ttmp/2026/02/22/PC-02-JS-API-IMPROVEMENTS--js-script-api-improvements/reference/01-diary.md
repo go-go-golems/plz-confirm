@@ -64,11 +64,14 @@ RelatedFiles:
     - Path: agent-ui-system/client/src/pages/homeRequestHistoryDisplay.ts
       Note: Request history display mapping helper for script metadata/badges
     - Path: internal/scriptengine/engine.go
-      Note: ctx.seed/ctx.random/ctx.randomInt runtime helpers
+      Note: |-
+        ctx.seed/ctx.random/ctx.randomInt runtime helpers
+        ctx.branch runtime helper bootstrap and injection
     - Path: internal/scriptengine/engine_test.go
       Note: |-
         Grid widget support test in engine init/view path
         Deterministic seeded random test
+        Declarative branch helper tests
     - Path: internal/server/script.go
       Note: |-
         Script view input validation now enforces grid contract
@@ -89,12 +92,14 @@ RelatedFiles:
         Toast mapping and invalid style tests
         Lifecycle seed persistence test
         Rich select lifecycle and invalid option tests
+        Branch helper integration flow test
     - Path: internal/server/server.go
       Note: Seed allocation and seed-aware script input injection at create time
     - Path: pkg/doc/js-script-api.md
       Note: |-
         Grid API documentation
         Composite sections and display widget API docs
+        Declarative branching API documentation
     - Path: pkg/doc/js-script-development.md
       Note: |-
         Development guide updated for grid support
@@ -115,6 +120,7 @@ LastUpdated: 2026-02-22T20:37:13.424677713-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 
 
@@ -852,3 +858,69 @@ Output compatibility is preserved: event payloads still return selected `value` 
 
 ### Technical details
 - Rich option submit payload uses `value` field only.
+
+## Step 11: Proposal 11 - Declarative Branching Helper API
+
+This step added a declarative branching helper (`ctx.branch`) so script authors can express route tables and predicate-driven branches without repetitive manual `if/else` step switching.
+
+The helper is runtime-injected and keeps current script contract intact (`update` still required).
+
+### Prompt Context
+
+**User prompt (verbatim):** (see Step 1)
+
+**Assistant interpretation:** Implement proposal 11 as a practical helper API with route-table + predicate support and integration tests.
+
+**Inferred user intent:** Reduce branching boilerplate in multi-step scripts while keeping behavior explicit and testable.
+
+**Commit (code):** ae1d495f822216a293bd824abf4d49f5696a3630 - "feat(script): add declarative branching helper in ctx"
+
+### What I did
+- Added runtime JS helpers in engine bootstrap:
+- `__pc_branch` for route matching,
+- support for `routes` object and `rules` predicate arrays,
+- default route fallback handling.
+- Injected `ctx.branch(state, event, spec)` into script context.
+- Added engine tests covering:
+- route-table branching (`approved/rejected/default`),
+- predicate rules (`rules[].when` function + step target).
+- Added server integration test for declarative branch flow (`confirm -> details/reason` paths).
+- Updated API docs with `ctx.branch` examples and semantics.
+- Updated development guide to document the new context helper.
+
+### Why
+- Branching logic is the highest-duplication pattern in script update handlers; a helper API reduces noise and improves readability.
+
+### What worked
+- Branch helper supports both quick route maps and explicit predicate rule lists.
+- Existing scripts remain unaffected.
+- Go lint/tests and frontend type checks all pass.
+
+### What didn't work
+- No blockers in this step.
+
+### What I learned
+- Injecting helper behavior via runtime bootstrap is a low-risk way to add script ergonomics without wire/proto changes.
+
+### What was tricky to build
+- The tricky part was offering expressive branching while avoiding brittle parsing/eval features. I handled this by supporting:
+- direct route keys,
+- predicate functions (`when(event,state)`),
+- simple string path checks (`event.data.approved`) for lightweight declarative use.
+
+### What warrants a second pair of eyes
+- `ctx.branch` mutates and returns the same `state` object; this matches current script style but should be explicit in docs to avoid immutable-state assumptions.
+
+### What should be done in the future
+- If adoption is strong, consider adding first-class typed route schema in docs/examples (including richer key-extraction strategies).
+
+### Code review instructions
+- Review `internal/scriptengine/engine.go` helper bootstrap and `ctx.branch` injection.
+- Review `internal/scriptengine/engine_test.go` branch helper tests.
+- Review `internal/server/script_test.go` declarative branch integration test.
+- Validate with:
+- `go test ./internal/scriptengine ./internal/server -count=1`
+- `pnpm -C agent-ui-system run check`
+
+### Technical details
+- `ctx.branch` sets `state.step` and returns `state`.

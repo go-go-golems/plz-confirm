@@ -108,3 +108,13 @@ Step 10: Implemented Proposal 15 rich select options with backward-compatible va
 - /home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/agent-ui-system/client/src/components/widgets/SelectDialog.tsx — Rich option UI
 - /home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/internal/server/script.go — Rich option validation
 
+
+## 2026-02-22
+
+Step 11: Implemented Proposal 11 declarative branching helper API (ctx.branch) with route/predicate integration tests (commit ae1d495f822216a293bd824abf4d49f5696a3630)
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/internal/scriptengine/engine.go — ctx.branch helper
+- /home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/internal/scriptengine/engine_test.go — branch helper tests
+
