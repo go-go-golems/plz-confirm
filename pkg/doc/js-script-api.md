@@ -19,6 +19,20 @@ Most plz-confirm widgets are one-shot: you create a request, the user responds, 
 
 Under the hood, the server runs your script in a sandboxed JavaScript runtime. You don't need to set up a frontend, manage WebSocket connections, or write any Go code. You just write four functions and the server handles the rest.
 
+## What's New In This Revision
+
+The current script API includes a broader set of view and workflow primitives than the initial release. These additions make multi-step flows easier to author without custom frontend code.
+
+- New interactive widgets: `grid`, `rating`
+- Composite `sections` rendering with `display` context blocks plus one interactive section
+- Per-step progress metadata (`progress.current`, `progress.total`, `progress.label`)
+- Back navigation controls (`allowBack` / `showBack`, optional `backLabel`)
+- Toast notifications via `view.toast` (`message`, `style`, `duration` or `durationMs`)
+- Prefilled widget defaults (`input.defaults`) for `select`, `form`, `table`, and `rating`
+- Deterministic random helpers in context (`ctx.seed`, `ctx.random()`, `ctx.randomInt(min,max)`)
+- Rich select options (`{ value, label, description, badge, icon, disabled }`)
+- Declarative step routing helper (`ctx.branch`)
+
 ## Quick Start
 
 Here's the smallest possible script — a single confirmation step:
@@ -184,6 +198,8 @@ backLabel: "Back"
 ```javascript
 toast: { message: "Saved!", durationMs: 2000, style: "success" }
 ```
+
+`duration` is accepted as an alias for `durationMs`. Toasts are deduplicated per request when `stepId`, message, style, and duration are unchanged.
 
 ### `update(state, event, ctx)` — React to user input
 
@@ -431,7 +447,18 @@ Renders a form from a JSON Schema definition. Great for collecting structured da
 
 **What you get back in `event.data`:**
 
-A flat object with keys matching your schema's `properties`. For example, if your schema has `username` and `email` fields, you get `{ username: "alice", email: "alice@example.com" }`.
+A `data` object containing keys that match your schema's `properties`.
+
+Example:
+
+```json
+{
+  "data": {
+    "username": "alice",
+    "email": "alice@example.com"
+  }
+}
+```
 
 ### `table` — Row Selection
 
@@ -443,7 +470,7 @@ Displays tabular data and lets the user pick one or more rows.
 |---|---|---|---|
 | `title` | string | (required) | Table heading |
 | `data` | object[] | (required) | Array of row objects |
-| `columns` | string[] | (required) | Which keys to show as columns |
+| `columns` | string[] | inferred from first row | Which keys to show as columns |
 | `multiSelect` | boolean | `false` | Allow selecting multiple rows |
 | `searchable` | boolean | `false` | Show a search/filter box |
 
@@ -736,18 +763,33 @@ curl -sS "http://localhost:3000/api/requests/$REQ_ID" \
   | jq '{status, scriptOutput}'
 ```
 
-## Common Mistakes
+### Seed All Feature Requests For Human Testing
+
+For a full manual QA pass across all new script features, run the repository helper that loads the ticket scripts and posts one request per flow:
+
+```bash
+bash scripts/seed-js-api-feature-requests.sh
+```
+
+You can override target session and backend:
+
+```bash
+SESSION_ID=global API_BASE_URL=http://localhost:3001 bash scripts/seed-js-api-feature-requests.sh
+```
+
+## Troubleshooting
 
 These are the issues that come up most often when writing scripts. Each one has a clear symptom and a quick fix.
 
-| What went wrong | What you see | How to fix it |
+| Problem | Cause | Solution |
 |---|---|---|
-| You forgot one of the four required exports (`describe`, `init`, `view`, `update`) | `400` on create | Make sure `module.exports` has all four functions |
-| `init` or `view` returned a string, number, or array instead of a plain object | `400` — "invalid return shape" | Always return `{}` objects, even if they're simple like `{ step: "start" }` |
-| You returned `{ done: true }` but `result` isn't an object (or is missing) | `400` — invalid terminal shape | Use `{ done: true, result: { ... } }` — result must be a `{}` |
-| `view` returned a `widgetType` that doesn't exist | Browser shows "unsupported widget" error | Use one of: `confirm`, `select`, `grid`, `rating`, `table`, `form`, `upload`, `image` |
-| Your script has a tight loop or expensive computation | `504` timeout after `timeoutMs` | Keep callbacks lightweight. If you need more time, increase `timeoutMs` |
-| You accessed `event.data.approved` without checking if `event.data` exists | `422` runtime error — script crashed | Guard with `event.data && event.data.approved` |
+| `400` on create due missing exports | `module.exports` omitted one of `describe`, `init`, `view`, `update` | Export all four lifecycle functions |
+| `400` due invalid return shape | `init`/`view`/terminal `update` returned non-object or missing `result` object | Return plain objects and use `{ done: true, result: {...} }` for terminal updates |
+| Unsupported widget rendering | `view.widgetType` is invalid for script rendering | Use `confirm`, `select`, `grid`, `rating`, `table`, `form`, `upload`, `image`, or `display` (sections mode) |
+| Composite view rejected with `400` | `sections` does not contain exactly one interactive section | Keep exactly one non-`display` section and any number of `display` sections |
+| Timeout (`504`) during `init` or `update` | Infinite loop or heavy synchronous work exceeded `timeoutMs` | Keep script callbacks lightweight or increase `timeoutMs` |
+| Runtime fault (`422`) in `update` | Unchecked nested access such as `event.data.approved` when `event.data` is missing | Guard reads with null checks |
+| Toast not visible in UI | Watching wrong `sessionId`, or toast payload was deduped on unchanged step/message/style/duration | Open `/?sessionId=<your-session>`, then change step or toast payload when testing repeated notifications |
 
 ## See Also
 
