@@ -19,6 +19,11 @@ Most plz-confirm widgets are one-shot: you create a request, the user responds, 
 
 Under the hood, the server runs your script in a sandboxed JavaScript runtime. You don't need to set up a frontend, manage WebSocket connections, or write any Go code. You just write four functions and the server handles the rest.
 
+Current runtime behavior:
+- `require` is available.
+- `console.log/info/warn/error` are available and captured by the server.
+- `process` is not exposed.
+
 ## What's New In This Revision
 
 The current script API includes a broader set of view and workflow primitives than the initial release. These additions make multi-step flows easier to author without custom frontend code.
@@ -270,6 +275,17 @@ init: function (ctx) {
 ```
 
 For randomized workflows, prefer `ctx.random()` / `ctx.randomInt()` over `Math.random()` so behavior remains reproducible for a request lifecycle.
+
+### Runtime Globals and Logging
+
+The script runtime exposes `require` and `console` globals.
+
+- `require(...)` can be used by scripts.
+- `console.log`, `console.info`, `console.warn`, and `console.error` are captured during each script run.
+
+Captured lines are returned in API responses:
+- `scriptLogs` (top-level field on `UIRequest`) contains logs from the latest script run that produced the response.
+- On terminal completion, `scriptOutput.logs` also includes the same run logs.
 
 ### The `event` Object
 
@@ -551,7 +567,7 @@ This is the same endpoint used for all widget types. For scripts, set `type` to 
 | `props` | object | no | Arbitrary values made available to your script as `ctx.props` |
 | `timeoutMs` | int64 | no | Maximum execution time per function call in milliseconds. If your `init` or `update` takes longer than this, the server kills it and returns a `504`. |
 
-The response is a full `UIRequest` object with `scriptState`, `scriptView`, and `scriptDescribe` already populated from the initial `describe/init/view` run.
+The response is a full `UIRequest` object with `scriptState`, `scriptView`, `scriptDescribe`, and `scriptLogs` already populated from the initial `describe/init/view` run.
 
 ### Submit Script Event
 
@@ -571,6 +587,8 @@ Send the user's response to advance the flow:
 ```
 
 The server calls your `update` function with the current state and this event. The response is the updated `UIRequest` — either still pending (with a new `scriptView`) or completed (with `scriptOutput`).
+
+For both pending and completed responses, `scriptLogs` contains the captured logs for that run. For completed responses, `scriptOutput.logs` is also populated.
 
 ### Read and Wait
 

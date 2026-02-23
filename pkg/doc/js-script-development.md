@@ -58,7 +58,7 @@ The browser side handles rendering script widgets and sending events back to the
 
 The protobuf definitions are the single source of truth for the wire format.
 
-- **`request.proto`** — Defines the `script` value in the `WidgetType` enum, adds `scriptInput`/`scriptOutput` to the `UIRequest` oneofs, and adds `script_state`, `script_view`, and `script_describe` fields.
+- **`request.proto`** — Defines the `script` value in the `WidgetType` enum, adds `scriptInput`/`scriptOutput` to the `UIRequest` oneofs, and adds `script_state`, `script_view`, `script_describe`, and `script_logs` fields.
 - **`widgets.proto`** — Defines `ScriptInput`, `ScriptOutput`, `ScriptEvent`, `ScriptView`, and `ScriptDescribe` messages.
 
 Generated code lives in:
@@ -71,25 +71,25 @@ After changing `.proto` files, regenerate with `make codegen`.
 
 ### Fresh VM Per Call
 
-The engine creates a brand-new `goja.Runtime` for every `InitAndView` or `UpdateAndView` call. There's no VM reuse, no cached state between calls — each invocation starts from a clean slate by loading and evaluating the script source fresh.
+The engine creates a brand-new runtime for every `InitAndView` or `UpdateAndView` call. It now uses a `go-go-goja` factory to build owned runtimes per invocation (still one fresh VM per call, no VM reuse, no cached script state between calls).
 
 This is intentional. It provides strong isolation (a misbehaving `update` can't corrupt the runtime for the next call) at the cost of some overhead. For the script sizes we expect (small state machines, not heavy computation), this tradeoff is well worth it.
 
-We use [Goja](https://github.com/nicholasgasior/goja) directly — a pure-Go ES5.1 runtime — rather than the `go-go-goja` engine wrapper. This keeps the dependency surface small and avoids pulling in module systems we don't need.
+Under the hood this still executes on [Goja](https://github.com/nicholasgasior/goja), but runtime lifecycle is now owned through `go-go-goja` factory/runtime APIs so runtime setup and teardown are explicit and centralized.
 
 ### The Sandbox
 
-The VM is intentionally bare. No host bridge is exposed:
+The script runtime intentionally exposes a constrained Node-style surface:
 
-- `require` is `undefined` — scripts can't load modules.
+- `require` is available.
+- `console` is available (`log/info/warn/error`) and output is captured by the server.
 - `process` is `undefined` — no access to environment variables or OS primitives.
-- No filesystem, network, or timer APIs.
 
-The only things available are standard ES5.1 built-ins (Object, Array, JSON, Math, etc.) plus whatever the server injects as context (`__pc_ctx`, `__pc_state`, `__pc_event`).
+The runtime still primarily exposes standard ES5.1 built-ins (Object, Array, JSON, Math, etc.) plus server-injected context (`__pc_ctx`, `__pc_state`, `__pc_event`), and now includes `require` and capture-aware `console`.
 
 Context helpers now include deterministic random utilities (`ctx.seed`, `ctx.random()`, `ctx.randomInt(min,max)`) and a declarative branch helper (`ctx.branch(state, event, spec)`).
 
-These constraints are enforced by `TestSandboxHasNoHostBridge` in `engine_test.go`, so if someone accidentally exposes a new global, the test will catch it.
+These constraints are enforced by sandbox/runtime tests in `engine_test.go`, including `require` availability, `process` absence, and console capture behavior.
 
 ### Timeout and Cancellation
 
@@ -125,7 +125,7 @@ Any validation failure surfaces as a `400 Bad Request` with a descriptive error 
    - `describe(ctx)` — validates the returned name/version.
    - `init(ctx)` — produces the initial state object.
    - `view(state, ctx)` — produces the first widget to show.
-3. The server builds a `UIRequest` proto with `scriptState` (from init), `scriptView` (from view), and `scriptDescribe` (from describe).
+3. The server builds a `UIRequest` proto with `scriptState` (from init), `scriptView` (from view), `scriptDescribe` (from describe), and `scriptLogs` (captured console output from that run).
 4. `store.Create(req)` persists the request.
 5. A `new_request` event is broadcast to all connected WebSocket clients in the session.
 
@@ -135,10 +135,11 @@ Any validation failure surfaces as a `400 Bad Request` with a descriptive error 
 2. The incoming `ScriptEvent` proto is parsed from the request body and converted to a `map[string]any` via `eventToMap()`.
 3. The server calls `engine.UpdateAndView(ctx, scriptInput, currentState, event)`.
 4. If the result is **non-terminal** (no `done: true`):
-   - `store.PatchScript(id, newState, newView)` updates the request in place.
+   - `store.PatchScript(id, newState, newView, logs)` updates the request in place.
    - A `request_updated` event is broadcast over WebSocket.
 5. If the result is **terminal** (`done: true`):
-   - The request is completed with `scriptOutput.result`.
+   - The request is completed with `scriptOutput.result` and `scriptOutput.logs`.
+   - Top-level `scriptLogs` is also updated with the latest run logs.
    - A `request_completed` event is broadcast over WebSocket.
 
 ### How ctx Gets Built
@@ -159,7 +160,7 @@ If you need to add new fields to `ctx` (like a request ID or session info), this
 
 ### How Errors Map to HTTP Status Codes
 
-The `scriptErrorStatus()` function in `script.go` uses string matching on the error message to decide which HTTP status to return:
+The `statusForScriptError()` function in `script.go` first classifies using typed script-engine errors (`errors.Is`) and then uses conservative string fallbacks:
 
 | If the error message contains... | HTTP status |
 |---|---|
