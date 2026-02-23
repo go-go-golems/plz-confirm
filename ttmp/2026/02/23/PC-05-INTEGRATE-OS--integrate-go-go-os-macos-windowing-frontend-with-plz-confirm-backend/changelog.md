@@ -93,3 +93,28 @@ Validation executed:
 Known follow-up:
 
 - `go-inventory-chat` currently resolves `github.com/go-go-golems/plz-confirm/pkg/backend` through local workspace composition (new package is not present in published `plz-confirm` v0.0.3 yet).
+
+## 2026-02-23
+
+Fixed confirm-runtime protocol mismatch that caused `Unsupported widget type: undefined` in inventory confirm windows (commit `2ffac96` in `go-go-os`).
+
+What changed:
+
+1. Added proto adapter layer to normalize backend protojson `UIRequest`/WS events into frontend runtime shape:
+   - `packages/confirm-runtime/src/proto/confirmProtoAdapter.ts`
+2. Wired API + WS paths to use adapter normalization:
+   - `packages/confirm-runtime/src/api/confirmApiClient.ts`
+   - `packages/confirm-runtime/src/ws/confirmWsManager.ts`
+3. Switched response submission to emit proper proto oneof payloads (`confirmOutput`, `selectOutput`, etc.) instead of generic `{output: ...}`.
+4. Updated inventory host integration call-site to pass request context to submit encoder:
+   - `apps/inventory/src/App.tsx`
+5. Added adapter unit tests:
+   - `packages/confirm-runtime/src/proto/confirmProtoAdapter.test.ts`
+
+Validation executed:
+
+- `npm exec vitest run packages/confirm-runtime/src/proto/confirmProtoAdapter.test.ts` (pass)
+
+Known environment note:
+
+- Workspace `tsc -b` remains blocked by pre-existing `packages/engine` typing/tooling issues unrelated to this fix.

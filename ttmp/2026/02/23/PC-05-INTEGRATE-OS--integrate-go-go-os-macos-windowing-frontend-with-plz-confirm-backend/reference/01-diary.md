@@ -13,6 +13,8 @@ DocType: reference
 Intent: long-term
 Owners: []
 RelatedFiles:
+    - Path: ../../../../../../../go-go-os/apps/inventory/src/App.tsx
+      Note: Step 13 submit path updated to pass request context
     - Path: ../../../../../../../go-go-os/go-inventory-chat/cmd/hypercard-inventory-server/main.go
       Note: |-
         Router integration analysis source
@@ -24,8 +26,16 @@ RelatedFiles:
         D3 coexistence and prefixed websocket integration tests
     - Path: ../../../../../../../go-go-os/package.json
       Note: Workspace build wiring updated during step 8
+    - Path: ../../../../../../../go-go-os/packages/confirm-runtime/src/api/confirmApiClient.ts
+      Note: Step 13 response encoding + request decode
+    - Path: ../../../../../../../go-go-os/packages/confirm-runtime/src/proto/confirmProtoAdapter.test.ts
+      Note: Step 13 adapter contract tests
+    - Path: ../../../../../../../go-go-os/packages/confirm-runtime/src/proto/confirmProtoAdapter.ts
+      Note: Step 13 runtime protojson adapter
     - Path: ../../../../../../../go-go-os/packages/confirm-runtime/src/runtime/createConfirmRuntime.ts
       Note: Diary step 8 implementation evidence
+    - Path: ../../../../../../../go-go-os/packages/confirm-runtime/src/ws/confirmWsManager.ts
+      Note: Step 13 websocket event decode mapping
     - Path: ../../../../../../../go-go-os/packages/engine/src/components/shell/windowing/useDesktopShellController.tsx
       Note: |-
         Desktop window-content adapter and orchestration analysis source
@@ -62,6 +72,7 @@ LastUpdated: 2026-02-23T19:20:00-05:00
 WhatFor: Allow any contributor, especially a new intern, to reconstruct exactly how the PC-05 architecture recommendation was derived.
 WhenToUse: Use when reviewing the blueprint rationale, validating the evidence trail, or resuming unfinished implementation tasks.
 ---
+
 
 
 
@@ -1037,3 +1048,117 @@ I also documented a real dependency caveat discovered during validation: the new
 - Host mount and tests:
   - `/home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/go-go-os/go-inventory-chat/cmd/hypercard-inventory-server/main.go`
   - `/home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/go-go-os/go-inventory-chat/cmd/hypercard-inventory-server/main_integration_test.go`
+
+## Step 13: Fix runtime protocol mapping bug (`Unsupported widget type: undefined`)
+
+After running manual C4 checks, we hit a real frontend/backend contract mismatch: backend emits protojson `UIRequest` payloads with fields like `type`, `confirmInput`, and websocket envelopes `{type, request}`, but `confirm-runtime` was reading them as already-normalized runtime objects (`widgetType`, `input.payload`). That left `request.widgetType` undefined and rendered the fallback unsupported widget state.
+
+I fixed this by adding an explicit protocol adapter layer and wiring it through both realtime and REST paths, plus output encoding for submit calls so the backend receives proper proto oneof fields.
+
+### Prompt Context
+
+**User prompt (verbatim):** "I get \"Unsupported widget type: undefined\" when firing off that first request.
+
+❯   curl -sS -X POST http://localhost:8091/confirm/api/requests \
+    -H 'content-type: application/json' \
+    -d '{\"type\":\"confirm\",\"sessionId\":\"global\",\"confirmInput\":{\"title\":\"Deploy now?\",\"message\":\"Release 1.2.3\"}}' | jq
+{
+  \"id\": \"e8040484-a3da-4892-a11e-20f132633847\",
+  \"type\": \"confirm\",
+  \"sessionId\": \"global\",
+  \"confirmInput\": {
+    \"title\": \"Deploy now?\",
+    \"message\": \"Release 1.2.3\"
+  },
+  \"status\": \"pending\",
+  \"createdAt\": \"2026-02-23T22:28:11.553464722Z\",
+  \"expiresAt\": \"2026-02-23T22:33:11.553464722Z\",
+  \"metadata\": {
+    \"parents\": [],
+    \"remoteAddr\": \"[::1]:55120\",
+    \"userAgent\": \"curl/8.5.0\"
+  },
+  \"scriptLogs\": []
+}"
+
+**Assistant interpretation:** Diagnose and fix the request shape mismatch so confirm windows recognize widget type and can submit responses through the correct backend contract.
+
+**Inferred user intent:** Make manual C4 testing actually usable by aligning frontend runtime assumptions with real backend protojson payloads.
+
+**Commit (code):** `2ffac96` — "confirm-runtime: map protojson requests/events and encode response oneofs"
+
+### What I did
+
+- Added adapter module:
+  - `go-go-os/packages/confirm-runtime/src/proto/confirmProtoAdapter.ts`
+  - responsibilities:
+    - map protojson `UIRequest` -> runtime `ConfirmRequest`
+    - map websocket envelopes -> runtime realtime events
+    - map runtime submit payloads -> proto oneof output payloads
+- Updated REST client:
+  - `go-go-os/packages/confirm-runtime/src/api/confirmApiClient.ts`
+  - now normalizes incoming protojson and encodes submit payloads by widget type.
+- Updated WS manager:
+  - `go-go-os/packages/confirm-runtime/src/ws/confirmWsManager.ts`
+  - now parses websocket frames through adapter before dispatch.
+- Updated inventory host call-site:
+  - `go-go-os/apps/inventory/src/App.tsx`
+  - submit now passes request context so encoder can pick the correct proto oneof.
+- Added unit tests:
+  - `go-go-os/packages/confirm-runtime/src/proto/confirmProtoAdapter.test.ts`
+- Added small table/select payload improvements in request host for better proto output fidelity:
+  - `go-go-os/packages/confirm-runtime/src/components/ConfirmRequestWindowHost.tsx`
+
+### Why
+
+- Without explicit normalization, frontend runtime cannot reliably consume backend contract fields.
+- Without oneof encoding, submit calls fail backend validation (`missing required fields (widget output oneof)`).
+
+### What worked
+
+- Adapter tests passed:
+  - `npm exec vitest run packages/confirm-runtime/src/proto/confirmProtoAdapter.test.ts`
+- Commit captured all required runtime-path changes in one checkpoint (`2ffac96`).
+
+### What didn't work
+
+- Package/app typecheck remains noisy because of pre-existing workspace-wide engine typing/toolchain issues (React type declarations and unrelated strictness errors).
+- This is environment debt predating the fix; adapter tests were used as focused validation.
+
+### What I learned
+
+- C4 immediately surfaced that “transport shape parity” is a first-order requirement; UI-level testing depends on it.
+- Even when widget components exist, contract translation must be explicit in package-first runtime boundaries.
+
+### What was tricky to build
+
+- The tricky part was mapping generic frontend interaction payloads into strict proto oneof output shapes while minimizing churn in existing widget host components.
+- I solved this by centralizing output encoding in adapter code and only passing request context from App-level submit handler.
+
+### What warrants a second pair of eyes
+
+- Review table/image output encoding choices in adapter for semantic parity with desired downstream consumers (currently pragmatic defaults).
+
+### What should be done in the future
+
+- Continue item (3) work: script section rendering parity + upload endpoint semantics + tighter output mapping for table/image edge cases.
+
+### Code review instructions
+
+- Review commit:
+  - `git -C /home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/go-go-os show --name-only 2ffac96`
+- Run focused adapter tests:
+  - `cd /home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/go-go-os`
+  - `npm exec vitest run packages/confirm-runtime/src/proto/confirmProtoAdapter.test.ts`
+
+### Technical details
+
+- Changed files in `go-go-os`:
+  - `/home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/go-go-os/packages/confirm-runtime/src/proto/confirmProtoAdapter.ts`
+  - `/home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/go-go-os/packages/confirm-runtime/src/proto/confirmProtoAdapter.test.ts`
+  - `/home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/go-go-os/packages/confirm-runtime/src/api/confirmApiClient.ts`
+  - `/home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/go-go-os/packages/confirm-runtime/src/ws/confirmWsManager.ts`
+  - `/home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/go-go-os/packages/confirm-runtime/src/types.ts`
+  - `/home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/go-go-os/packages/confirm-runtime/src/state/selectors.ts`
+  - `/home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/go-go-os/packages/confirm-runtime/src/components/ConfirmRequestWindowHost.tsx`
+  - `/home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/go-go-os/apps/inventory/src/App.tsx`
