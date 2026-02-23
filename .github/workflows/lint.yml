@@ -18,35 +18,17 @@ jobs:
     name: lint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
       - run: git fetch --force --tags
-      - uses: actions/setup-go@v5
+      - name: Set up Go
+        uses: actions/setup-go@v6
         with:
-          go-version: '>=1.19.5'
+          go-version-file: go.mod
           cache: true
-      # `internal/server/embed.go` uses go:embed, so we must ensure embedded assets exist
-      # before typechecking (golangci-lint runs typecheck).
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 10.4.1
-          run_install: false
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'pnpm'
-          cache-dependency-path: agent-ui-system/pnpm-lock.yaml
-
-      - name: Install frontend deps
-        run: pnpm -C agent-ui-system install --frozen-lockfile
-
-      - name: go generate (embed UI assets)
-        run: go generate ./internal/server
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@v7
+        uses: golangci/golangci-lint-action@v9
         with:
-          version: v2.1.0
+          version: v2.4.0
           args: --timeout=5m
