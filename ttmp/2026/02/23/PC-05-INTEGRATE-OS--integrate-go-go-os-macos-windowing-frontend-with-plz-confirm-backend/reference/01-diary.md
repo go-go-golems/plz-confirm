@@ -17,6 +17,11 @@ RelatedFiles:
       Note: |-
         Router integration analysis source
         Primary backend route analysis source in diary
+        D2 /confirm mount in host mux
+    - Path: ../../../../../../../go-go-os/go-inventory-chat/cmd/hypercard-inventory-server/main_integration_test.go
+      Note: |-
+        Diary step 12 backend coexistence and prefixed websocket tests
+        D3 coexistence and prefixed websocket integration tests
     - Path: ../../../../../../../go-go-os/package.json
       Note: Workspace build wiring updated during step 8
     - Path: ../../../../../../../go-go-os/packages/confirm-runtime/src/runtime/createConfirmRuntime.ts
@@ -27,10 +32,22 @@ RelatedFiles:
         Primary frontend shell analysis source in diary
     - Path: ../../../../../../../go-go-os/packages/engine/src/components/widgets/SelectableList.tsx
       Note: Diary step 7 implementation evidence
+    - Path: cmd/plz-confirm/main.go
+      Note: |-
+        Diary step 12 switched serve command to public backend package
+        D1 CLI serve now uses public backend package
     - Path: internal/server/server.go
       Note: |-
         Confirm backend route and request lifecycle analysis source
         Primary plz-confirm backend analysis source in diary
+    - Path: pkg/backend/backend.go
+      Note: |-
+        Diary step 12 extracted embeddable public backend surface
+        D1 public embeddable backend wrapper
+    - Path: pkg/backend/backend_test.go
+      Note: |-
+        Diary step 12 added public backend package coverage
+        D1 public backend API coverage
     - Path: ttmp/2026/02/23/PC-05-INTEGRATE-OS--integrate-go-go-os-macos-windowing-frontend-with-plz-confirm-backend/design-doc/01-integration-blueprint-plz-confirm-on-go-go-os-macos-windowing.md
       Note: |-
         Main design deliverable authored during investigation
@@ -41,10 +58,11 @@ RelatedFiles:
         Diary and index were updated together for intern onboarding
 ExternalSources: []
 Summary: Chronological diary of PC-05 investigation and documentation, including commands, findings, assumptions, and delivery steps.
-LastUpdated: 2026-02-23T17:05:00-05:00
+LastUpdated: 2026-02-23T19:20:00-05:00
 WhatFor: Allow any contributor, especially a new intern, to reconstruct exactly how the PC-05 architecture recommendation was derived.
 WhenToUse: Use when reviewing the blueprint rationale, validating the evidence trail, or resuming unfinished implementation tasks.
 ---
+
 
 
 
@@ -918,3 +936,104 @@ Per user instruction, UI-specific narrative details were recorded in the separat
 
 - UI-focused narrative for this tranche is captured in:
   - `/home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/plz-confirm/ttmp/2026/02/23/PC-06-UI-CONSISTENCY-HANDOFF--confirm-widget-visual-consistency-handoff/reference/01-diary.md`
+
+## Step 12: Complete backend integration tranche (D1/D2/D3/D4)
+
+I implemented the backend tranche end-to-end: extracted a public embeddable plz-confirm backend package, mounted it in `go-inventory-chat` under `/confirm/*`, added integration tests for route coexistence and prefixed confirm websocket behavior, and committed both code checkpoints. This closes D1 through D4 on the task board.
+
+I also documented a real dependency caveat discovered during validation: the new `pkg/backend` package is available in local workspace composition now, but not in published `plz-confirm` `v0.0.3` yet, so non-workspace builds still need a release/version alignment follow-up.
+
+### Prompt Context
+
+**User prompt (verbatim):** "ok, continue, but make a new ticket where you eep track of all the widgets and stories and scenarios that need to be addressed to have a consistent look later on so that I can hand it off to my colleague. Keep a detailed document in there of how these widgets work and how they are used, so that the designer can get started right away with a nice document. Otherwise, continue working as normal, task by task, committing and keeping a diary, except when you do something UI related, write it up in the other ticket."
+
+**Assistant interpretation:** Continue implementation task-by-task with commits and detailed diary updates, while keeping UI-specific writeups separated; proceed with the next non-UI tranche (backend integration).
+
+**Inferred user intent:** Finish the actual integration plumbing now, not just analysis/docs, and keep a durable evidence trail for handoff and review.
+
+**Commit (code):** `56e40ec` — "plz-confirm: extract public embeddable backend server package"  
+**Commit (code):** `3e79c2a` — "inventory-server: mount plz-confirm backend under /confirm with coexistence tests"
+
+### What I did
+
+- In `plz-confirm`:
+  - Added `pkg/backend/backend.go` exposing `NewServer`, `Handler`, `ListenAndServe`, and `Mount`.
+  - Added `pkg/backend/backend_test.go` covering direct `/api/requests` and prefixed `/confirm/api/requests`.
+  - Switched `cmd/plz-confirm/main.go` serve command to use `pkg/backend`.
+  - Ran:
+    - `go test ./pkg/backend ./cmd/plz-confirm -count=1`
+  - Committed as `56e40ec`.
+- In `go-go-os/go-inventory-chat`:
+  - Mounted `plzconfirmbackend.NewServer().Mount(appMux, "/confirm")` in `cmd/hypercard-inventory-server/main.go`.
+  - Extended `main_integration_test.go` to:
+    - validate coexistence (`/chat`, `/api/timeline`, `/confirm/api/requests`),
+    - validate prefixed confirm websocket replay at `/confirm/ws?sessionId=global`.
+  - Ran:
+    - `go test ./cmd/hypercard-inventory-server -count=1`
+    - `go test ./... -count=1`
+  - Committed as `3e79c2a`.
+
+### Why
+
+- D1 was the hard prerequisite: `go-inventory-chat` cannot legally import `plz-confirm/internal/*`.
+- D2/D3 ensured real host routing + websocket behavior under the prefix actually works and does not break chat/timeline routes.
+- Separate commits preserved clean review boundaries across repositories.
+
+### What worked
+
+- Public backend extraction compiled and passed tests.
+- `plz-confirm` pre-commit hook executed full `go test ./...` + `golangci-lint` and passed.
+- `go-inventory-chat` integration tests passed with local workspace module resolution.
+- New confirm-prefixed routes and websocket flows worked alongside existing chat routes.
+
+### What didn't work
+
+- Initial test run in `go-go-os/go-inventory-chat` failed before workspace update:
+  - `directory cmd/hypercard-inventory-server is contained in a module that is not one of the workspace modules listed in go.work`
+- With `GOWORK=off`, module resolution failed as expected before extraction release was published:
+  - `no required module provides package github.com/go-go-golems/plz-confirm/pkg/backend`
+- Attempting to resolve against published `v0.0.3` confirmed package absence:
+  - `module ... v0.0.3 found, but does not contain package .../pkg/backend`
+
+### What I learned
+
+- Cross-repo integration is now technically in place, but release management is the next gating item for non-workspace builds.
+- Using the public package in CLI (`cmd/plz-confirm`) is a useful guardrail that keeps extraction code path exercised continuously.
+
+### What was tricky to build
+
+- The sharp edge was module topology, not handler logic.
+- Symptoms were compile/test failures that alternated between workspace and non-workspace modes.
+- Resolution was:
+  1. add `go-go-os/go-inventory-chat` to local `go.work` for integrated validation,
+  2. keep task docs explicit about workspace-based dependency until a published plz-confirm version includes `pkg/backend`.
+
+### What warrants a second pair of eyes
+
+- Confirm preferred release strategy for consuming `pkg/backend` from `go-inventory-chat`:
+  - publish new plz-confirm version and pin in `go-inventory-chat`, or
+  - maintain workspace-only integration during active co-development.
+
+### What should be done in the future
+
+- Execute C4 manual UI lifecycle validation now that `/confirm/*` backend mount exists.
+- Publish a plz-confirm release containing `pkg/backend`, then lock `go-inventory-chat/go.mod` to that version.
+
+### Code review instructions
+
+- Review `plz-confirm` commit:
+  - `git -C /home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/plz-confirm show --name-only 56e40ec`
+- Review `go-go-os` commit:
+  - `git -C /home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/go-go-os show --name-only 3e79c2a`
+- Re-run backend validation:
+  - `go test ./pkg/backend ./cmd/plz-confirm -count=1` in `plz-confirm`
+  - `go test ./... -count=1` in `go-go-os/go-inventory-chat` (workspace mode)
+
+### Technical details
+
+- New public package:
+  - `/home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/plz-confirm/pkg/backend/backend.go`
+  - `/home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/plz-confirm/pkg/backend/backend_test.go`
+- Host mount and tests:
+  - `/home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/go-go-os/go-inventory-chat/cmd/hypercard-inventory-server/main.go`
+  - `/home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/go-go-os/go-inventory-chat/cmd/hypercard-inventory-server/main_integration_test.go`

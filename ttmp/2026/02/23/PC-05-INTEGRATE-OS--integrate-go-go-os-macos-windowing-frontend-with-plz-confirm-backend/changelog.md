@@ -71,3 +71,25 @@ Completed inventory host integration tranche (commit af1a085): wired confirm-run
 - /home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/go-go-os/apps/inventory/src/app/store.ts — confirmRuntime reducer wiring
 - /home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/go-go-os/tooling/vite/createHypercardViteConfig.ts — /confirm proxy and alias support
 
+## 2026-02-23
+
+Completed backend integration tranche:
+
+1. Commit `56e40ec` in `plz-confirm`:
+   - Added public embeddable backend package `pkg/backend` (server wrapper + prefix mounting).
+   - Switched CLI `serve` command to consume the new public package.
+   - Added package tests for direct and `/confirm`-prefixed request creation.
+2. Commit `3e79c2a` in `go-go-os`:
+   - Mounted plz-confirm backend under `/confirm/*` in `go-inventory-chat`.
+   - Added integration tests for route coexistence (`/chat` + `/api/timeline` + `/confirm/api/requests`) and prefixed confirm websocket (`/confirm/ws` pending replay).
+
+Validation executed:
+
+- `go test ./pkg/backend ./cmd/plz-confirm -count=1` (pass)
+- `go test ./... -count=1` in `plz-confirm` via pre-commit hook (pass)
+- `go test ./cmd/hypercard-inventory-server -count=1` in `go-inventory-chat` with workspace resolution (pass)
+- `go test ./... -count=1` in `go-inventory-chat` with workspace resolution (pass)
+
+Known follow-up:
+
+- `go-inventory-chat` currently resolves `github.com/go-go-golems/plz-confirm/pkg/backend` through local workspace composition (new package is not present in published `plz-confirm` v0.0.3 yet).

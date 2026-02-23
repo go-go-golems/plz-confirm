@@ -17,6 +17,11 @@ RelatedFiles:
       Note: |-
         Current inventory backend router composition and mount points
         Current route ownership and mount integration point
+        Implemented /confirm mount documented in router section
+    - Path: ../../../../../../../go-go-os/go-inventory-chat/cmd/hypercard-inventory-server/main_integration_test.go
+      Note: |-
+        Route coexistence and /confirm/ws integration coverage added during backend tranche
+        Integration test strategy now partially implemented
     - Path: ../../../../../../../go-go-os/packages/confirm-runtime/src/components/ConfirmRequestWindowHost.tsx
       Note: Package-first confirm widget host skeleton
     - Path: ../../../../../../../go-go-os/packages/confirm-runtime/src/runtime/createConfirmRuntime.ts
@@ -65,6 +70,12 @@ RelatedFiles:
       Note: |-
         plz-confirm websocket event broadcast model
         WebSocket event stream contract
+    - Path: pkg/backend/backend.go
+      Note: |-
+        Public embeddable server wrapper extracted from internal plz-confirm backend
+        Implemented public backend package documented in status section
+    - Path: pkg/backend/backend_test.go
+      Note: Public backend package tests for direct and prefixed mount flows
     - Path: proto/plz_confirm/v1/request.proto
       Note: UIRequest envelope and widget enums
     - Path: proto/plz_confirm/v1/widgets.proto
@@ -73,10 +84,11 @@ RelatedFiles:
         Widget payload contract source
 ExternalSources: []
 Summary: Deep integration plan for reusing plz-confirm backend semantics with go-go-os macOS-style desktop frontend in go-inventory-chat, including router, protocol bridge, widget mapping, runtime boundaries, rollout, and onboarding details.
-LastUpdated: 2026-02-23T16:45:00-05:00
+LastUpdated: 2026-02-23T19:15:00-05:00
 WhatFor: Guide implementation of PC-05 by defining architecture and phased execution for integrating plz-confirm request/script flows into go-go-os desktop windows.
 WhenToUse: Read before any code changes for PC-05; use as primary onboarding + implementation blueprint for interns and maintainers.
 ---
+
 
 
 
@@ -326,28 +338,25 @@ because of Go internal visibility.
 
 #### Required extraction
 
-Create public package(s) in plz-confirm, example:
+Status: implemented in this ticket as `plz-confirm/pkg/backend`.
 
-1. `plz-confirm/pkg/confirmserver` (router/handler surface)
-2. `plz-confirm/pkg/confirmstore` (or keep store behind server package)
-3. Keep CLI-specific logic in `internal/cli`.
-
-Minimum public API needed by host applications:
+Implemented public API surface used by host applications:
 
 ```go
-type Server interface {
-    Handler() http.Handler
-}
+type Server struct { ... }
 
-func NewServer(opts Options) (*Server, error)
+func NewServer() *Server
+func (s *Server) Handler() http.Handler
+func (s *Server) ListenAndServe(ctx context.Context, opts ListenOptions) error
+func (s *Server) Mount(mux *http.ServeMux, prefix string)
+func Mount(mux *http.ServeMux, prefix string, handler http.Handler)
 ```
 
-with `Options` allowing:
+Notes:
 
-1. injected store implementation
-2. optional static file serving enable/disable
-3. script engine configuration
-4. optional path prefix awareness (or host handles prefix)
+1. Internal store/scriptengine remain encapsulated behind the public server wrapper.
+2. Prefix mounting is handled by the public package and used by `go-inventory-chat` for `/confirm/*`.
+3. CLI `serve` now consumes `pkg/backend` so the public surface is exercised by default.
 
 #### Module/workspace update
 
@@ -549,14 +558,14 @@ Gap analysis:
 Implementation shape in `main.go` after creating `appMux`:
 
 1. Instantiate plz-confirm server object in-process.
-2. Take its `Handler()` and mount with `http.StripPrefix("/confirm", confirmHandler)`.
+2. Mount it under `/confirm` via the public `Mount` helper.
 3. Ensure CORS/websocket behavior remains compatible under prefixed paths.
 
-Pseudo-code:
+Implemented code shape:
 
 ```go
-confirmSrv := confirmserver.New(...)
-appMux.Handle("/confirm/", http.StripPrefix("/confirm", confirmSrv.Handler()))
+confirmSrv := plzconfirmbackend.NewServer()
+confirmSrv.Mount(appMux, "/confirm")
 ```
 
 ### Session strategy
@@ -841,31 +850,43 @@ Completed in this ticket execution:
    - Created `packages/confirm-runtime` with api/ws/state/host/runtime/component layers.
    - Added app-agnostic host adapters and runtime wiring skeleton.
    - Added workspace wiring in root `tsconfig.json` and root build script.
+3. **Inventory host integration** (commit `af1a085` in `go-go-os`):
+   - Wired `confirmRuntime` reducer/services into `apps/inventory`.
+   - Added request window delegation (`confirm-request:<id>`) and queue command/window.
+   - Added dev proxy routes and alias wiring for `/confirm` + `/confirm/ws`.
+4. **Backend embeddable extraction and mount** (commits `56e40ec` in `plz-confirm`, `3e79c2a` in `go-go-os`):
+   - Added `plz-confirm/pkg/backend` public wrapper around internal server/store.
+   - Switched `cmd/plz-confirm serve` to the new public package.
+   - Mounted plz-confirm backend under `/confirm/*` in `go-inventory-chat`.
+   - Added integration tests for route coexistence and prefixed confirm websocket replay.
 
 Still pending:
 
-1. Inventory host integration (`apps/inventory`) for reducer wiring + window delegation.
-2. Backend embeddable plz-confirm extraction and `/confirm/*` route mounting in `go-inventory-chat`.
-3. End-to-end script sections parity and upload/image backend semantics hardening.
+1. Manual UI lifecycle validation for open/close/focus behavior under real confirm traffic.
+2. End-to-end script sections parity and upload/image backend semantics hardening.
+3. Frontend visual consistency pass (tracked in `PC-06-UI-CONSISTENCY-HANDOFF`).
 
 Validation notes from this run:
 
-1. `npm run test -w packages/engine -- ...` reached taxonomy check but failed because `vitest` binary is not installed in this environment (`sh: 1: vitest: not found`).
-2. Workspace-wide `tsc -b` checks are currently blocked by missing dependency/type environment across existing packages; this is pre-existing and not introduced by this ticket.
+1. `go test ./pkg/backend ./cmd/plz-confirm -count=1` passed.
+2. `go test ./... -count=1` passed in `plz-confirm` during pre-commit hook.
+3. `go test ./... -count=1` passed in `go-go-os/go-inventory-chat` with workspace module resolution.
+4. `go-inventory-chat` currently resolves `github.com/go-go-golems/plz-confirm/pkg/backend` via local workspace composition; published `plz-confirm` `v0.0.3` does not yet include this package.
 
 ## File-Level Change Sketch (Expected)
 
 ### plz-confirm repo
 
-1. New public package(s), e.g.:
-   - `pkg/confirmserver/*`
-2. Possibly move reusable store/scriptengine packages out of `internal` or wrap them.
-3. Keep CLI wiring in `cmd/plz-confirm/main.go` pointing to public package.
+1. Implemented public backend package:
+   - `pkg/backend/backend.go`
+   - `pkg/backend/backend_test.go`
+2. Internal store/scriptengine remain wrapped behind public `pkg/backend`.
+3. CLI wiring in `cmd/plz-confirm/main.go` now points to `pkg/backend`.
 
 ### go-inventory-chat backend
 
 1. `go-go-os/go-inventory-chat/cmd/hypercard-inventory-server/main.go`
-   - create and mount confirm handler under `/confirm/*`
+   - mounts confirm handler under `/confirm/*` via `plzconfirmbackend.NewServer().Mount(...)`
 2. Add integration tests in server test file for confirm endpoints.
 
 ### go-go-os frontend (package-first)

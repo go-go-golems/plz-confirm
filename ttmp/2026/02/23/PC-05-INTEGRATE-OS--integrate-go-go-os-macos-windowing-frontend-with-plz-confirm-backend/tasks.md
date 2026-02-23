@@ -43,14 +43,14 @@
 
 ### D. Backend Integration (existing planned phases)
 
-- [ ] D1. Extract embeddable public plz-confirm package(s) from `internal/*`
-- [ ] D2. Mount `/confirm/*` routes in `go-inventory-chat`
-- [ ] D3. Add route coexistence and ws prefix tests
-- [ ] D4. Commit backend integration tranche (`git commit` checkpoint)
+- [x] D1. Extract embeddable public plz-confirm package(s) from `internal/*`
+- [x] D2. Mount `/confirm/*` routes in `go-inventory-chat`
+- [x] D3. Add route coexistence and ws prefix tests
+- [x] D4. Commit backend integration tranche (`git commit` checkpoint)
 
 ### E. Verification + Documentation
 
-- [ ] E1. Run typecheck/tests for touched packages and fix breakages (blocked: local environment missing `vitest` and full TS deps)
+- [ ] E1. Run typecheck/tests for touched packages and fix breakages (backend go tests now passing; frontend/workspace TS verification still pending)
 - [x] E2. Update design doc with implemented file references and behavior notes
 - [x] E3. Keep diary updated per tranche with exact commands/errors/outcomes
 - [x] E4. Update changelog and task statuses after each commit checkpoint
