@@ -13,65 +13,90 @@ DocType: reference
 Intent: long-term
 Owners: []
 RelatedFiles:
-    - Path: ../../../../../../../go-go-os/apps/inventory/src/App.tsx
+    - Path: go-go-os/apps/inventory/src/App.tsx
       Note: Step 13 submit path updated to pass request context
-    - Path: ../../../../../../../go-go-os/go-inventory-chat/cmd/hypercard-inventory-server/main.go
+    - Path: go-go-os/go-inventory-chat/cmd/hypercard-inventory-server/main.go
       Note: |-
         Router integration analysis source
         Primary backend route analysis source in diary
         D2 /confirm mount in host mux
-    - Path: ../../../../../../../go-go-os/go-inventory-chat/cmd/hypercard-inventory-server/main_integration_test.go
+    - Path: go-go-os/go-inventory-chat/cmd/hypercard-inventory-server/main_integration_test.go
       Note: |-
         Diary step 12 backend coexistence and prefixed websocket tests
         D3 coexistence and prefixed websocket integration tests
-    - Path: ../../../../../../../go-go-os/package.json
+    - Path: go-go-os/package.json
       Note: Workspace build wiring updated during step 8
-    - Path: ../../../../../../../go-go-os/packages/confirm-runtime/src/api/confirmApiClient.ts
+    - Path: go-go-os/packages/confirm-runtime/src/api/confirmApiClient.ts
       Note: Step 13 response encoding + request decode
-    - Path: ../../../../../../../go-go-os/packages/confirm-runtime/src/proto/confirmProtoAdapter.test.ts
-      Note: Step 13 adapter contract tests
-    - Path: ../../../../../../../go-go-os/packages/confirm-runtime/src/proto/confirmProtoAdapter.ts
-      Note: Step 13 runtime protojson adapter
-    - Path: ../../../../../../../go-go-os/packages/confirm-runtime/src/runtime/createConfirmRuntime.ts
+    - Path: go-go-os/packages/confirm-runtime/src/components/ConfirmRequestWindowHost.tsx
+      Note: Step 14 script-mode parity and upload host rendering
+    - Path: go-go-os/packages/confirm-runtime/src/proto/confirmProtoAdapter.test.ts
+      Note: |-
+        Step 13 adapter contract tests
+        Step 14 adapter coverage for script metadata and image bool
+    - Path: go-go-os/packages/confirm-runtime/src/proto/confirmProtoAdapter.ts
+      Note: |-
+        Step 13 runtime protojson adapter
+        Step 14 script metadata mapping and image bool mapping
+    - Path: go-go-os/packages/confirm-runtime/src/runtime/createConfirmRuntime.ts
       Note: Diary step 8 implementation evidence
-    - Path: ../../../../../../../go-go-os/packages/confirm-runtime/src/ws/confirmWsManager.ts
+    - Path: go-go-os/packages/confirm-runtime/src/types.ts
+      Note: Step 14 script view type expansion
+    - Path: go-go-os/packages/confirm-runtime/src/ws/confirmWsManager.ts
       Note: Step 13 websocket event decode mapping
-    - Path: ../../../../../../../go-go-os/packages/engine/src/components/shell/windowing/useDesktopShellController.tsx
+    - Path: go-go-os/packages/engine/src/components/shell/windowing/useDesktopShellController.tsx
       Note: |-
         Desktop window-content adapter and orchestration analysis source
         Primary frontend shell analysis source in diary
-    - Path: ../../../../../../../go-go-os/packages/engine/src/components/widgets/SelectableList.tsx
+    - Path: go-go-os/packages/engine/src/components/widgets/SelectableList.tsx
       Note: Diary step 7 implementation evidence
-    - Path: cmd/plz-confirm/main.go
+    - Path: plz-confirm/cmd/plz-confirm/main.go
       Note: |-
         Diary step 12 switched serve command to public backend package
         D1 CLI serve now uses public backend package
-    - Path: internal/server/server.go
+    - Path: plz-confirm/cmd/plz-confirm/ws.go
+      Note: Step 14 ws URL prefix handling for embedded /confirm mount
+    - Path: plz-confirm/internal/cli/confirm.go
+      Note: Step 14 glazed tag decode fix for base-url/session/timeout
+    - Path: plz-confirm/internal/cli/form.go
+      Note: Step 14 glazed tag decode fix
+    - Path: plz-confirm/internal/cli/image.go
+      Note: Step 14 glazed tag decode fix
+    - Path: plz-confirm/internal/cli/select.go
+      Note: Step 14 glazed tag decode fix
+    - Path: plz-confirm/internal/cli/table.go
+      Note: Step 14 glazed tag decode fix
+    - Path: plz-confirm/internal/cli/upload.go
+      Note: Step 14 glazed tag decode fix
+    - Path: plz-confirm/internal/server/server.go
       Note: |-
         Confirm backend route and request lifecycle analysis source
         Primary plz-confirm backend analysis source in diary
-    - Path: pkg/backend/backend.go
+    - Path: plz-confirm/pkg/backend/backend.go
       Note: |-
         Diary step 12 extracted embeddable public backend surface
         D1 public embeddable backend wrapper
-    - Path: pkg/backend/backend_test.go
+    - Path: plz-confirm/pkg/backend/backend_test.go
       Note: |-
         Diary step 12 added public backend package coverage
         D1 public backend API coverage
-    - Path: ttmp/2026/02/23/PC-05-INTEGRATE-OS--integrate-go-go-os-macos-windowing-frontend-with-plz-confirm-backend/design-doc/01-integration-blueprint-plz-confirm-on-go-go-os-macos-windowing.md
+    - Path: plz-confirm/ttmp/2026/02/23/PC-05-INTEGRATE-OS--integrate-go-go-os-macos-windowing-frontend-with-plz-confirm-backend/design-doc/01-integration-blueprint-plz-confirm-on-go-go-os-macos-windowing.md
       Note: |-
         Main design deliverable authored during investigation
         Diary tracks how this main blueprint was produced
-    - Path: ttmp/2026/02/23/PC-05-INTEGRATE-OS--integrate-go-go-os-macos-windowing-frontend-with-plz-confirm-backend/index.md
+    - Path: plz-confirm/ttmp/2026/02/23/PC-05-INTEGRATE-OS--integrate-go-go-os-macos-windowing-frontend-with-plz-confirm-backend/index.md
       Note: |-
         Ticket overview updated to point intern to deliverables
         Diary and index were updated together for intern onboarding
+    - Path: plz-confirm/ttmp/2026/02/23/PC-05-INTEGRATE-OS--integrate-go-go-os-macos-windowing-frontend-with-plz-confirm-backend/scripts/e2e_cli_confirm_roundtrip.sh
+      Note: Step 14 deterministic E2E CLI test harness
 ExternalSources: []
 Summary: Chronological diary of PC-05 investigation and documentation, including commands, findings, assumptions, and delivery steps.
 LastUpdated: 2026-02-23T19:20:00-05:00
 WhatFor: Allow any contributor, especially a new intern, to reconstruct exactly how the PC-05 architecture recommendation was derived.
 WhenToUse: Use when reviewing the blueprint rationale, validating the evidence trail, or resuming unfinished implementation tasks.
 ---
+
 
 
 
@@ -1162,3 +1187,123 @@ I fixed this by adding an explicit protocol adapter layer and wiring it through 
   - `/home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/go-go-os/packages/confirm-runtime/src/state/selectors.ts`
   - `/home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/go-go-os/packages/confirm-runtime/src/components/ConfirmRequestWindowHost.tsx`
   - `/home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/go-go-os/apps/inventory/src/App.tsx`
+
+## Step 14: CLI compatibility repair, retroactive script archival, and script-view parity implementation
+
+This step focused on unblocking live verification against the integrated `/confirm` backend and then moving implementation forward on C4/C3 script behavior. The first blocker was a CLI parsing regression that made `plz-confirm confirm --base-url ...` unusable; after that was fixed, I codified every ad-hoc shell workflow into ticket-owned scripts and resumed runtime parity work in `@hypercard/confirm-runtime`.
+
+I treated this as one contiguous tranche because each part fed the next: CLI compatibility was required for testing, scripts were required for reproducibility/handoff, and script-view parity work relied on that validated test loop.
+
+### Prompt Context
+
+**User prompt (verbatim):** "ok, continue, test."
+
+**Assistant interpretation:** Continue implementation immediately and run concrete end-to-end tests against the integrated backend/frontend.
+
+**Inferred user intent:** Keep momentum, reduce uncertainty with runnable validation, and avoid speculative progress.
+
+**Commit (code):** Pending in this step (working tree stage at time of diary entry).
+
+### What I did
+
+- Diagnosed and fixed `plz-confirm` CLI flag decoding regression:
+  - Root cause: settings structs used `glazed.parameter:"..."` tags, but Glazed v1 `DecodeInto` reads `glazed:"..."` tags.
+  - Updated all command settings tags in:
+    - `plz-confirm/internal/cli/confirm.go`
+    - `plz-confirm/internal/cli/select.go`
+    - `plz-confirm/internal/cli/form.go`
+    - `plz-confirm/internal/cli/table.go`
+    - `plz-confirm/internal/cli/upload.go`
+    - `plz-confirm/internal/cli/image.go`
+- Fixed websocket helper prefix handling for embedded mount:
+  - `plz-confirm/cmd/plz-confirm/ws.go`
+  - `buildWSURL()` now preserves non-root path prefixes (e.g. `/confirm`), producing `/confirm/ws` instead of always forcing `/ws`.
+- Ran compatibility tests against integrated backend (`http://127.0.0.1:8091/confirm`):
+  - `go test ./internal/cli ./internal/client ./cmd/plz-confirm`
+  - manual `plz-confirm confirm --base-url ...` wait-path checks
+  - full E2E orchestration: WS capture -> response submit -> CLI unblock table output.
+- Stored all ad-hoc scripts (retroactively) under ticket scripts folder and made them executable:
+  - `ttmp/.../PC-05.../scripts/repro_cli_base_url_decode_regression.sh`
+  - `ttmp/.../PC-05.../scripts/ws_prefix_connect_smoke.sh`
+  - `ttmp/.../PC-05.../scripts/e2e_cli_confirm_roundtrip.sh`
+  - `ttmp/.../PC-05.../scripts/debug_ws_confirm_dual.sh`
+- Continued C4/C3 runtime parity implementation in `go-go-os` confirm runtime:
+  - Extended script-view typing and proto adapter mapping:
+    - preserve `stepId`, `title`, `description`
+    - preserve non-core script widget names (`rating`, `grid`, etc.) instead of coercing to `confirm`
+    - image response adapter now supports `selectedBool` and direct string forms
+  - Refactored `ConfirmRequestWindowHost` to:
+    - render script sections with display-context blocks and one interactive section enforcement
+    - send script events as `{ type: "submit" | "back", stepId, data }`
+    - add basic script display section rendering
+    - support upload widget submission via `FilePickerDropzone`
+    - improve table data compatibility (`rows` and `data`)
+  - Added adapter tests for script metadata + image confirm mapping.
+
+### Why
+
+- Without CLI fix, we could not reliably verify integrated server behavior from terminal workflows.
+- Without preserving script metadata and event semantics (`submit/back` + `stepId`), script runtime behavior diverges from existing plz-confirm expectations.
+- Without ticket-local scripts, handoff/replay quality is poor and intern onboarding loses reproducibility.
+
+### What worked
+
+- CLI base-url path now executes correctly (no more `unsupported outbound URL scheme ""`).
+- E2E verification succeeded: request creation, websocket observation, `/response` submit, CLI unblocked with expected row output.
+- Adapter tests pass after parity changes:
+  - `npm exec vitest run packages/confirm-runtime/src/proto/confirmProtoAdapter.test.ts`
+
+### What didn't work
+
+- `npm exec tsc -- -p packages/confirm-runtime/tsconfig.json --noEmit` reports pre-existing React typing/tooling issues in workspace setup (`Could not find declaration file for module 'react'`), so I used focused tests rather than full package typecheck as gate.
+- A first ws-smoke approach using external `timeout` left a child process alive; script was rewritten to `--count 1` plus explicit event trigger and cleanup.
+
+### What I learned
+
+- The CLI regression was purely decode-tag drift, not HTTP/backend incompatibility.
+- For embedded mounts, path-preserving URL builders are mandatory across every helper command, not only runtime client code.
+- Script-mode parity is mostly about event contract fidelity and view metadata propagation, not raw widget rendering.
+
+### What was tricky to build
+
+- The trickiest part was preserving script widget identity for unsupported-but-valid types while still maintaining strict top-level request widget typing. Previously coercing unknown script widget types to `confirm` produced silent incorrect behavior.
+- Another sharp edge was preventing validation scripts from leaking long-running websocket processes; I moved to deterministic count-based WS capture and explicit cleanup.
+
+### What warrants a second pair of eyes
+
+- Review `ConfirmRequestWindowHost` script mode behavior for exact parity with legacy UI around `display` formatting and section constraints.
+- Review upload output payload shape in script mode (`files[]` object fields) against any downstream script assumptions.
+
+### What should be done in the future
+
+- Add runtime-level component tests for script sections + back behavior in `confirm-runtime`.
+- Add a small CLI test around `buildWSURL` prefix handling to prevent regression.
+- Continue planned C3 work items for remaining script parity gaps (`grid`/`rating` rendering, richer display formatting).
+
+### Code review instructions
+
+- Verify CLI regression fix and ws prefix handling:
+  - `git -C /home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/plz-confirm diff -- cmd/plz-confirm/ws.go internal/cli`
+- Run ticket scripts:
+  - `bash /home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/plz-confirm/ttmp/2026/02/23/PC-05-INTEGRATE-OS--integrate-go-go-os-macos-windowing-frontend-with-plz-confirm-backend/scripts/repro_cli_base_url_decode_regression.sh`
+  - `bash /home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/plz-confirm/ttmp/2026/02/23/PC-05-INTEGRATE-OS--integrate-go-go-os-macos-windowing-frontend-with-plz-confirm-backend/scripts/e2e_cli_confirm_roundtrip.sh`
+- Verify confirm-runtime adapter changes:
+  - `cd /home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/go-go-os`
+  - `npm exec vitest run packages/confirm-runtime/src/proto/confirmProtoAdapter.test.ts`
+
+### Technical details
+
+- Key changed files (`plz-confirm`):
+  - `/home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/plz-confirm/cmd/plz-confirm/ws.go`
+  - `/home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/plz-confirm/internal/cli/confirm.go`
+  - `/home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/plz-confirm/internal/cli/select.go`
+  - `/home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/plz-confirm/internal/cli/form.go`
+  - `/home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/plz-confirm/internal/cli/table.go`
+  - `/home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/plz-confirm/internal/cli/upload.go`
+  - `/home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/plz-confirm/internal/cli/image.go`
+  - `/home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/plz-confirm/ttmp/2026/02/23/PC-05-INTEGRATE-OS--integrate-go-go-os-macos-windowing-frontend-with-plz-confirm-backend/scripts/*.sh`
+- Key changed files (`go-go-os`):
+  - `/home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/go-go-os/packages/confirm-runtime/src/types.ts`
+  - `/home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/go-go-os/packages/confirm-runtime/src/proto/confirmProtoAdapter.ts`
+  - `/home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/go-go-os/packages/confirm-runtime/src/proto/confirmProtoAdapter.test.ts`
+  - `/home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/go-go-os/packages/confirm-runtime/src/components/ConfirmRequestWindowHost.tsx`

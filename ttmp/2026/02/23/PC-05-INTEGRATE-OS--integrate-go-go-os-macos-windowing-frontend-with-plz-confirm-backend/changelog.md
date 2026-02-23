@@ -118,3 +118,42 @@ Validation executed:
 Known environment note:
 
 - Workspace `tsc -b` remains blocked by pre-existing `packages/engine` typing/tooling issues unrelated to this fix.
+
+## 2026-02-23
+
+Continued integration execution with three outcomes:
+
+1. Repaired `plz-confirm` CLI compatibility with embedded `/confirm` backend:
+   - Fixed Glazed tag decode regression in all request commands (`glazed.parameter` -> `glazed`).
+   - Fixed `plz-confirm ws` path-prefix handling so `--base-url http://host/confirm` resolves to `/confirm/ws`.
+2. Archived all ad-hoc validation scripts retroactively into ticket-owned scripts directory:
+   - `scripts/repro_cli_base_url_decode_regression.sh`
+   - `scripts/ws_prefix_connect_smoke.sh`
+   - `scripts/e2e_cli_confirm_roundtrip.sh`
+   - `scripts/debug_ws_confirm_dual.sh`
+3. Resumed C4/C3 runtime parity work in `@hypercard/confirm-runtime`:
+   - Script metadata mapping (`stepId`, `title`, `description`) + unknown script widget preservation.
+   - Script submit/back event semantics in host (`type: submit/back`, with `stepId`).
+   - Script sections rendering with display blocks and one-interactive-section validation.
+   - Upload widget host support via `FilePickerDropzone`.
+
+Validation snapshots:
+
+- `go test ./internal/cli ./internal/client ./cmd/plz-confirm` (pass)
+- `npm exec vitest run packages/confirm-runtime/src/proto/confirmProtoAdapter.test.ts` (pass)
+- Ticket script E2E roundtrip (`scripts/e2e_cli_confirm_roundtrip.sh`) (pass)
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/plz-confirm/cmd/plz-confirm/ws.go — Embedded prefix websocket URL fix
+- /home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/plz-confirm/internal/cli/confirm.go — Glazed decode tag fix
+- /home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/plz-confirm/internal/cli/select.go — Glazed decode tag fix
+- /home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/plz-confirm/internal/cli/form.go — Glazed decode tag fix
+- /home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/plz-confirm/internal/cli/table.go — Glazed decode tag fix
+- /home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/plz-confirm/internal/cli/upload.go — Glazed decode tag fix
+- /home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/plz-confirm/internal/cli/image.go — Glazed decode tag fix
+- /home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/plz-confirm/ttmp/2026/02/23/PC-05-INTEGRATE-OS--integrate-go-go-os-macos-windowing-frontend-with-plz-confirm-backend/scripts/e2e_cli_confirm_roundtrip.sh — Reproducible CLI/backend E2E harness
+- /home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/go-go-os/packages/confirm-runtime/src/components/ConfirmRequestWindowHost.tsx — Script-mode parity and upload host support
+- /home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/go-go-os/packages/confirm-runtime/src/proto/confirmProtoAdapter.ts — Script metadata + image bool mapping
+- /home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/go-go-os/packages/confirm-runtime/src/proto/confirmProtoAdapter.test.ts — Coverage for new adapter behavior
+- /home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/go-go-os/packages/confirm-runtime/src/types.ts — Script view type extensions
