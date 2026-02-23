@@ -35,11 +35,11 @@
 
 ### C. Inventory Host Integration (thin adapter)
 
-- [ ] C1. Wire confirm-runtime reducer/services into `apps/inventory` store
-- [ ] C2. Wire `renderAppWindow` delegation for `confirm-request:<id>`
-- [ ] C3. Add desktop command/menu hooks for confirm queue (minimal)
+- [x] C1. Wire confirm-runtime reducer/services into `apps/inventory` store
+- [x] C2. Wire `renderAppWindow` delegation for `confirm-request:<id>`
+- [x] C3. Add desktop command/menu hooks for confirm queue (minimal)
 - [ ] C4. Validate manual flow for window open/close lifecycle
-- [ ] C5. Commit inventory integration tranche (`git commit` checkpoint)
+- [x] C5. Commit inventory integration tranche (`git commit` checkpoint)
 
 ### D. Backend Integration (existing planned phases)
 

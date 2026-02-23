@@ -852,3 +852,69 @@ I kept this as a dedicated commit so reviewers can inspect stories separately fr
 ### Technical details
 
 - Commit hash for this tranche: `203181b`.
+
+## Step 11: Complete inventory host integration tranche (C1/C2/C3/C5)
+
+I continued implementation with the next planned tranche: wiring confirm-runtime into `apps/inventory` and integrating request-window routing/queue commands. This closes most of Phase C and prepares for backend route mounting work.
+
+Per user instruction, UI-specific narrative details were recorded in the separate handoff ticket `PC-06-UI-CONSISTENCY-HANDOFF`; this step records the implementation checkpoint and cross-ticket linkage.
+
+### Prompt Context
+
+**User prompt (verbatim):** (see Step 6)
+
+**Assistant interpretation:** Continue task-by-task implementation and commits while splitting UI-oriented writeups into dedicated handoff ticket.
+
+**Inferred user intent:** Keep engineering progress moving while maintaining clean documentation boundaries for design collaboration.
+
+**Commit (code):** `af1a085` — "inventory: wire confirm-runtime windows and queue host integration"
+
+### What I did
+
+- Wired confirm-runtime reducer into inventory store.
+- Wired `renderAppWindow` delegation for:
+  - `confirm-request:<id>`
+  - `confirm-queue`
+- Added minimal queue command/menu/icon hooks (`confirm.queue`).
+- Added `/confirm` proxy/alias adjustments in Vite helper for dev integration paths.
+- Committed integration tranche in `go-go-os`.
+
+### Why
+
+- This implements C1, C2, C3, and C5 from the task plan, leaving only C4 manual lifecycle validation pending.
+
+### What worked
+
+- Tranche committed cleanly and task statuses advanced.
+
+### What didn't work
+
+- Full build/typecheck remains blocked by broader pre-existing TypeScript/dependency environment issues in this workspace.
+
+### What I learned
+
+- Separating UI handoff details into PC-06 while keeping implementation status in PC-05 keeps both tickets focused and reviewable.
+
+### What was tricky to build
+
+- The tricky part was maintaining correct app-key and window-id conventions while integrating queue and request windows without destabilizing existing chat/debug windows.
+
+### What warrants a second pair of eyes
+
+- Confirm that queue/request window routing keys (`confirm-queue`, `confirm-request:<id>`) align with long-term app-key naming conventions.
+
+### What should be done in the future
+
+- Run C4 manual lifecycle validation once backend `/confirm/*` routes are mounted (D1/D2).
+
+### Code review instructions
+
+- Verify commit:
+  - `git -C /home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/go-go-os show --name-only af1a085`
+- Verify task transitions:
+  - `docmgr task list --ticket PC-05-INTEGRATE-OS`
+
+### Technical details
+
+- UI-focused narrative for this tranche is captured in:
+  - `/home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/plz-confirm/ttmp/2026/02/23/PC-06-UI-CONSISTENCY-HANDOFF--confirm-widget-visual-consistency-handoff/reference/01-diary.md`

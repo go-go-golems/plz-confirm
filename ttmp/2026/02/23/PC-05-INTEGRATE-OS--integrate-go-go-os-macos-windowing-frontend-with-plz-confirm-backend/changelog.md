@@ -60,3 +60,14 @@ Added copious Storybook coverage for the six new engine widgets (commit 203181b)
 - /home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/go-go-os/packages/engine/src/components/widgets/SelectableList.stories.tsx — New interactive and edge-case stories
 - /home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/plz-confirm/ttmp/2026/02/23/PC-05-INTEGRATE-OS--integrate-go-go-os-macos-windowing-frontend-with-plz-confirm-backend/reference/01-diary.md — Step 10 documents story tranche and validation
 
+
+## 2026-02-23
+
+Completed inventory host integration tranche (commit af1a085): wired confirm-runtime reducer, runtime connection lifecycle, confirm request window delegation, confirm queue command/menu wiring, and /confirm dev proxy aliasing.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/go-go-os/apps/inventory/src/App.tsx — Confirm queue and request window host integration
+- /home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/go-go-os/apps/inventory/src/app/store.ts — confirmRuntime reducer wiring
+- /home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/go-go-os/tooling/vite/createHypercardViteConfig.ts — /confirm proxy and alias support
+
