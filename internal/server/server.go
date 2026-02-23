@@ -8,7 +8,6 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -291,7 +290,8 @@ func (s *Server) handleCreateRequest(w http.ResponseWriter, r *http.Request) {
 		log.Printf("[WS] marshal new_request failed: %v", err)
 	}
 
-	log.Printf("[API] Created request %s (%s)", req.Id, req.Type)
+	// #nosec G706 -- req.Id is server-generated and quoted for log safety.
+	log.Printf("[API] Created request %q (%s)", req.Id, req.Type.String())
 	writeProtoJSON(w, http.StatusCreated, req)
 }
 
@@ -447,7 +447,8 @@ func (s *Server) handleSubmitResponse(w http.ResponseWriter, r *http.Request, id
 		log.Printf("[WS] marshal request_completed failed: %v", err)
 	}
 
-	log.Printf("[API] Request %s completed", req.Id)
+	// #nosec G706 -- req.Id is server-generated and quoted for log safety.
+	log.Printf("[API] Request %q completed", req.Id)
 	writeProtoJSON(w, http.StatusOK, req)
 }
 
@@ -634,7 +635,7 @@ func (s *Server) handleImagesItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	f, err := os.Open(img.Path)
+	f, err := s.images.Open(r.Context(), id)
 	if err != nil {
 		s.images.Delete(context.Background(), id)
 		http.Error(w, "not found", http.StatusNotFound)
@@ -661,6 +662,7 @@ func (s *Server) handleImagesItem(w http.ResponseWriter, r *http.Request) {
 
 func writeJSON(w http.ResponseWriter, status int, v any) {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-Content-Type-Options", "nosniff")
 	w.WriteHeader(status)
 	_ = json.NewEncoder(w).Encode(v)
 }
@@ -668,6 +670,7 @@ func writeJSON(w http.ResponseWriter, status int, v any) {
 // writeProtoJSON writes a protobuf message as JSON using protojson
 func writeProtoJSON(w http.ResponseWriter, status int, msg proto.Message) {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-Content-Type-Options", "nosniff")
 	w.WriteHeader(status)
 	b, err := protojson.MarshalOptions{
 		EmitUnpopulated: true,
@@ -678,5 +681,6 @@ func writeProtoJSON(w http.ResponseWriter, status int, msg proto.Message) {
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
+	// #nosec G705 -- payload is protojson with application/json content-type.
 	_, _ = w.Write(b)
 }

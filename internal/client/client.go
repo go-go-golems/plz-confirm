@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"mime/multipart"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
@@ -27,9 +28,32 @@ import (
 type Client struct {
 	BaseURL    string
 	HTTPClient *http.Client
+	policy     outboundPolicy
 }
 
 var ErrWaitTimeout = stderrors.New("timeout waiting for response")
+
+// outboundPolicy is intentionally internal for now; it establishes a default
+// transport safety baseline without introducing external configuration.
+type outboundPolicy struct {
+	AllowHTTP      bool
+	AllowHTTPS     bool
+	AllowLoopback  bool
+	AllowPrivateIP bool
+	AllowLinkLocal bool
+	BlockMetadata  bool
+}
+
+func defaultOutboundPolicy() outboundPolicy {
+	return outboundPolicy{
+		AllowHTTP:      true,
+		AllowHTTPS:     true,
+		AllowLoopback:  true,
+		AllowPrivateIP: true,
+		AllowLinkLocal: false,
+		BlockMetadata:  true,
+	}
+}
 
 func New(baseURL string) *Client {
 	return &Client{
@@ -40,6 +64,7 @@ func New(baseURL string) *Client {
 			// - we rely on per-request contexts / server-side long-poll timeouts
 			Timeout: 0,
 		},
+		policy: defaultOutboundPolicy(),
 	}
 }
 
@@ -138,7 +163,7 @@ func (c *Client) CreateRequest(ctx context.Context, p CreateRequestParams) (*v1.
 	}
 	req.Header.Set("Content-Type", "application/json")
 
-	resp, err := c.HTTPClient.Do(req)
+	resp, err := c.do(req)
 	if err != nil {
 		return nil, errors.Wrap(err, "post /api/requests")
 	}
@@ -235,6 +260,7 @@ func (c *Client) UploadImage(ctx context.Context, filePath string, ttlSeconds in
 			_ = mw.Close()
 		}()
 
+		// #nosec G304 -- filePath is a user-selected local file path for explicit upload.
 		f, err := os.Open(filePath)
 		if err != nil {
 			_ = pw.CloseWithError(errors.Wrap(err, "open image file"))
@@ -269,7 +295,7 @@ func (c *Client) UploadImage(ctx context.Context, filePath string, ttlSeconds in
 	}
 	req.Header.Set("Content-Type", mw.FormDataContentType())
 
-	resp, err := c.HTTPClient.Do(req)
+	resp, err := c.do(req)
 	if err != nil {
 		return UploadImageResponse{}, errors.Wrap(err, "post /api/images")
 	}
@@ -301,7 +327,7 @@ func (c *Client) waitOnce(ctx context.Context, id string, pollTimeoutS int) (*v1
 		return nil, errors.Wrap(err, "create wait request")
 	}
 
-	resp, err := c.HTTPClient.Do(req)
+	resp, err := c.do(req)
 	if err != nil {
 		return nil, errors.Wrap(err, "get /wait")
 	}
@@ -325,4 +351,86 @@ func (c *Client) waitOnce(ctx context.Context, id string, pollTimeoutS int) (*v1
 		return nil, errors.Wrap(err, "protojson unmarshal wait response")
 	}
 	return out, nil
+}
+
+func (c *Client) do(req *http.Request) (*http.Response, error) {
+	if req == nil || req.URL == nil {
+		return nil, errors.New("invalid request URL")
+	}
+	if err := validateOutboundURL(req.URL, c.policy); err != nil {
+		return nil, err
+	}
+	// #nosec G107,G704 -- URL is validated by validateOutboundURL before dispatch.
+	return c.HTTPClient.Do(req)
+}
+
+func validateOutboundURL(u *url.URL, policy outboundPolicy) error {
+	if u == nil {
+		return errors.New("outbound URL is required")
+	}
+	scheme := strings.ToLower(strings.TrimSpace(u.Scheme))
+	switch scheme {
+	case "http":
+		if !policy.AllowHTTP {
+			return errors.New("outbound http is disabled")
+		}
+	case "https":
+		if !policy.AllowHTTPS {
+			return errors.New("outbound https is disabled")
+		}
+	default:
+		return errors.Errorf("unsupported outbound URL scheme %q", u.Scheme)
+	}
+
+	host := strings.TrimSpace(u.Hostname())
+	if host == "" {
+		return errors.New("outbound URL host is required")
+	}
+	if isMetadataHost(host) && policy.BlockMetadata {
+		return errors.Errorf("blocked metadata host %q", host)
+	}
+	if strings.EqualFold(host, "localhost") && !policy.AllowLoopback {
+		return errors.New("loopback outbound host is disabled")
+	}
+
+	ip := net.ParseIP(host)
+	if ip == nil {
+		return nil
+	}
+	if isMetadataIP(ip) && policy.BlockMetadata {
+		return errors.Errorf("blocked metadata IP %q", host)
+	}
+	if ip.IsLoopback() && !policy.AllowLoopback {
+		return errors.Errorf("loopback outbound IP %q is disabled", host)
+	}
+	if ip.IsPrivate() && !policy.AllowPrivateIP {
+		return errors.Errorf("private outbound IP %q is disabled", host)
+	}
+	if (ip.IsLinkLocalUnicast() || ip.IsLinkLocalMulticast()) && !policy.AllowLinkLocal {
+		return errors.Errorf("link-local outbound IP %q is disabled", host)
+	}
+	return nil
+}
+
+func isMetadataHost(host string) bool {
+	switch strings.ToLower(strings.TrimSpace(host)) {
+	case "metadata.google.internal", "metadata":
+		return true
+	default:
+		return false
+	}
+}
+
+func isMetadataIP(ip net.IP) bool {
+	if ip == nil {
+		return false
+	}
+	// AWS IMDS IPv4 and IPv6 well-known addresses.
+	if ip.Equal(net.ParseIP("169.254.169.254")) {
+		return true
+	}
+	if ip.Equal(net.ParseIP("fd00:ec2::254")) {
+		return true
+	}
+	return false
 }

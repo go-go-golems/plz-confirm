@@ -331,6 +331,9 @@ func defaultScriptContext(propsStruct interface{ AsMap() map[string]any }) map[s
 		props = propsStruct.AsMap()
 	}
 	seed := contextSeed(props)
+	// ctx.random/ctx.randomInt are deterministic scripting helpers, not
+	// cryptographic primitives for secrets or auth flows.
+	// #nosec G404 -- intentional non-crypto PRNG for reproducible script behavior.
 	rng := rand.New(rand.NewSource(seed))
 	return map[string]any{
 		"props": props,

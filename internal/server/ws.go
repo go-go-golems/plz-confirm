@@ -129,7 +129,8 @@ func (s *Server) handleWS(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.ws.add(sessionID, conn)
-	log.Printf("[WS] client connected (sessionId=%s)", sessionID)
+	// #nosec G706 -- sessionId is quoted to neutralize control characters.
+	log.Printf("[WS] client connected (sessionId=%q)", sessionID)
 
 	// On connect, send all currently pending requests.
 	pending := s.store.PendingForSession(r.Context(), sessionID)

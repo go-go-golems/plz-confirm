@@ -118,3 +118,12 @@ Step 11: Implemented Proposal 11 declarative branching helper API (ctx.branch) w
 - /home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/internal/scriptengine/engine.go — ctx.branch helper
 - /home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/internal/scriptengine/engine_test.go — branch helper tests
 
+
+## 2026-02-23
+
+Added security findings analysis reference covering G115/G404/G704/G703/G705/G706 triage, exploitability, and project-specific mitigation strategy.
+
+### Related Files
+
+- ttmp/2026/02/22/PC-02-JS-API-IMPROVEMENTS--js-script-api-improvements/reference/02-security-findings-analysis-and-mitigation-strategy.md — New detailed security triage and mitigation matrix
+

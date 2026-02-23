@@ -135,3 +135,35 @@ func TestCreateRequest_ScriptInput(t *testing.T) {
 		t.Fatalf("server did not observe script input")
 	}
 }
+
+func TestWaitOnceRejectsMetadataIPHost(t *testing.T) {
+	t.Parallel()
+
+	c := New("http://169.254.169.254")
+	ctx, cancel := context.WithTimeout(context.Background(), 250*time.Millisecond)
+	defer cancel()
+
+	_, err := c.waitOnce(ctx, "req-1", 1)
+	if err == nil {
+		t.Fatalf("expected error for metadata host, got nil")
+	}
+	if !strings.Contains(err.Error(), "metadata") {
+		t.Fatalf("expected metadata-blocked error, got %v", err)
+	}
+}
+
+func TestWaitOnceRejectsUnsupportedScheme(t *testing.T) {
+	t.Parallel()
+
+	c := New("ftp://example.com")
+	ctx, cancel := context.WithTimeout(context.Background(), 250*time.Millisecond)
+	defer cancel()
+
+	_, err := c.waitOnce(ctx, "req-1", 1)
+	if err == nil {
+		t.Fatalf("expected error for unsupported scheme, got nil")
+	}
+	if !strings.Contains(err.Error(), "unsupported outbound URL scheme") {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}

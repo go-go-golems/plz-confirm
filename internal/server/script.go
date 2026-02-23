@@ -7,6 +7,7 @@ import (
 	stderrors "errors"
 	"fmt"
 	"io"
+	"math"
 	"net/http"
 	"strings"
 
@@ -662,6 +663,52 @@ func numberAsInt(v any) (int, bool) {
 	}
 }
 
+func numberAsInt64(v any) (int64, bool) {
+	switch n := v.(type) {
+	case int:
+		return int64(n), true
+	case int8:
+		return int64(n), true
+	case int16:
+		return int64(n), true
+	case int32:
+		return int64(n), true
+	case int64:
+		return n, true
+	case uint:
+		if uint64(n) > math.MaxInt64 {
+			return 0, false
+		}
+		return int64(n), true
+	case uint8:
+		return int64(n), true
+	case uint16:
+		return int64(n), true
+	case uint32:
+		return int64(n), true
+	case uint64:
+		if n > math.MaxInt64 {
+			return 0, false
+		}
+		return int64(n), true
+	case float32:
+		f := float64(n)
+		if math.IsNaN(f) || math.IsInf(f, 0) || f < math.MinInt64 || f > math.MaxInt64 {
+			return 0, false
+		}
+		i := int64(f)
+		return i, float64(i) == f
+	case float64:
+		if math.IsNaN(n) || math.IsInf(n, 0) || n < math.MinInt64 || n > math.MaxInt64 {
+			return 0, false
+		}
+		i := int64(n)
+		return i, float64(i) == n
+	default:
+		return 0, false
+	}
+}
+
 func mapToScriptProgress(raw any) (*v1.ScriptProgress, error) {
 	if raw == nil {
 		return nil, nil
@@ -670,11 +717,11 @@ func mapToScriptProgress(raw any) (*v1.ScriptProgress, error) {
 	if !ok {
 		return nil, fmt.Errorf("view.progress must be object")
 	}
-	current, ok := numberAsInt(progressMap["current"])
+	current, ok := numberAsInt64(progressMap["current"])
 	if !ok {
 		return nil, fmt.Errorf("view.progress.current is required and must be integer")
 	}
-	total, ok := numberAsInt(progressMap["total"])
+	total, ok := numberAsInt64(progressMap["total"])
 	if !ok {
 		return nil, fmt.Errorf("view.progress.total is required and must be integer")
 	}
@@ -686,6 +733,9 @@ func mapToScriptProgress(raw any) (*v1.ScriptProgress, error) {
 	}
 	if current > total {
 		return nil, fmt.Errorf("view.progress.current must be <= total")
+	}
+	if current > math.MaxInt32 || total > math.MaxInt32 {
+		return nil, fmt.Errorf("view.progress values exceed int32 range")
 	}
 
 	progress := &v1.ScriptProgress{
