@@ -1,0 +1,1176 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>01-implementation-plan-js-describe-extension</title>
+  <style>
+    html {
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 12px;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+    @media print {
+      html {
+        background-color: white;
+      }
+      body {
+        background-color: transparent;
+        color: black;
+        font-size: 12pt;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      font-family: Menlo, Monaco, Consolas, 'Lucida Console', monospace;
+      font-size: 85%;
+      margin: 0;
+      hyphens: manual;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      background-color: #1a1a1a;
+      border: none;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC ul {
+      padding-left: 1.3em;
+    }
+    #TOC > ul {
+      padding-left: 0;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+    /* CSS for syntax highlighting */
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    .sourceCode { overflow: visible; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+        color: #aaaaaa;
+      }
+    pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+    div.sourceCode
+      {   }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+    code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+    code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+    code span.at { color: #7d9029; } /* Attribute */
+    code span.bn { color: #40a070; } /* BaseN */
+    code span.bu { color: #008000; } /* BuiltIn */
+    code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+    code span.ch { color: #4070a0; } /* Char */
+    code span.cn { color: #880000; } /* Constant */
+    code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+    code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+    code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+    code span.dt { color: #902000; } /* DataType */
+    code span.dv { color: #40a070; } /* DecVal */
+    code span.er { color: #ff0000; font-weight: bold; } /* Error */
+    code span.ex { } /* Extension */
+    code span.fl { color: #40a070; } /* Float */
+    code span.fu { color: #06287e; } /* Function */
+    code span.im { color: #008000; font-weight: bold; } /* Import */
+    code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+    code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+    code span.op { color: #666666; } /* Operator */
+    code span.ot { color: #007020; } /* Other */
+    code span.pp { color: #bc7a00; } /* Preprocessor */
+    code span.sc { color: #4070a0; } /* SpecialChar */
+    code span.ss { color: #bb6688; } /* SpecialString */
+    code span.st { color: #4070a0; } /* String */
+    code span.va { color: #19177c; } /* Variable */
+    code span.vs { color: #4070a0; } /* VerbatimString */
+    code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+  </style>
+</head>
+<body>
+<h1 id="implementation-plan-js-describe-extension">Implementation Plan:
+JS Describe Extension</h1>
+<h2 id="executive-summary">Executive Summary</h2>
+<p>This document proposes how to add a JavaScript-driven interaction API
+to <code>plz-confirm</code>, centered on a new <strong>describe
+extension</strong> plus a script execution lifecycle. The goal is to let
+an agent submit a JavaScript program that:</p>
+<ol type="1">
+<li>declares its contract via <code>describe(ctx)</code>;</li>
+<li>initializes state via <code>init(ctx)</code>;</li>
+<li>renders UI trees via <code>view(state, ctx)</code>;</li>
+<li>consumes user events via
+<code>update(state, event, ctx)</code>;</li>
+<li>either returns an updated state (continue) or a final result
+(complete).</li>
+</ol>
+<p>The implementation spans both repositories:</p>
+<ul>
+<li><code>plz-confirm</code>: wire protocol, server lifecycle,
+store/event model, CLI command, and React renderer.</li>
+<li><code>go-go-goja</code>: reusable runtime and module patterns to
+keep the JS bridge maintainable and safe.</li>
+</ul>
+<p>The recommended path is <strong>phased</strong>:</p>
+<ul>
+<li>Phase 1: add protocol/runtime foundations with strict sandbox
+defaults and no async requirements.</li>
+<li>Phase 2: add frontend generic renderer for script nodes and event
+loop endpoint.</li>
+<li>Phase 3: harden with validation, tests, and observability.</li>
+<li>Phase 4: optional extraction/reuse improvements in
+<code>go-go-goja</code>.</li>
+</ul>
+<h2 id="problem-statement">Problem Statement</h2>
+<h3 id="what-is-missing-today">What is missing today</h3>
+<p><code>plz-confirm</code> is currently optimized for one-shot widgets
+(confirm/select/form/upload/table/image):</p>
+<ul>
+<li>create request (<code>POST /api/requests</code>),</li>
+<li>render one known widget type,</li>
+<li>submit final output
+(<code>POST /api/requests/{id}/response</code>),</li>
+<li>mark completed.</li>
+</ul>
+<p>This works well for static interactions, but fails for dynamic
+multi-step flows where the next screen depends on user input and
+intermediate control decisions.</p>
+<h3 id="why-a-describe-extension-is-needed">Why a describe extension is
+needed</h3>
+<p>The imported source (<code>sources/local/plz-confirm-js.md</code>)
+defines a script widget concept. However, to safely operationalize this
+in production, we need a reliable preflight contract that states what
+the script is and expects before execution. That contract is the
+<strong>describe extension</strong>:</p>
+<ul>
+<li>defines API version/compatibility,</li>
+<li>declares expected props and output shape,</li>
+<li>declares optional capabilities (files, secondary actions,
+etc.),</li>
+<li>gives the server/frontend enough metadata to validate behavior
+before runtime errors.</li>
+</ul>
+<p>Without <code>describe</code>, onboarding and debugging become
+difficult because behavior is implicit in code only.</p>
+<h3 id="existing-architectural-constraints">Existing architectural
+constraints</h3>
+<p>The current codebase imposes concrete constraints we must design
+around:</p>
+<ul>
+<li><code>UIRequest</code> is typed by protobuf oneofs
+(<code>request.proto</code>, <code>widgets.proto</code>) and serialized
+with <code>protojson</code>.</li>
+<li>Server lifecycle is completion-oriented
+(<code>internal/server/server.go</code> +
+<code>internal/store/store.go</code>).</li>
+<li>Frontend <code>submitResponse</code> path always implies completion
+(<code>WidgetRenderer.tsx</code>,
+<code>services/websocket.ts</code>).</li>
+<li>Store has one done-channel per request and no intermediate event
+stream.</li>
+<li>Goja runtime access must remain single-owner and time-bounded.</li>
+</ul>
+<h2 id="current-architecture-map-what-exists-now">Current Architecture
+Map (What Exists Now)</h2>
+<p>This section is intentionally explicit so a new intern can navigate
+confidently.</p>
+<h3 id="plz-confirm-wire-model">plz-confirm wire model</h3>
+<p>Primary files:</p>
+<ul>
+<li><code>proto/plz_confirm/v1/request.proto</code></li>
+<li><code>proto/plz_confirm/v1/widgets.proto</code></li>
+</ul>
+<p>Current <code>WidgetType</code> values are
+<code>confirm/select/form/upload/table/image</code> (no script type
+yet). <code>UIRequest</code> has typed input/output oneofs and request
+metadata/status fields.</p>
+<h3 id="plz-confirm-server-lifecycle">plz-confirm server lifecycle</h3>
+<p>Primary file:</p>
+<ul>
+<li><code>internal/server/server.go</code></li>
+</ul>
+<p>Current request endpoints:</p>
+<ul>
+<li><code>POST /api/requests</code> -&gt; create pending request</li>
+<li><code>GET /api/requests/{id}</code> -&gt; fetch request</li>
+<li><code>POST /api/requests/{id}/response</code> -&gt; submit final
+output</li>
+<li><code>POST /api/requests/{id}/touch</code> -&gt; disable expiry on
+first interaction</li>
+<li><code>GET /api/requests/{id}/wait</code> -&gt; long-poll until
+completion</li>
+</ul>
+<p>WebSocket events currently broadcast:</p>
+<ul>
+<li><code>new_request</code></li>
+<li><code>request_completed</code></li>
+</ul>
+<p>No <code>request_updated</code> event currently exists.</p>
+<h3 id="plz-confirm-state-store">plz-confirm state store</h3>
+<p>Primary file:</p>
+<ul>
+<li><code>internal/store/store.go</code></li>
+</ul>
+<p>Store model:</p>
+<ul>
+<li>in-memory map of request entries,</li>
+<li>per-request <code>done chan struct{}</code> used to unblock waiters
+on completion,</li>
+<li>helper <code>setDefaultOutputFor</code> for timeout completion
+defaults.</li>
+</ul>
+<p>Important limitation:</p>
+<ul>
+<li>the store can complete or touch a request, but has no first-class
+event stream/state-version updates for ongoing flows.</li>
+</ul>
+<h3 id="plz-confirm-cli-pattern">plz-confirm CLI pattern</h3>
+<p>Primary files:</p>
+<ul>
+<li><code>cmd/plz-confirm/main.go</code></li>
+<li><code>internal/cli/*.go</code></li>
+<li><code>internal/client/client.go</code></li>
+</ul>
+<p>Each command follows the same shape:</p>
+<ol type="1">
+<li>parse flags into settings,</li>
+<li>build typed input payload,</li>
+<li>call <code>CreateRequest</code>,</li>
+<li>call <code>WaitRequest</code>,</li>
+<li>decode typed output and print row.</li>
+</ol>
+<h3 id="plz-confirm-frontend-pattern">plz-confirm frontend pattern</h3>
+<p>Primary files:</p>
+<ul>
+<li><code>agent-ui-system/client/src/components/WidgetRenderer.tsx</code></li>
+<li><code>agent-ui-system/client/src/services/websocket.ts</code></li>
+<li><code>agent-ui-system/client/src/store/store.ts</code></li>
+<li><code>agent-ui-system/client/src/proto/normalize.ts</code></li>
+</ul>
+<p>Rendering is a <code>switch(active.type)</code> into explicit dialog
+components. Submission calls <code>submitResponse</code>, which posts
+typed oneof output and then transitions request to
+completed/history.</p>
+<h3 id="go-go-goja-runtime-and-modules">go-go-goja runtime and
+modules</h3>
+<p>Primary files:</p>
+<ul>
+<li><code>go-go-goja/engine/runtime.go</code></li>
+<li><code>go-go-goja/engine/factory.go</code></li>
+<li><code>go-go-goja/modules/common.go</code></li>
+<li><code>go-go-goja/modules/exports.go</code></li>
+<li><code>go-go-goja/pkg/runtimeowner/runner.go</code></li>
+</ul>
+<p>Key patterns we should reuse:</p>
+<ul>
+<li><code>modules.NativeModule</code> adapter shape (<code>Name</code>,
+<code>Doc</code>, <code>Loader</code>),</li>
+<li><code>modules.Register</code> + <code>EnableAll</code> registry
+workflow,</li>
+<li>exported Go values via <code>modules.SetExport</code>,</li>
+<li>owner-thread execution discipline via
+<code>runtimeowner.Runner</code> where async is involved.</li>
+</ul>
+<h3 id="experiment-findings-used-in-this-plan">Experiment findings used
+in this plan</h3>
+<p>Ticket-local experiments validated:</p>
+<ol type="1">
+<li><code>module.exports</code> init/view/update invocation can return
+stable <code>map[string]any</code> trees after
+<code>Export()</code>.</li>
+<li><code>goja.Runtime.Interrupt()</code> reliably aborts runaway
+scripts with <code>*goja.InterruptedError</code>.</li>
+<li><code>protojson</code> shape matches existing conventions (enum
+strings + oneof lower-camel fields).</li>
+</ol>
+<p>Experiment scripts:</p>
+<ul>
+<li><code>scripts/goja-flow/main.go</code></li>
+<li><code>scripts/goja-interrupt/main.go</code></li>
+<li><code>scripts/protojson-shape/main.go</code></li>
+</ul>
+<h2 id="proposed-solution">Proposed Solution</h2>
+<h2
+id="js-contract-add-the-describe-extension-and-state-machine-lifecycle">1)
+JS contract: add the describe extension and state-machine lifecycle</h2>
+<h3 id="script-exports">Script exports</h3>
+<p>Recommended JS module contract:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode js"><code class="sourceCode javascript"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>module<span class="op">.</span><span class="at">exports</span> <span class="op">=</span> {</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">describe</span><span class="op">:</span> <span class="kw">function</span> (ctx) {</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> {</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>      <span class="dt">apiVersion</span><span class="op">:</span> <span class="st">&quot;plz-confirm.script.v1&quot;</span><span class="op">,</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>      <span class="dt">name</span><span class="op">:</span> <span class="st">&quot;deploy-approval&quot;</span><span class="op">,</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>      <span class="dt">summary</span><span class="op">:</span> <span class="st">&quot;Review plan and approve deployment&quot;</span><span class="op">,</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>      <span class="dt">propsSchema</span><span class="op">:</span> { <span class="co">/* JSON-Schema-ish object */</span> }<span class="op">,</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>      <span class="dt">resultSchema</span><span class="op">:</span> { <span class="co">/* JSON-Schema-ish object */</span> }<span class="op">,</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>      <span class="dt">capabilities</span><span class="op">:</span> {</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>        <span class="dt">needsFs</span><span class="op">:</span> <span class="kw">false</span><span class="op">,</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>        <span class="dt">supportsActions</span><span class="op">:</span> <span class="kw">true</span><span class="op">,</span></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>        <span class="dt">maxStepsHint</span><span class="op">:</span> <span class="dv">5</span><span class="op">,</span></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>      }</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>    }<span class="op">;</span></span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>  }<span class="op">,</span></span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>  <span class="dt">init</span><span class="op">:</span> <span class="kw">function</span> (ctx) {</span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> { <span class="dt">step</span><span class="op">:</span> <span class="st">&quot;start&quot;</span><span class="op">,</span> <span class="dt">answers</span><span class="op">:</span> {} }<span class="op">;</span></span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a>  }<span class="op">,</span></span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a>  <span class="dt">view</span><span class="op">:</span> <span class="kw">function</span> (state<span class="op">,</span> ctx) {</span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> { <span class="dt">kind</span><span class="op">:</span> <span class="st">&quot;page&quot;</span><span class="op">,</span> <span class="dt">title</span><span class="op">:</span> <span class="st">&quot;...&quot;</span><span class="op">,</span> <span class="dt">body</span><span class="op">:</span> [] }<span class="op">;</span></span>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a>  }<span class="op">,</span></span>
+<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a>  <span class="dt">update</span><span class="op">:</span> <span class="kw">function</span> (state<span class="op">,</span> <span class="bu">event</span><span class="op">,</span> ctx) {</span>
+<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a>    <span class="co">// either return next state or done envelope</span></span>
+<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> { <span class="dt">done</span><span class="op">:</span> <span class="kw">true</span><span class="op">,</span> <span class="dt">result</span><span class="op">:</span> { <span class="dt">approved</span><span class="op">:</span> <span class="kw">true</span> } }<span class="op">;</span></span>
+<span id="cb1-28"><a href="#cb1-28" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb1-29"><a href="#cb1-29" aria-hidden="true" tabindex="-1"></a>}<span class="op">;</span></span></code></pre></div>
+<h3 id="why-describe-is-required">Why <code>describe</code> is
+required</h3>
+<p><code>describe</code> is not decorative. It enables:</p>
+<ul>
+<li>server-side preflight validation before first render,</li>
+<li>clearer runtime errors when required exports are missing,</li>
+<li>compatibility checks as API evolves,</li>
+<li>safer onboarding and observability (name/summary/capabilities).</li>
+</ul>
+<h2
+id="plz-confirm-protocol-add-script-inputoutput-runtime-stateview">2)
+plz-confirm protocol: add script input/output + runtime state/view</h2>
+<h3 id="proto-additions">Proto additions</h3>
+<p>Files to update:</p>
+<ul>
+<li><code>proto/plz_confirm/v1/request.proto</code></li>
+<li><code>proto/plz_confirm/v1/widgets.proto</code></li>
+</ul>
+<p>Additions:</p>
+<ul>
+<li><code>WidgetType.script = 7</code> (or <code>flow = 7</code>, pick
+one and keep naming consistent).</li>
+<li><code>ScriptInput</code> and <code>ScriptOutput</code>
+messages.</li>
+<li><code>UIRequest</code> oneof entries:
+<ul>
+<li><code>script_input</code></li>
+<li><code>script_output</code></li>
+</ul></li>
+<li>New optional fields for pending runtime:
+<ul>
+<li><code>script_state</code> (<code>google.protobuf.Struct</code>)</li>
+<li><code>script_view</code> (<code>google.protobuf.Struct</code>)</li>
+<li>optional <code>script_describe</code>
+(<code>google.protobuf.Struct</code>) for surfaced metadata.</li>
+</ul></li>
+</ul>
+<p><code>ScriptInput</code> minimum fields:</p>
+<ul>
+<li><code>title</code></li>
+<li><code>script</code> (source string)</li>
+<li><code>props</code> (Struct)</li>
+<li>optional <code>mounts</code> (read-only fs capabilities)</li>
+<li>optional <code>limits</code> (timeouts/size guards)</li>
+</ul>
+<p><code>ScriptOutput</code> minimum fields:</p>
+<ul>
+<li><code>result</code> (Struct)</li>
+<li>optional <code>logs</code> (captured console lines)</li>
+</ul>
+<h3 id="why-stateview-live-on-request">Why state/view live on
+request</h3>
+<p>Storing current state/view in <code>UIRequest</code> makes
+multi-client behavior deterministic and debuggable. WS snapshots and
+REST fetches remain truthful without hidden server-local runtime
+context.</p>
+<h2
+id="plz-confirm-server-add-eventupdate-loop-for-pending-script-requests">3)
+plz-confirm server: add event/update loop for pending script
+requests</h2>
+<h3 id="new-endpoint">New endpoint</h3>
+<p>Add:</p>
+<ul>
+<li><code>POST /api/requests/{id}/event</code></li>
+</ul>
+<p>Expected payload:</p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode json"><code class="sourceCode json"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">{</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;type&quot;</span><span class="fu">:</span> <span class="st">&quot;submit&quot;</span><span class="fu">,</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;stepId&quot;</span><span class="fu">:</span> <span class="st">&quot;review&quot;</span><span class="fu">,</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;data&quot;</span><span class="fu">:</span> <span class="fu">{</span><span class="dt">&quot;approve&quot;</span><span class="fu">:</span> <span class="kw">true</span><span class="fu">},</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;actionId&quot;</span><span class="fu">:</span> <span class="kw">null</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="fu">}</span></span></code></pre></div>
+<p>Server flow:</p>
+<ol type="1">
+<li>Load request by ID.</li>
+<li>Ensure type is <code>script</code> and status pending.</li>
+<li>Re-run/update JS engine with current <code>script_state</code> +
+event.</li>
+<li>If done: set <code>script_output</code>, mark completed (existing
+completion path).</li>
+<li>Else: persist updated <code>script_state</code> +
+<code>script_view</code>, keep pending.</li>
+<li>Broadcast WS <code>request_updated</code>.</li>
+</ol>
+<h3 id="ws-event-extension">WS event extension</h3>
+<p>Add event type:</p>
+<ul>
+<li><code>request_updated</code></li>
+</ul>
+<p>Wire serialization reuses existing <code>marshalWSEvent</code>
+pattern in <code>internal/server/ws_events.go</code>.</p>
+<h3 id="store-extension">Store extension</h3>
+<p>Add store operations in <code>internal/store/store.go</code>:</p>
+<ul>
+<li><code>UpdatePending(id, patchFn)</code> or explicit methods:
+<ul>
+<li><code>SetScriptStateAndView(...)</code></li>
+<li><code>CompleteScript(...)</code></li>
+</ul></li>
+</ul>
+<p>Keep lock discipline and status guards identical to existing
+completion methods.</p>
+<h2
+id="script-runtime-in-plz-confirm-local-package-using-go-go-goja-patterns">4)
+Script runtime in plz-confirm: local package using go-go-goja
+patterns</h2>
+<h3 id="recommendation">Recommendation</h3>
+<p>Implement runtime package <strong>inside
+<code>plz-confirm</code></strong> first (for velocity and tight API
+evolution), while copying stable adapter patterns from
+<code>go-go-goja</code>.</p>
+<p>Suggested package:</p>
+<ul>
+<li><code>plz-confirm/internal/scriptengine</code></li>
+</ul>
+<p>Suggested files:</p>
+<ul>
+<li><code>engine.go</code> (compile + invoke
+describe/init/view/update)</li>
+<li><code>limits.go</code> (timeouts/output-size checks)</li>
+<li><code>ui_dsl.go</code> (builders or direct pass-through)</li>
+<li><code>sandbox_fs.go</code> (capability-based file reads)</li>
+<li><code>errors.go</code> (typed user-facing errors)</li>
+</ul>
+<h3 id="why-not-import-go-go-goja-engine-directly-initially">Why not
+import go-go-goja engine directly (initially)</h3>
+<p><code>go-go-goja/engine/runtime.go</code> blank-imports multiple
+modules (<code>database</code>, <code>exec</code>, <code>fs</code>,
+<code>glazehelp</code>) and drags a larger dependency surface than
+needed for plz-confirm runtime execution. The feature requires a
+narrower and safer runtime profile.</p>
+<h3 id="what-to-reuse-from-go-go-goja">What to reuse from
+go-go-goja</h3>
+<p>Reuse design patterns, not necessarily direct imports:</p>
+<ul>
+<li>module adapter conventions (<code>modules/common.go</code>,
+<code>modules/exports.go</code>),</li>
+<li>export naming and conversion discipline,</li>
+<li>owner-thread and async safety concepts
+(<code>pkg/runtimeowner</code>).</li>
+</ul>
+<h2 id="frontend-add-scriptdialog-generic-node-renderer">5) Frontend:
+add ScriptDialog + generic node renderer</h2>
+<h3 id="renderer-integration">Renderer integration</h3>
+<p>File:</p>
+<ul>
+<li><code>agent-ui-system/client/src/components/WidgetRenderer.tsx</code></li>
+</ul>
+<p>Add new branch:</p>
+<ul>
+<li><code>case WidgetType.script</code> -&gt;
+<code>&lt;ScriptDialog ... /&gt;</code></li>
+</ul>
+<h3 id="websocket-integration">WebSocket integration</h3>
+<p>File:</p>
+<ul>
+<li><code>agent-ui-system/client/src/services/websocket.ts</code></li>
+</ul>
+<p>Add new event handling:</p>
+<ul>
+<li><code>request_updated</code> -&gt; <code>patchRequest(...)</code>
+for active/pending entries.</li>
+</ul>
+<h3 id="script-dialog-responsibilities">Script dialog
+responsibilities</h3>
+<p><code>ScriptDialog</code> should:</p>
+<ul>
+<li>render <code>scriptView</code> node tree,</li>
+<li>collect local form/select/table selections for current step,</li>
+<li>submit to <code>/api/requests/{id}/event</code> (not
+<code>/response</code>) unless done-path semantics require
+<code>/response</code>.</li>
+</ul>
+<h3 id="ui-node-strategy">UI node strategy</h3>
+<p>Do not build a whole new UI library first.</p>
+<p>Phase 1 renderer should map script nodes onto existing dialog
+subcomponents/patterns:</p>
+<ul>
+<li>display: <code>markdown</code>, <code>callout</code>,
+<code>code</code>, <code>diff</code></li>
+<li>inputs: <code>confirm</code>, <code>select</code>,
+<code>form</code>, <code>table</code>, <code>image</code>,
+<code>upload</code></li>
+<li>controls: <code>submit</code>, <code>action</code></li>
+</ul>
+<p>This avoids duplicating validation/UX behavior already implemented in
+existing widgets.</p>
+<h2 id="cli-add-plz-confirm-script">6) CLI: add
+<code>plz-confirm script</code></h2>
+<h3 id="command-file">Command file</h3>
+<ul>
+<li><code>internal/cli/script.go</code></li>
+</ul>
+<h3 id="main-registration">Main registration</h3>
+<ul>
+<li><code>cmd/plz-confirm/main.go</code></li>
+</ul>
+<h3 id="core-flags">Core flags</h3>
+<ul>
+<li><code>--title</code></li>
+<li><code>--script @file.js</code> (and/or <code>--script -</code>)</li>
+<li><code>--props @props.json</code></li>
+<li><code>--mount name:path:ro</code> (repeatable)</li>
+<li><code>--timeout</code>, <code>--wait-timeout</code>,
+<code>--session-id</code>, <code>--base-url</code></li>
+</ul>
+<p>CLI output should report final <code>script_output.result</code> in
+existing Glazed output formats.</p>
+<h2 id="sandbox-defaults-and-security-posture">7) Sandbox defaults and
+security posture</h2>
+<p>Default capabilities for v1:</p>
+<ul>
+<li>allowed: <code>describe/init/view/update</code>,
+<code>console</code> capture, explicit read-only mounts.</li>
+<li>denied: arbitrary process execution, unrestricted filesystem,
+network, env mutation.</li>
+</ul>
+<p>Implement fs safety with mount names + relative paths only. No
+absolute path reads from script code.</p>
+<p>Use bounded limits from <code>ScriptInput.limits</code> with safe
+server defaults:</p>
+<ul>
+<li>max script size,</li>
+<li>max execution time per call,</li>
+<li>max output size,</li>
+<li>max file read bytes.</li>
+</ul>
+<h2 id="design-decisions">Design Decisions</h2>
+<h3 id="decision-1-require-describe-in-script-contract">Decision 1:
+require <code>describe()</code> in script contract</h3>
+<p>Reason:</p>
+<ul>
+<li>creates explicit compatibility and validation surface,</li>
+<li>aligns with “describe extension” requirement,</li>
+<li>prevents runtime guesswork about script intent.</li>
+</ul>
+<p>Tradeoff:</p>
+<ul>
+<li>slightly more authoring overhead for script writers.</li>
+</ul>
+<h3 id="decision-2-keep-initviewupdate-event-state-machine">Decision 2:
+keep <code>init/view/update</code> event-state machine</h3>
+<p>Reason:</p>
+<ul>
+<li>matches Goja constraints and existing imported proposal,</li>
+<li>avoids async/generator requirements,</li>
+<li>deterministic and testable.</li>
+</ul>
+<p>Tradeoff:</p>
+<ul>
+<li>more explicit state plumbing in scripts.</li>
+</ul>
+<h3
+id="decision-3-persist-script_statescript_view-in-uirequest">Decision 3:
+persist <code>script_state/script_view</code> in
+<code>UIRequest</code></h3>
+<p>Reason:</p>
+<ul>
+<li>simplifies multi-client consistency and debugging,</li>
+<li>leverages existing request fetch + WS distribution model.</li>
+</ul>
+<p>Tradeoff:</p>
+<ul>
+<li>larger request payloads for complex views.</li>
+</ul>
+<h3
+id="decision-4-add-event-request_updated-instead-of-overloading-response">Decision
+4: add <code>/event</code> + <code>request_updated</code> instead of
+overloading <code>/response</code></h3>
+<p>Reason:</p>
+<ul>
+<li>clearer semantics (intermediate vs final),</li>
+<li>aligns with prior internal analysis patterns,</li>
+<li>minimizes accidental completion bugs.</li>
+</ul>
+<p>Tradeoff:</p>
+<ul>
+<li>one additional endpoint and frontend code path.</li>
+</ul>
+<h3
+id="decision-5-local-runtime-package-in-plz-confirm-first-optional-extraction-later">Decision
+5: local runtime package in plz-confirm first; optional extraction
+later</h3>
+<p>Reason:</p>
+<ul>
+<li>fastest delivery with tight feature iteration,</li>
+<li>avoids pulling unrelated runtime modules by default,</li>
+<li>still informed by go-go-goja architecture patterns.</li>
+</ul>
+<p>Tradeoff:</p>
+<ul>
+<li>some temporary duplication until extraction.</li>
+</ul>
+<h2 id="alternatives-considered">Alternatives Considered</h2>
+<h3
+id="alternative-a-static-wizard-spec-only-no-update-function">Alternative
+A: static wizard spec only (no update function)</h3>
+<p>Pros:</p>
+<ul>
+<li>simpler server logic,</li>
+<li>no intermediate event/update lifecycle.</li>
+</ul>
+<p>Cons:</p>
+<ul>
+<li>cannot support dynamic branching from user responses,</li>
+<li>weak fit for requested complex flows.</li>
+</ul>
+<p>Decision: rejected.</p>
+<h3 id="alternative-b-overload-response-with-kind-hintfinal">Alternative
+B: overload <code>/response</code> with
+<code>kind: hint|final</code></h3>
+<p>Pros:</p>
+<ul>
+<li>fewer new endpoints.</li>
+</ul>
+<p>Cons:</p>
+<ul>
+<li>muddier semantics,</li>
+<li>higher risk of accidental completion,</li>
+<li>harder to reason about in clients.</li>
+</ul>
+<p>Decision: rejected.</p>
+<h3
+id="alternative-c-import-go-go-goja-engine-wholesale-in-plz-confirm">Alternative
+C: import go-go-goja engine wholesale in plz-confirm</h3>
+<p>Pros:</p>
+<ul>
+<li>reuse existing runtime bootstrap quickly.</li>
+</ul>
+<p>Cons:</p>
+<ul>
+<li>broader dependency and module surface than needed,</li>
+<li>security posture harder to keep minimal by default.</li>
+</ul>
+<p>Decision: rejected for v1; maybe revisit after runtime extraction
+work.</p>
+<h3
+id="alternative-d-keep-all-script-state-server-local-only">Alternative
+D: keep all script state server-local only</h3>
+<p>Pros:</p>
+<ul>
+<li>smaller wire payloads.</li>
+</ul>
+<p>Cons:</p>
+<ul>
+<li>harder WS parity/debugging,</li>
+<li>weaker recoverability from reconnects.</li>
+</ul>
+<p>Decision: rejected for initial implementation.</p>
+<h2 id="implementation-plan">Implementation Plan</h2>
+<p>This section is a practical execution sequence for an intern.</p>
+<h3 id="phase-0-contract-alignment-and-scaffolding">Phase 0: Contract
+alignment and scaffolding</h3>
+<ol type="1">
+<li>Confirm naming choices:
+<ul>
+<li>widget type string (<code>script</code> vs <code>flow</code>),</li>
+<li>required exported function names
+(<code>describe/init/view/update</code>).</li>
+</ul></li>
+<li>Add/update ticket tasks in <code>tasks.md</code> with checkboxes per
+phase.</li>
+<li>Add dev notes in ticket <code>scripts/README.md</code> for
+reproducibility.</li>
+</ol>
+<h3 id="phase-1-proto-codegen-core-request-plumbing">Phase 1: Proto +
+codegen + core request plumbing</h3>
+<p>Files:</p>
+<ul>
+<li><code>proto/plz_confirm/v1/request.proto</code></li>
+<li><code>proto/plz_confirm/v1/widgets.proto</code></li>
+<li>generated outputs in:
+<ul>
+<li><code>proto/generated/go/plz_confirm/v1/*.pb.go</code></li>
+<li><code>agent-ui-system/client/src/proto/generated/**</code></li>
+</ul></li>
+</ul>
+<p>Steps:</p>
+<ol type="1">
+<li>Add <code>WidgetType.script</code>.</li>
+<li>Add <code>ScriptInput</code>, <code>ScriptOutput</code>, helper
+messages.</li>
+<li>Extend <code>UIRequest</code> oneofs for script input/output.</li>
+<li>Add optional runtime fields (<code>script_state</code>,
+<code>script_view</code>, <code>script_describe</code>).</li>
+<li>Run codegen:
+<ul>
+<li><code>make proto</code></li>
+<li><code>pnpm -C agent-ui-system run proto</code></li>
+</ul></li>
+</ol>
+<p>Validation:</p>
+<ul>
+<li>compile generated Go and TS types,</li>
+<li>verify enum/string keys in generated TS include
+<code>script</code>.</li>
+</ul>
+<h3 id="phase-2-serverstore-lifecycle-for-script-events">Phase 2:
+Server/store lifecycle for script events</h3>
+<p>Files:</p>
+<ul>
+<li><code>internal/server/server.go</code></li>
+<li><code>internal/server/ws_events.go</code></li>
+<li><code>internal/store/store.go</code></li>
+</ul>
+<p>Steps:</p>
+<ol type="1">
+<li>Extend create/response widget type routing to include script where
+needed.</li>
+<li>Add <code>POST /api/requests/{id}/event</code> handler.</li>
+<li>Add store update operation for pending script state/view
+writes.</li>
+<li>Add WS broadcast type <code>request_updated</code>.</li>
+<li>Ensure <code>/wait</code> continues to return on completion; event
+updates should not complete.</li>
+</ol>
+<p>Validation:</p>
+<ul>
+<li>unit tests for handler behavior (pending update vs completion),</li>
+<li>WS payload tests for <code>request_updated</code> shape.</li>
+</ul>
+<h3 id="phase-3-script-runtime-package-plz-confirm">Phase 3: Script
+runtime package (plz-confirm)</h3>
+<p>Files (new):</p>
+<ul>
+<li><code>internal/scriptengine/engine.go</code></li>
+<li><code>internal/scriptengine/sandbox_fs.go</code></li>
+<li><code>internal/scriptengine/limits.go</code></li>
+<li><code>internal/scriptengine/errors.go</code></li>
+</ul>
+<p>Steps:</p>
+<ol type="1">
+<li>Build compile+invoke path:
+<ul>
+<li>load script source,</li>
+<li>resolve <code>module.exports</code>,</li>
+<li>assert <code>describe/init/view/update</code> callability.</li>
+</ul></li>
+<li>Implement <code>describe</code> preflight validation.</li>
+<li>Implement bounded execution wrapper using
+<code>goja.Interrupt()</code> timeout pattern.</li>
+<li>Implement minimal capability-safe fs wrapper.</li>
+<li>Return typed Go maps/structs that convert cleanly to protobuf
+Struct.</li>
+</ol>
+<p>Validation:</p>
+<ul>
+<li>unit tests for:
+<ul>
+<li>missing export errors,</li>
+<li>timeout interruption,</li>
+<li>invalid return shape handling,</li>
+<li>done vs continue update envelopes.</li>
+</ul></li>
+</ul>
+<h3 id="phase-4-frontend-script-renderer-and-event-submit-flow">Phase 4:
+Frontend script renderer and event submit flow</h3>
+<p>Files:</p>
+<ul>
+<li><code>agent-ui-system/client/src/components/WidgetRenderer.tsx</code></li>
+<li><code>agent-ui-system/client/src/services/websocket.ts</code></li>
+<li><code>agent-ui-system/client/src/store/store.ts</code> (likely
+minor)</li>
+<li>new files under
+<code>agent-ui-system/client/src/components/widgets/</code>:
+<ul>
+<li><code>ScriptDialog.tsx</code></li>
+<li>optional node renderer helpers.</li>
+</ul></li>
+</ul>
+<p>Steps:</p>
+<ol type="1">
+<li>Add <code>WidgetType.script</code> branch in renderer.</li>
+<li>Add <code>/event</code> client call and <code>request_updated</code>
+WS handling.</li>
+<li>Implement generic node-to-component mapping using existing UI
+primitives.</li>
+<li>Keep user interaction semantics consistent with current
+widgets.</li>
+</ol>
+<p>Validation:</p>
+<ul>
+<li>manual e2e with a sample script,</li>
+<li>UI behavior for multi-step flows,</li>
+<li>no regression to existing widgets.</li>
+</ul>
+<h3 id="phase-5-cli-command-and-operator-workflow">Phase 5: CLI command
+and operator workflow</h3>
+<p>Files:</p>
+<ul>
+<li><code>internal/cli/script.go</code> (new)</li>
+<li><code>cmd/plz-confirm/main.go</code></li>
+<li>optional docs:
+<ul>
+<li><code>pkg/doc/how-to-use.md</code></li>
+<li><code>README.md</code></li>
+</ul></li>
+</ul>
+<p>Steps:</p>
+<ol type="1">
+<li>Implement <code>plz-confirm script</code> command.</li>
+<li>Parse script/props/mounts input robustly.</li>
+<li>Create request and wait for final completion.</li>
+<li>Print <code>script_output.result</code> with Glazed row output.</li>
+</ol>
+<p>Validation:</p>
+<ul>
+<li>command runs against local server,</li>
+<li>output formats include JSON/YAML/table as expected.</li>
+</ul>
+<h3 id="phase-6-tests-hardening-and-docs">Phase 6: Tests, hardening, and
+docs</h3>
+<p>Test coverage goals:</p>
+<ul>
+<li>server integration tests for create/event/response lifecycle,</li>
+<li>runtime unit tests for interruption and shape validation,</li>
+<li>frontend tests for renderer branches and request_updated
+handling,</li>
+<li>at least one end-to-end smoke script in ticket
+<code>scripts/</code>.</li>
+</ul>
+<p>Docs:</p>
+<ul>
+<li>add script widget section to <code>adding-widgets</code> style
+docs,</li>
+<li>include one complete script example with
+describe/init/view/update,</li>
+<li>document safe defaults and limits.</li>
+</ul>
+<h2 id="file-by-file-change-map">File-by-File Change Map</h2>
+<h3 id="plz-confirm-must-change">plz-confirm (must change)</h3>
+<ul>
+<li><code>proto/plz_confirm/v1/request.proto</code></li>
+<li><code>proto/plz_confirm/v1/widgets.proto</code></li>
+<li><code>internal/server/server.go</code></li>
+<li><code>internal/server/ws_events.go</code></li>
+<li><code>internal/store/store.go</code></li>
+<li><code>internal/client/client.go</code> (if adding event helper
+methods)</li>
+<li><code>internal/cli/script.go</code> (new)</li>
+<li><code>cmd/plz-confirm/main.go</code></li>
+<li><code>agent-ui-system/client/src/components/WidgetRenderer.tsx</code></li>
+<li><code>agent-ui-system/client/src/services/websocket.ts</code></li>
+<li><code>agent-ui-system/client/src/components/widgets/ScriptDialog.tsx</code>
+(new)</li>
+<li><code>agent-ui-system/client/src/proto/generated/...</code>
+(generated)</li>
+</ul>
+<h3 id="go-go-goja-recommended-follow-up-changes">go-go-goja
+(recommended follow-up changes)</h3>
+<ul>
+<li>Add reusable package for script contract validation/runtime
+orchestration (new package; naming TBD).</li>
+<li>Optionally add lightweight engine bootstrap path that does not force
+full default module set.</li>
+<li>Add runtime integration tests for describe/init/view/update
+invocation.</li>
+</ul>
+<h2 id="testing-strategy">Testing Strategy</h2>
+<h2 id="unit-tests-minimum">Unit tests (minimum)</h2>
+<h3 id="plz-confirm-runtime">plz-confirm runtime</h3>
+<ul>
+<li><code>describe</code> missing/invalid returns clear error.</li>
+<li><code>init/view/update</code> missing yields clear error.</li>
+<li>update returning <code>{done:true,result:...}</code> completes
+request.</li>
+<li>update returning next state updates pending request.</li>
+<li>infinite loop interrupts on deadline.</li>
+</ul>
+<h3 id="plz-confirm-serverstore">plz-confirm server/store</h3>
+<ul>
+<li><code>/event</code> on non-script request returns validation
+error.</li>
+<li><code>/event</code> on completed request returns conflict.</li>
+<li><code>/event</code> emits <code>request_updated</code> when not
+done.</li>
+<li><code>/event</code> emits <code>request_completed</code> when
+done.</li>
+</ul>
+<h3 id="frontend">frontend</h3>
+<ul>
+<li><code>WidgetRenderer</code> handles script branch.</li>
+<li>websocket handler processes <code>request_updated</code> and patches
+active request.</li>
+<li><code>ScriptDialog</code> emits event payload, not final response,
+for intermediate submits.</li>
+</ul>
+<h2 id="integration-tests">Integration tests</h2>
+<ul>
+<li>submit script request with simple 2-step flow,</li>
+<li>verify first event updates view,</li>
+<li>verify final event completes and unblocks wait.</li>
+</ul>
+<h2 id="operational-risks-and-mitigations">Operational Risks and
+Mitigations</h2>
+<h3 id="risk-script-hangs-or-heavy-cpu-usage">Risk: script hangs or
+heavy CPU usage</h3>
+<p>Mitigation:</p>
+<ul>
+<li>strict per-call timeout,</li>
+<li>interrupt-based cancellation,</li>
+<li>bounded input/output sizes.</li>
+</ul>
+<h3 id="risk-unsafe-file-access">Risk: unsafe file access</h3>
+<p>Mitigation:</p>
+<ul>
+<li>mount-based capability model,</li>
+<li>read-only default,</li>
+<li>reject absolute paths and traversal patterns.</li>
+</ul>
+<h3 id="risk-protocol-complexityregressions">Risk: protocol
+complexity/regressions</h3>
+<p>Mitigation:</p>
+<ul>
+<li>keep existing <code>/response</code> semantics for non-script
+widgets untouched,</li>
+<li>add dedicated <code>/event</code> path and explicit WS event
+type,</li>
+<li>snapshot tests for payload shape.</li>
+</ul>
+<h3 id="risk-dependency-bloat-from-runtime-reuse">Risk: dependency bloat
+from runtime reuse</h3>
+<p>Mitigation:</p>
+<ul>
+<li>implement plz-confirm local runtime first,</li>
+<li>reuse patterns from go-go-goja rather than pulling whole engine path
+initially.</li>
+</ul>
+<h2 id="rollout-plan">Rollout Plan</h2>
+<ol type="1">
+<li>Ship behind feature gate flag on server (env/config toggle).</li>
+<li>Enable only for local development sessions first.</li>
+<li>Add one internal script sample and smoke script.</li>
+<li>Gather logs/error telemetry.</li>
+<li>Enable by default after passing test and security checklist.</li>
+</ol>
+<h2 id="open-questions">Open Questions</h2>
+<ol type="1">
+<li>Naming finalization:
+<ul>
+<li><code>script</code> vs <code>flow</code> in
+<code>WidgetType</code>.</li>
+</ul></li>
+<li><code>describe</code> strictness:
+<ul>
+<li>required fields in v1 (minimal vs rich metadata).</li>
+</ul></li>
+<li>Storage strategy:
+<ul>
+<li>do we persist script logs on request object or keep best-effort
+ephemeral logs only?</li>
+</ul></li>
+<li>FS scope defaults:
+<ul>
+<li>should no mounts be allowed by default unless explicitly set in
+input?</li>
+</ul></li>
+<li>Cross-repo extraction timing:
+<ul>
+<li>when to move plz-confirm runtime package into reusable go-go-goja
+package.</li>
+</ul></li>
+</ol>
+<h2 id="intern-start-checklist">Intern Start Checklist</h2>
+<p>Use this exact sequence:</p>
+<ol type="1">
+<li>Read this file top-to-bottom once.</li>
+<li>Read <code>proto/plz_confirm/v1/request.proto</code> and
+<code>proto/plz_confirm/v1/widgets.proto</code>.</li>
+<li>Read <code>internal/server/server.go</code> request handlers.</li>
+<li>Read <code>internal/store/store.go</code> create/complete/wait
+behavior.</li>
+<li>Read frontend <code>WidgetRenderer.tsx</code> and
+<code>services/websocket.ts</code>.</li>
+<li>Run ticket experiments:
+<ul>
+<li><code>go run ./plz-confirm/ttmp/2026/02/22/PC-01-ADD-JS-API--add-js-api-describe-extension/scripts/goja-flow</code></li>
+<li><code>go run ./plz-confirm/ttmp/2026/02/22/PC-01-ADD-JS-API--add-js-api-describe-extension/scripts/goja-interrupt</code></li>
+<li><code>go run ./plz-confirm/ttmp/2026/02/22/PC-01-ADD-JS-API--add-js-api-describe-extension/scripts/protojson-shape</code></li>
+</ul></li>
+<li>Implement Phase 1 only; commit.</li>
+<li>Implement Phase 2; commit.</li>
+<li>Continue phase-by-phase with tests before each commit.</li>
+</ol>
+<h2 id="references">References</h2>
+<ul>
+<li>Imported source proposal:
+<ul>
+<li><code>plz-confirm/ttmp/2026/02/22/PC-01-ADD-JS-API--add-js-api-describe-extension/sources/local/plz-confirm-js.md</code></li>
+</ul></li>
+<li>Existing widget extension guide:
+<ul>
+<li><code>plz-confirm/pkg/doc/adding-widgets.md</code></li>
+</ul></li>
+<li>Prior protocol/event analysis:
+<ul>
+<li><code>plz-confirm/ttmp/2025/12/25/005-HINT-PROMPT--add-non-closing-hint-prompt-events-request-updates/analysis/01-hint-prompt-events-and-request-updates-analysis.md</code></li>
+</ul></li>
+<li>go-go-goja runtime/module references:
+<ul>
+<li><code>go-go-goja/engine/runtime.go</code></li>
+<li><code>go-go-goja/engine/factory.go</code></li>
+<li><code>go-go-goja/modules/common.go</code></li>
+<li><code>go-go-goja/pkg/runtimeowner/runner.go</code></li>
+</ul></li>
+</ul>
+</body>
+</html>
