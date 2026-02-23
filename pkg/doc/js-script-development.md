@@ -147,6 +147,9 @@ The `defaultScriptContext()` function in `engine.go` constructs the context obje
 map[string]any{
     "props": in.GetProps().AsMap(),  // from scriptInput.props, or empty map
     "now":   time.Now().UTC().Format(time.RFC3339Nano),
+    "seed":  <per-request deterministic seed>,
+    "random":    <seeded float generator>,
+    "randomInt": <seeded int-range generator>,
 }
 ```
 

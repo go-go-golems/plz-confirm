@@ -821,6 +821,54 @@ module.exports = {
 	}
 }
 
+func TestScriptSeededContextPersistsAcrossLifecycle(t *testing.T) {
+	t.Parallel()
+
+	s := New(store.New())
+	h := s.Handler()
+
+	seedScript := `
+module.exports = {
+  describe: function () { return { name: "seed-lifecycle", version: "1.0.0" }; },
+  init: function (ctx) {
+    return { seedFromInit: ctx.seed };
+  },
+  view: function () {
+    return { widgetType: "confirm", input: { title: "Seed?" } };
+  },
+  update: function (state, event, ctx) {
+    return {
+      done: true,
+      result: {
+        seedFromInit: state.seedFromInit,
+        seedFromUpdate: ctx.seed,
+        randomInt: ctx.randomInt(1, 100)
+      }
+    };
+  }
+};
+`
+
+	createReq := &v1.UIRequest{
+		Type:      v1.WidgetType_script,
+		SessionId: "global",
+		Input: &v1.UIRequest_ScriptInput{
+			ScriptInput: &v1.ScriptInput{
+				Title:  "Seed lifecycle",
+				Script: seedScript,
+			},
+		},
+	}
+
+	created := postUIRequest(t, h, "/api/requests", createReq)
+	event := &v1.ScriptEvent{Type: "submit", Data: mustStruct(t, map[string]any{"approved": true})}
+	completed := postScriptEvent(t, h, created.Id, event)
+	result := completed.GetScriptOutput().GetResult().AsMap()
+	if result["seedFromInit"] != result["seedFromUpdate"] {
+		t.Fatalf("expected same seed across lifecycle, got result=%v", result)
+	}
+}
+
 func postUIRequest(t *testing.T, h http.Handler, path string, reqProto *v1.UIRequest) *v1.UIRequest {
 	t.Helper()
 

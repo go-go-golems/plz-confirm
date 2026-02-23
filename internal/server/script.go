@@ -2,6 +2,8 @@ package server
 
 import (
 	"context"
+	cryptorand "crypto/rand"
+	"encoding/binary"
 	stderrors "errors"
 	"fmt"
 	"io"
@@ -12,8 +14,75 @@ import (
 	"github.com/go-go-golems/plz-confirm/internal/store"
 	"github.com/go-go-golems/plz-confirm/proto/generated/go/plz_confirm/v1"
 	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/structpb"
 )
+
+const scriptSeedStateKey = "__pc_seed"
+
+func newScriptSeed() (int64, error) {
+	var b [8]byte
+	if _, err := cryptorand.Read(b[:]); err != nil {
+		return 0, err
+	}
+	return int64(binary.LittleEndian.Uint64(b[:]) & 0x7fffffffffffffff), nil
+}
+
+func stateSeedValue(state map[string]any) (int64, bool) {
+	if state == nil {
+		return 0, false
+	}
+	raw, ok := state[scriptSeedStateKey]
+	if !ok {
+		return 0, false
+	}
+	switch v := raw.(type) {
+	case int64:
+		return v, true
+	case int:
+		return int64(v), true
+	case int32:
+		return int64(v), true
+	case float64:
+		return int64(v), true
+	case float32:
+		return int64(v), true
+	default:
+		return 0, false
+	}
+}
+
+func ensureSeedInState(state map[string]any, seed int64) map[string]any {
+	if state == nil {
+		state = map[string]any{}
+	}
+	state[scriptSeedStateKey] = float64(seed)
+	return state
+}
+
+func scriptInputWithSeed(in *v1.ScriptInput, seed int64) (*v1.ScriptInput, error) {
+	if in == nil {
+		return nil, fmt.Errorf("script input is required")
+	}
+	propsMap := map[string]any{}
+	if in.GetProps() != nil {
+		for k, v := range in.GetProps().AsMap() {
+			propsMap[k] = v
+		}
+	}
+	propsMap[scriptSeedStateKey] = float64(seed)
+	propsStruct, err := structpb.NewStruct(propsMap)
+	if err != nil {
+		return nil, fmt.Errorf("script props: %w", err)
+	}
+
+	clone, ok := proto.Clone(in).(*v1.ScriptInput)
+	if !ok {
+		return nil, fmt.Errorf("failed to clone script input")
+	}
+	clone.Props = propsStruct
+	return clone, nil
+}
 
 func (s *Server) handleScriptEvent(w http.ResponseWriter, r *http.Request, id string) {
 	existingReq, err := s.store.Get(r.Context(), id)
@@ -57,9 +126,24 @@ func (s *Server) handleScriptEvent(w http.ResponseWriter, r *http.Request, id st
 	if existingReq.GetScriptState() != nil {
 		state = existingReq.GetScriptState().AsMap()
 	}
+	seed, ok := stateSeedValue(state)
+	if !ok {
+		var err error
+		seed, err = newScriptSeed()
+		if err != nil {
+			http.Error(w, "failed to allocate script seed", http.StatusInternalServerError)
+			return
+		}
+	}
+	state = ensureSeedInState(state, seed)
 	eventMap := eventToMap(event)
+	seededInput, err := scriptInputWithSeed(existingReq.GetScriptInput(), seed)
+	if err != nil {
+		http.Error(w, "invalid script input: "+err.Error(), http.StatusBadRequest)
+		return
+	}
 
-	updateResult, err := s.scripts.UpdateAndView(r.Context(), existingReq.GetScriptInput(), state, eventMap)
+	updateResult, err := s.scripts.UpdateAndView(r.Context(), seededInput, state, eventMap)
 	if err != nil {
 		http.Error(w, "script update failed: "+err.Error(), statusForScriptError(err))
 		return
@@ -101,6 +185,7 @@ func (s *Server) handleScriptEvent(w http.ResponseWriter, r *http.Request, id st
 		writeProtoJSON(w, http.StatusOK, req)
 		return
 	}
+	updateResult.State = ensureSeedInState(updateResult.State, seed)
 
 	stateStruct, viewProto, err := scriptUpdateResultToProto(updateResult)
 	if err != nil {

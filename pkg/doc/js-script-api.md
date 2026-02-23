@@ -214,6 +214,9 @@ All four functions receive a `ctx` object as their last argument. It gives you a
 |---|---|---|
 | `ctx.props` | object | Custom values you passed in `scriptInput.props` when creating the request. Defaults to `{}` if you didn't send any. |
 | `ctx.now` | string | Current server time as an RFC 3339 timestamp with nanoseconds. Useful for generating unique IDs or recording when things happened. |
+| `ctx.seed` | number | Per-request deterministic seed, stable across init/update/view calls for that request. |
+| `ctx.random()` | function | Deterministic pseudo-random float in `[0,1)`, seeded from `ctx.seed`. |
+| `ctx.randomInt(min, max)` | function | Deterministic pseudo-random integer in the inclusive range `[min,max]`. |
 
 Props are the main way to make scripts configurable without changing the source code. For example, you might pass `{ defaultEnv: "staging" }` in props and use it in `init`:
 
@@ -222,6 +225,8 @@ init: function (ctx) {
   return { step: "confirm", env: ctx.props.defaultEnv || "prod" };
 }
 ```
+
+For randomized workflows, prefer `ctx.random()` / `ctx.randomInt()` over `Math.random()` so behavior remains reproducible for a request lifecycle.
 
 ### The `event` Object
 

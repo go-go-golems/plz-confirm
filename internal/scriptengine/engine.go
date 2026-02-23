@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math"
+	"math/rand"
 	"strings"
 	"time"
 
@@ -12,6 +14,7 @@ import (
 )
 
 const defaultTimeout = 2 * time.Second
+const contextSeedPropKey = "__pc_seed"
 
 type Engine struct{}
 
@@ -250,9 +253,50 @@ func defaultScriptContext(propsStruct interface{ AsMap() map[string]any }) map[s
 	if propsStruct != nil {
 		props = propsStruct.AsMap()
 	}
+	seed := contextSeed(props)
+	rng := rand.New(rand.NewSource(seed))
 	return map[string]any{
 		"props": props,
 		"now":   time.Now().UTC().Format(time.RFC3339Nano),
+		"seed":  float64(seed),
+		"random": func() float64 {
+			return rng.Float64()
+		},
+		"randomInt": func(low, high float64) int64 {
+			lo := int64(math.Floor(low))
+			hi := int64(math.Floor(high))
+			if hi < lo {
+				lo, hi = hi, lo
+			}
+			if lo == hi {
+				return lo
+			}
+			return lo + rng.Int63n(hi-lo+1)
+		},
+	}
+}
+
+func contextSeed(props map[string]any) int64 {
+	if props == nil {
+		return time.Now().UnixNano()
+	}
+	raw, ok := props[contextSeedPropKey]
+	if !ok {
+		return time.Now().UnixNano()
+	}
+	switch v := raw.(type) {
+	case int64:
+		return v
+	case int:
+		return int64(v)
+	case int32:
+		return int64(v)
+	case float64:
+		return int64(v)
+	case float32:
+		return int64(v)
+	default:
+		return time.Now().UnixNano()
 	}
 }
 

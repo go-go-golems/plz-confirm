@@ -234,11 +234,23 @@ func (s *Server) handleCreateRequest(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if reqProto.Type == v1.WidgetType_script {
-		initResult, err := s.scripts.InitAndView(r.Context(), reqProto.GetScriptInput())
+		seed, err := newScriptSeed()
+		if err != nil {
+			http.Error(w, "failed to allocate script seed", http.StatusInternalServerError)
+			return
+		}
+		seededInput, err := scriptInputWithSeed(reqProto.GetScriptInput(), seed)
+		if err != nil {
+			http.Error(w, "invalid script input: "+err.Error(), http.StatusBadRequest)
+			return
+		}
+		initResult, err := s.scripts.InitAndView(r.Context(), seededInput)
 		if err != nil {
 			http.Error(w, "script init failed: "+err.Error(), statusForScriptError(err))
 			return
 		}
+		reqProto.Input = &v1.UIRequest_ScriptInput{ScriptInput: seededInput}
+		initResult.State = ensureSeedInState(initResult.State, seed)
 
 		scriptState, scriptView, scriptDescribe, err := scriptInitResultToProto(initResult)
 		if err != nil {

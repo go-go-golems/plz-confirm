@@ -165,6 +165,54 @@ module.exports = {
 	}
 }
 
+func TestSeededRandomContextIsDeterministic(t *testing.T) {
+	t.Parallel()
+
+	script := `
+module.exports = {
+  describe: function () { return { name: "seeded", version: "1.0.0" }; },
+  init: function (ctx) {
+    return {
+      seed: ctx.seed,
+      r1: ctx.random(),
+      r2: ctx.randomInt(1, 10)
+    };
+  },
+  view: function (state) {
+    return { widgetType: "confirm", input: { title: "seed" } };
+  },
+  update: function (state, event, ctx) {
+    return { done: true, result: { seed: ctx.seed, r1: ctx.random(), r2: ctx.randomInt(1, 10) } };
+  }
+};
+`
+
+	props, err := structpb.NewStruct(map[string]any{contextSeedPropKey: float64(12345)})
+	if err != nil {
+		t.Fatalf("NewStruct: %v", err)
+	}
+
+	e := New()
+	first, err := e.InitAndView(context.Background(), &v1.ScriptInput{
+		Script: script,
+		Props:  props,
+	})
+	if err != nil {
+		t.Fatalf("InitAndView first failed: %v", err)
+	}
+	second, err := e.InitAndView(context.Background(), &v1.ScriptInput{
+		Script: script,
+		Props:  props,
+	})
+	if err != nil {
+		t.Fatalf("InitAndView second failed: %v", err)
+	}
+
+	if first.State["r1"] != second.State["r1"] || first.State["r2"] != second.State["r2"] {
+		t.Fatalf("expected deterministic random values, got first=%v second=%v", first.State, second.State)
+	}
+}
+
 func TestTimeout(t *testing.T) {
 	t.Parallel()
 
