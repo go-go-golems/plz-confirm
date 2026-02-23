@@ -160,7 +160,17 @@ The return object supports two modes:
 
 Single-widget `widgetType` values are `confirm`, `select`, `grid`, `form`, `table`, `upload`, or `image`. See the Widget Type Reference below for details.
 
-You can also include `stepId` (a string that gets echoed back in the event, useful for correlating which step the user responded to), `title`, and `description` (both shown in the UI above the widget).
+You can also include:
+
+- `stepId` (echoed back in events for correlation),
+- `title` and `description` (shown above the widget),
+- `progress` for multi-step progress UI:
+
+```javascript
+progress: { current: 3, total: 8, label: "Question 3 of 8" }
+```
+
+`label` is optional; the UI will fall back to an auto-generated "STEP x OF y" label.
 
 ### `update(state, event, ctx)` — React to user input
 

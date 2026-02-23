@@ -481,6 +481,97 @@ module.exports = {
 	}
 }
 
+func TestScriptCreateMapsProgressFields(t *testing.T) {
+	t.Parallel()
+
+	s := New(store.New())
+	h := s.Handler()
+
+	progressScript := `
+module.exports = {
+  describe: function () { return { name: "progress-demo", version: "1.0.0" }; },
+  init: function () { return { step: "q3" }; },
+  view: function () {
+    return {
+      widgetType: "confirm",
+      input: { title: "Rate docs?" },
+      progress: { current: 3, total: 8, label: "Question 3 of 8" }
+    };
+  },
+  update: function (state, event) { return { done: true, result: event.data || {} }; }
+};
+`
+
+	createReq := &v1.UIRequest{
+		Type:      v1.WidgetType_script,
+		SessionId: "global",
+		Input: &v1.UIRequest_ScriptInput{
+			ScriptInput: &v1.ScriptInput{
+				Title:  "Progress demo",
+				Script: progressScript,
+			},
+		},
+	}
+
+	created := postUIRequest(t, h, "/api/requests", createReq)
+	progress := created.GetScriptView().GetProgress()
+	if progress == nil {
+		t.Fatalf("expected progress in script view")
+	}
+	if progress.GetCurrent() != 3 || progress.GetTotal() != 8 {
+		t.Fatalf("unexpected progress payload: %+v", progress)
+	}
+}
+
+func TestScriptCreateRejectsInvalidProgressFields(t *testing.T) {
+	t.Parallel()
+
+	s := New(store.New())
+	h := s.Handler()
+
+	invalidProgressScript := `
+module.exports = {
+  describe: function () { return { name: "progress-bad", version: "1.0.0" }; },
+  init: function () { return { step: "x" }; },
+  view: function () {
+    return {
+      widgetType: "confirm",
+      input: { title: "Bad progress" },
+      progress: { current: 9, total: 8 }
+    };
+  },
+  update: function (state) { return state; }
+};
+`
+
+	createReq := &v1.UIRequest{
+		Type:      v1.WidgetType_script,
+		SessionId: "global",
+		Input: &v1.UIRequest_ScriptInput{
+			ScriptInput: &v1.ScriptInput{
+				Title:  "Invalid progress",
+				Script: invalidProgressScript,
+			},
+		},
+	}
+
+	body, err := protojson.Marshal(createReq)
+	if err != nil {
+		t.Fatalf("marshal create req: %v", err)
+	}
+	req := httptest.NewRequest(http.MethodPost, "/api/requests", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400 for invalid progress, got %d body=%s", rr.Code, rr.Body.String())
+	}
+	if !bytes.Contains(rr.Body.Bytes(), []byte("current must be <=")) {
+		t.Fatalf("expected progress validation message, got body=%s", rr.Body.String())
+	}
+}
+
 func postUIRequest(t *testing.T, h http.Handler, path string, reqProto *v1.UIRequest) *v1.UIRequest {
 	t.Helper()
 

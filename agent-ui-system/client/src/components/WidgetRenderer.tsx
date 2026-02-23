@@ -248,6 +248,22 @@ export const WidgetRenderer: React.FC = () => {
     }
   };
 
+  const scriptProgress =
+    active.type === WidgetType.script ? active.scriptView?.progress : undefined;
+  const progressCurrent = Number(scriptProgress?.current ?? 0);
+  const progressTotal = Number(scriptProgress?.total ?? 0);
+  const hasScriptProgress =
+    Number.isFinite(progressCurrent) &&
+    Number.isFinite(progressTotal) &&
+    progressTotal > 0 &&
+    progressCurrent >= 0 &&
+    progressCurrent <= progressTotal;
+  const scriptProgressLabel =
+    scriptProgress?.label || `STEP ${progressCurrent} OF ${progressTotal}`;
+  const scriptProgressPct = hasScriptProgress
+    ? Math.max(0, Math.min(100, (progressCurrent / progressTotal) * 100))
+    : 0;
+
   return (
     <div className="w-full max-w-3xl mx-auto animate-in slide-in-from-bottom-4 duration-500">
       <div className="mb-2 flex justify-between items-end text-xs text-muted-foreground font-mono uppercase">
@@ -280,6 +296,23 @@ export const WidgetRenderer: React.FC = () => {
           ).toUpperCase()}
         </span>
       </div>
+
+      {hasScriptProgress && (
+        <div className="mb-2 rounded border border-primary/30 bg-primary/5 px-3 py-2">
+          <div className="mb-1 flex items-center justify-between text-[10px] font-mono uppercase text-primary/90">
+            <span>{scriptProgressLabel}</span>
+            <span>
+              {progressCurrent}/{progressTotal}
+            </span>
+          </div>
+          <div className="h-1.5 w-full overflow-hidden rounded bg-primary/20">
+            <div
+              className="h-full bg-primary transition-[width] duration-300"
+              style={{ width: `${scriptProgressPct}%` }}
+            />
+          </div>
+        </div>
+      )}
 
       <div
         className="cyber-card p-1"

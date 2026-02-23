@@ -190,6 +190,12 @@ message DisplayInput {
   optional string format = 2; // "markdown" | "text" | "html"
 }
 
+message ScriptProgress {
+  int32 current = 1;
+  int32 total = 2;
+  optional string label = 3;
+}
+
 message ScriptView {
   string widget_type = 1;
   google.protobuf.Struct input = 2;
@@ -197,6 +203,7 @@ message ScriptView {
   optional string title = 4;
   optional string description = 5;
   repeated ScriptViewSection sections = 6;
+  optional ScriptProgress progress = 7;
 }
 
 message ScriptDescribe {

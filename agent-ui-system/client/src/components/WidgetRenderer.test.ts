@@ -169,4 +169,24 @@ describe("WidgetRenderer script branch", () => {
       "ERROR: INVALID_SCRIPT_SECTIONS [exactly one interactive section is required]"
     );
   });
+
+  it("renders script progress indicators when progress is provided", () => {
+    const html = renderWithStore(
+      buildScriptRequest({
+        id: "req-render-progress",
+        scriptView: {
+          widgetType: "confirm",
+          input: { title: "Rate docs" },
+          stepId: "q3",
+          progress: {
+            current: 3,
+            total: 8,
+            label: "QUESTION 3 OF 8",
+          },
+        },
+      })
+    );
+    expect(html).toContain("QUESTION 3 OF 8");
+    expect(html).toContain("3/8");
+  });
 });

@@ -242,6 +242,13 @@ func mapToScriptView(m map[string]any) (*v1.ScriptView, error) {
 	if description, ok := m["description"].(string); ok && strings.TrimSpace(description) != "" {
 		view.Description = &description
 	}
+	progress, err := mapToScriptProgress(m["progress"])
+	if err != nil {
+		return nil, err
+	}
+	if progress != nil {
+		view.Progress = progress
+	}
 	return view, nil
 }
 
@@ -413,6 +420,61 @@ func numberAsPositiveInt(v any) (int, bool) {
 	default:
 		return 0, false
 	}
+}
+
+func numberAsInt(v any) (int, bool) {
+	switch n := v.(type) {
+	case int:
+		return n, true
+	case int32:
+		return int(n), true
+	case int64:
+		return int(n), true
+	case float32:
+		i := int(n)
+		return i, float32(i) == n
+	case float64:
+		i := int(n)
+		return i, float64(i) == n
+	default:
+		return 0, false
+	}
+}
+
+func mapToScriptProgress(raw any) (*v1.ScriptProgress, error) {
+	if raw == nil {
+		return nil, nil
+	}
+	progressMap, ok := raw.(map[string]any)
+	if !ok {
+		return nil, fmt.Errorf("view.progress must be object")
+	}
+	current, ok := numberAsInt(progressMap["current"])
+	if !ok {
+		return nil, fmt.Errorf("view.progress.current is required and must be integer")
+	}
+	total, ok := numberAsInt(progressMap["total"])
+	if !ok {
+		return nil, fmt.Errorf("view.progress.total is required and must be integer")
+	}
+	if total <= 0 {
+		return nil, fmt.Errorf("view.progress.total must be > 0")
+	}
+	if current < 0 {
+		return nil, fmt.Errorf("view.progress.current must be >= 0")
+	}
+	if current > total {
+		return nil, fmt.Errorf("view.progress.current must be <= total")
+	}
+
+	progress := &v1.ScriptProgress{
+		Current: int32(current),
+		Total:   int32(total),
+	}
+	if label, ok := progressMap["label"].(string); ok && strings.TrimSpace(label) != "" {
+		progress.Label = &label
+	}
+	return progress, nil
 }
 
 func mapToScriptDescribe(m map[string]any) (*v1.ScriptDescribe, error) {

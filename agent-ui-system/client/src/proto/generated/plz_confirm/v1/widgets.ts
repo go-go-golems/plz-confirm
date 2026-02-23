@@ -190,6 +190,12 @@ export interface DisplayInput {
   format?: string | undefined;
 }
 
+export interface ScriptProgress {
+  current: number;
+  total: number;
+  label?: string | undefined;
+}
+
 export interface ScriptView {
   widgetType: string;
   input?: { [key: string]: any } | undefined;
@@ -197,6 +203,7 @@ export interface ScriptView {
   title?: string | undefined;
   description?: string | undefined;
   sections: ScriptViewSection[];
+  progress?: ScriptProgress | undefined;
 }
 
 export interface ScriptDescribe {
