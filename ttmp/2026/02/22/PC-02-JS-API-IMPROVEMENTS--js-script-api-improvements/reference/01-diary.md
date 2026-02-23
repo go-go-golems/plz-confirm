@@ -25,10 +25,15 @@ RelatedFiles:
         Script progress bar rendering
         Back button rendering and back event dispatch
         Script renderer mapping for rating widget
+        stepId-based keying for state reset/preserve behavior
     - Path: agent-ui-system/client/src/components/widgets/DisplayWidget.test.tsx
       Note: Display widget rendering tests
     - Path: agent-ui-system/client/src/components/widgets/DisplayWidget.tsx
       Note: Read-only display section renderer
+    - Path: agent-ui-system/client/src/components/widgets/FormDialog.test.tsx
+      Note: Defaults test coverage
+    - Path: agent-ui-system/client/src/components/widgets/FormDialog.tsx
+      Note: Prefilled form defaults support
     - Path: agent-ui-system/client/src/components/widgets/GridDialog.test.tsx
       Note: Grid dialog component test
     - Path: agent-ui-system/client/src/components/widgets/GridDialog.tsx
@@ -36,7 +41,17 @@ RelatedFiles:
     - Path: agent-ui-system/client/src/components/widgets/RatingDialog.test.tsx
       Note: Rating dialog component test
     - Path: agent-ui-system/client/src/components/widgets/RatingDialog.tsx
-      Note: Rating dialog implementation
+      Note: |-
+        Rating dialog implementation
+        Rating defaults.value support
+    - Path: agent-ui-system/client/src/components/widgets/SelectDialog.test.tsx
+      Note: Defaults test coverage
+    - Path: agent-ui-system/client/src/components/widgets/SelectDialog.tsx
+      Note: Default selection initialization for select widget
+    - Path: agent-ui-system/client/src/components/widgets/TableDialog.test.tsx
+      Note: Defaults test coverage
+    - Path: agent-ui-system/client/src/components/widgets/TableDialog.tsx
+      Note: Default row selection initialization
     - Path: agent-ui-system/client/src/pages/Home.tsx
       Note: Sidebar request history rendering for script requests (proposal 1
     - Path: agent-ui-system/client/src/pages/homeRequestHistoryDisplay.test.ts
@@ -82,6 +97,7 @@ LastUpdated: 2026-02-22T20:37:13.424677713-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 
 
@@ -542,3 +558,70 @@ The goal was to replace awkward rating flows implemented via `select` or `form` 
 
 ### Technical details
 - Rating event payload shape: `{ value: number, comment?: string }`.
+
+## Step 7: Proposal 7 - Prefilled Defaults / Initial Values
+
+This step implemented `input.defaults` support across key script widgets (`select`, `form`, `table`, `rating`) and tightened renderer behavior so step transitions reset widget state while same-step rerenders preserve user edits.
+
+The implementation intentionally applies defaults only at component initialization for a step; it does not overwrite in-progress edits on rerender.
+
+### Prompt Context
+
+**User prompt (verbatim):** (see Step 1)
+
+**Assistant interpretation:** Add reusable defaults handling to script widgets and ensure state behavior is stable across rerenders.
+
+**Inferred user intent:** Make review/edit workflows first-class in script-driven forms and selection steps.
+
+**Commit (code):** c79449e6afd67592c9ef14aa43d54329fbfac996 - "feat(script): support widget defaults and prefilled values"
+
+### What I did
+- Added defaults resolution helpers:
+- `SelectDialog` (`selectedSingle` / `selectedMulti.values`),
+- `FormDialog` (object defaults merged into initial form data),
+- `TableDialog` (`selectedSingle` / `selectedMulti.values` mapping to row IDs),
+- `RatingDialog` (`defaults.value` support).
+- Updated `WidgetRenderer` script branch to key interactive widgets by `stepId`, so:
+- step changes remount and apply fresh defaults,
+- same-step rerenders preserve user edits.
+- Added frontend tests:
+- `SelectDialog.test.tsx` default single selection,
+- `FormDialog.test.tsx` prefilled value render,
+- `TableDialog.test.tsx` default row selection,
+- extended `RatingDialog.test.tsx` for `defaults.value`.
+- Updated docs with cross-widget defaults examples and behavior notes.
+
+### Why
+- Scripts often need “review/edit” UX where previous answers are preloaded.
+- Without step-based remount keys, defaults and local state can leak across step transitions for same widget type.
+
+### What worked
+- Defaults now prepopulate expected widgets at step load.
+- In-step edits remain stable across rerenders.
+- All relevant frontend tests and type checks pass.
+
+### What didn't work
+- No blockers in this step.
+
+### What I learned
+- `stepId` is the right lifecycle boundary for local widget state in script mode.
+- Defaults handling is easiest to reason about when done in component initializers, not effects.
+
+### What was tricky to build
+- Table defaults required robust candidate resolution (raw IDs vs object rows). I handled this by normalizing row keys (`id` fallback to JSON string) and matching candidates against existing rows before selecting.
+
+### What warrants a second pair of eyes
+- JSON-string row key fallback in `TableDialog` can be sensitive to object key ordering if upstream row serialization changes.
+
+### What should be done in the future
+- Consider a standardized `rowKey` contract for table widgets to avoid JSON fallback ambiguity.
+
+### Code review instructions
+- Review `SelectDialog.tsx`, `FormDialog.tsx`, `TableDialog.tsx`, and `RatingDialog.tsx` defaults initializers.
+- Review `WidgetRenderer.tsx` interactive widget keying by `stepId`.
+- Validate with:
+- `pnpm -C agent-ui-system run check`
+- `pnpm -C agent-ui-system exec vitest run client/src/components/widgets/SelectDialog.test.tsx client/src/components/widgets/FormDialog.test.tsx client/src/components/widgets/TableDialog.test.tsx client/src/components/widgets/RatingDialog.test.tsx client/src/components/WidgetRenderer.test.ts`
+
+### Technical details
+- Defaults are consumed from `input.defaults` and are not reapplied after user interaction within the same step.
