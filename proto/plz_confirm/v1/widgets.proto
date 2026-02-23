@@ -204,6 +204,8 @@ message ScriptView {
   optional string description = 5;
   repeated ScriptViewSection sections = 6;
   optional ScriptProgress progress = 7;
+  optional bool allow_back = 8;
+  optional string back_label = 9;
 }
 
 message ScriptDescribe {

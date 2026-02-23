@@ -204,6 +204,8 @@ export interface ScriptView {
   description?: string | undefined;
   sections: ScriptViewSection[];
   progress?: ScriptProgress | undefined;
+  allowBack?: boolean | undefined;
+  backLabel?: string | undefined;
 }
 
 export interface ScriptDescribe {

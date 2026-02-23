@@ -12,6 +12,7 @@ import { GridDialog } from "./widgets/GridDialog";
 import { DisplayWidget } from "./widgets/DisplayWidget";
 import { Loader2 } from "lucide-react";
 import { WidgetType } from "@/proto/generated/plz_confirm/v1/request";
+import { Button } from "@/components/ui/button";
 
 export const WidgetRenderer: React.FC = () => {
   const { active, loading } = useSelector((state: RootState) => state.request);
@@ -109,17 +110,22 @@ export const WidgetRenderer: React.FC = () => {
     loading: loading,
   };
 
-  const handleScriptSubmit = async (output: any) => {
+  const submitScriptWidgetEvent = async (eventType: string, data?: any) => {
     try {
       await submitScriptEvent(active.id, {
-        type: "submit",
+        type: eventType,
         stepId: active.scriptView?.stepId,
-        data: output,
+        data,
       });
     } catch (error) {
-      console.error("Failed to submit script event", error);
+      console.error(`Failed to submit script event (${eventType})`, error);
     }
   };
+
+  const handleScriptSubmit = async (output: any) =>
+    submitScriptWidgetEvent("submit", output);
+
+  const handleScriptBack = async () => submitScriptWidgetEvent("back");
 
   const renderScriptView = () => {
     if (!active.scriptView) {
@@ -134,6 +140,28 @@ export const WidgetRenderer: React.FC = () => {
       requestId: active.id,
       onSubmit: handleScriptSubmit,
       loading: loading,
+    };
+    const allowBack = Boolean(active.scriptView.allowBack);
+    const backLabel = String(active.scriptView.backLabel || "BACK");
+
+    const wrapWithBackControl = (content: React.ReactNode) => {
+      if (!allowBack) return content;
+      return (
+        <div className="space-y-2">
+          <div className="flex justify-start px-1">
+            <Button
+              type="button"
+              variant="outline"
+              className="cyber-button h-8 px-3 text-xs font-mono"
+              onClick={() => void handleScriptBack()}
+              disabled={loading}
+            >
+              {backLabel}
+            </Button>
+          </div>
+          {content}
+        </div>
+      );
     };
 
     const renderInteractiveScriptWidget = (widgetType: string, input: any) => {
@@ -175,7 +203,7 @@ export const WidgetRenderer: React.FC = () => {
         .trim()
         .toLowerCase();
       const input = (active.scriptView.input ?? {}) as any;
-      return renderInteractiveScriptWidget(widgetType, input);
+      return wrapWithBackControl(renderInteractiveScriptWidget(widgetType, input));
     }
 
     const interactiveSections = sections.filter(
@@ -189,16 +217,11 @@ export const WidgetRenderer: React.FC = () => {
       );
     }
 
-    return (
+    return wrapWithBackControl(
       <div className="space-y-3">
         {sections.map((section, idx) => {
           if (section.widgetType === "display") {
-            return (
-              <DisplayWidget
-                key={`display-${idx}`}
-                input={section.input}
-              />
-            );
+            return <DisplayWidget key={`display-${idx}`} input={section.input} />;
           }
           return (
             <React.Fragment key={`interactive-${idx}`}>

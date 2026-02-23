@@ -1846,6 +1846,8 @@ type ScriptView struct {
 	Description   *string                `protobuf:"bytes,5,opt,name=description,proto3,oneof" json:"description,omitempty"`
 	Sections      []*ScriptViewSection   `protobuf:"bytes,6,rep,name=sections,proto3" json:"sections,omitempty"`
 	Progress      *ScriptProgress        `protobuf:"bytes,7,opt,name=progress,proto3,oneof" json:"progress,omitempty"`
+	AllowBack     *bool                  `protobuf:"varint,8,opt,name=allow_back,json=allowBack,proto3,oneof" json:"allow_back,omitempty"`
+	BackLabel     *string                `protobuf:"bytes,9,opt,name=back_label,json=backLabel,proto3,oneof" json:"back_label,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1927,6 +1929,20 @@ func (x *ScriptView) GetProgress() *ScriptProgress {
 		return x.Progress
 	}
 	return nil
+}
+
+func (x *ScriptView) GetAllowBack() bool {
+	if x != nil && x.AllowBack != nil {
+		return *x.AllowBack
+	}
+	return false
+}
+
+func (x *ScriptView) GetBackLabel() string {
+	if x != nil && x.BackLabel != nil {
+		return *x.BackLabel
+	}
+	return ""
 }
 
 type ScriptDescribe struct {
@@ -2178,7 +2194,7 @@ const file_plz_confirm_v1_widgets_proto_rawDesc = "" +
 	"\acurrent\x18\x01 \x01(\x05R\acurrent\x12\x14\n" +
 	"\x05total\x18\x02 \x01(\x05R\x05total\x12\x19\n" +
 	"\x05label\x18\x03 \x01(\tH\x00R\x05label\x88\x01\x01B\b\n" +
-	"\x06_label\"\xef\x02\n" +
+	"\x06_label\"\xd5\x03\n" +
 	"\n" +
 	"ScriptView\x12\x1f\n" +
 	"\vwidget_type\x18\x01 \x01(\tR\n" +
@@ -2188,12 +2204,18 @@ const file_plz_confirm_v1_widgets_proto_rawDesc = "" +
 	"\x05title\x18\x04 \x01(\tH\x01R\x05title\x88\x01\x01\x12%\n" +
 	"\vdescription\x18\x05 \x01(\tH\x02R\vdescription\x88\x01\x01\x12=\n" +
 	"\bsections\x18\x06 \x03(\v2!.plz_confirm.v1.ScriptViewSectionR\bsections\x12?\n" +
-	"\bprogress\x18\a \x01(\v2\x1e.plz_confirm.v1.ScriptProgressH\x03R\bprogress\x88\x01\x01B\n" +
+	"\bprogress\x18\a \x01(\v2\x1e.plz_confirm.v1.ScriptProgressH\x03R\bprogress\x88\x01\x01\x12\"\n" +
+	"\n" +
+	"allow_back\x18\b \x01(\bH\x04R\tallowBack\x88\x01\x01\x12\"\n" +
+	"\n" +
+	"back_label\x18\t \x01(\tH\x05R\tbackLabel\x88\x01\x01B\n" +
 	"\n" +
 	"\b_step_idB\b\n" +
 	"\x06_titleB\x0e\n" +
 	"\f_descriptionB\v\n" +
-	"\t_progress\"\x98\x01\n" +
+	"\t_progressB\r\n" +
+	"\v_allow_backB\r\n" +
+	"\v_back_label\"\x98\x01\n" +
 	"\x0eScriptDescribe\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x18\n" +
 	"\aversion\x18\x02 \x01(\tR\aversion\x12$\n" +

@@ -249,6 +249,14 @@ func mapToScriptView(m map[string]any) (*v1.ScriptView, error) {
 	if progress != nil {
 		view.Progress = progress
 	}
+	if allowBack, ok := m["allowBack"].(bool); ok {
+		view.AllowBack = &allowBack
+	} else if showBack, ok := m["showBack"].(bool); ok {
+		view.AllowBack = &showBack
+	}
+	if backLabel, ok := m["backLabel"].(string); ok && strings.TrimSpace(backLabel) != "" {
+		view.BackLabel = &backLabel
+	}
 	return view, nil
 }
 

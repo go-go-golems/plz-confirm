@@ -186,7 +186,7 @@ When `WidgetRenderer.tsx` detects that the active request has a `scriptView`, it
 3. If `scriptView.progress` is present, renders a progress indicator above the widget card.
 4. If `scriptView.sections` is present, renders composite sections in order (`DisplayWidget` plus exactly one interactive widget). Otherwise, renders the single widget from `scriptView.widgetType`.
 5. Renders the matching interactive widget component (`ConfirmDialog`, `SelectDialog`, `GridDialog`, `TableDialog`, `FormDialog`, `UploadDialog`, or `ImageDialog`).
-6. When the user submits, it calls `submitScriptEvent(requestId, { type: "submit", stepId, data: output })` instead of the regular `/response` endpoint.
+6. When the user submits, it calls `submitScriptEvent(requestId, { type: "submit", stepId, data: output })` instead of the regular `/response` endpoint. If `allowBack` is enabled and the user clicks back, it sends `{ type: "back", stepId }`.
 
 This means script widgets look and behave exactly like regular widgets from the user's perspective — the only difference is what happens when they submit.
 

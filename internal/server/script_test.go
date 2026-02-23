@@ -572,6 +572,58 @@ module.exports = {
 	}
 }
 
+func TestScriptCreateMapsBackNavigationFields(t *testing.T) {
+	t.Parallel()
+
+	s := New(store.New())
+	h := s.Handler()
+
+	backScript := `
+module.exports = {
+  describe: function () { return { name: "back-demo", version: "1.0.0" }; },
+  init: function () { return { step: "details" }; },
+  view: function () {
+    return {
+      widgetType: "confirm",
+      input: { title: "Details step" },
+      showBack: true,
+      backLabel: "Go Back"
+    };
+  },
+  update: function (state, event) {
+    if (event.type === "back") {
+      state.step = "confirm";
+      return state;
+    }
+    return { done: true, result: event.data || {} };
+  }
+};
+`
+
+	createReq := &v1.UIRequest{
+		Type:      v1.WidgetType_script,
+		SessionId: "global",
+		Input: &v1.UIRequest_ScriptInput{
+			ScriptInput: &v1.ScriptInput{
+				Title:  "Back demo",
+				Script: backScript,
+			},
+		},
+	}
+
+	created := postUIRequest(t, h, "/api/requests", createReq)
+	view := created.GetScriptView()
+	if view == nil {
+		t.Fatalf("expected script view on create")
+	}
+	if !view.GetAllowBack() {
+		t.Fatalf("expected allow_back to be true")
+	}
+	if got := view.GetBackLabel(); got != "Go Back" {
+		t.Fatalf("unexpected back label: %q", got)
+	}
+}
+
 func postUIRequest(t *testing.T, h http.Handler, path string, reqProto *v1.UIRequest) *v1.UIRequest {
 	t.Helper()
 

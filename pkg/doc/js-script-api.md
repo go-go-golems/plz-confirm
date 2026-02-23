@@ -172,6 +172,13 @@ progress: { current: 3, total: 8, label: "Question 3 of 8" }
 
 `label` is optional; the UI will fall back to an auto-generated "STEP x OF y" label.
 
+- `allowBack` / `showBack` and optional `backLabel` to render a back-navigation button:
+
+```javascript
+allowBack: true,
+backLabel: "Back"
+```
+
 ### `update(state, event, ctx)` — React to user input
 
 Called each time the user submits a response. You receive the current state and the event from the browser. Return either:
@@ -216,7 +223,7 @@ When the user interacts with a widget, the browser sends an event to the server,
 
 | Field | Type | What it is |
 |---|---|---|
-| `event.type` | string | Always `"submit"` for standard widget interactions. |
+| `event.type` | string | `"submit"` for normal widget submissions, `"back"` when the back button is used. |
 | `event.stepId` | string or undefined | Echoed from whatever `stepId` you set in `view()`. Useful for knowing which step the user just responded to. |
 | `event.actionId` | string or undefined | Optional action-level correlation. Not commonly used. |
 | `event.data` | object or undefined | The actual user response. Its shape depends on the widget type — a confirm gives you `{ approved: true }`, a select gives you `{ selectedSingle: "prod" }`, etc. |

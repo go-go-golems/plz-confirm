@@ -189,4 +189,20 @@ describe("WidgetRenderer script branch", () => {
     expect(html).toContain("QUESTION 3 OF 8");
     expect(html).toContain("3/8");
   });
+
+  it("renders back button when script view enables back navigation", () => {
+    const html = renderWithStore(
+      buildScriptRequest({
+        id: "req-render-back",
+        scriptView: {
+          widgetType: "confirm",
+          input: { title: "Step 2" },
+          stepId: "step-2",
+          allowBack: true,
+          backLabel: "GO_BACK",
+        },
+      })
+    );
+    expect(html).toContain("GO_BACK");
+  });
 });
