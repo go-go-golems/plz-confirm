@@ -67,6 +67,9 @@ func TestUploadAndGetImage(t *testing.T) {
 	if rr2.Code != http.StatusOK {
 		t.Fatalf("expected %d, got %d body=%s", http.StatusOK, rr2.Code, rr2.Body.String())
 	}
+	if got := rr2.Header().Get("X-Content-Type-Options"); got != "nosniff" {
+		t.Fatalf("expected nosniff header, got %q", got)
+	}
 	if got := rr2.Header().Get("Content-Type"); got == "" || got[:6] != "image/" {
 		t.Fatalf("expected image/* content-type, got %q", got)
 	}
@@ -110,5 +113,67 @@ func TestUploadRejectsNonImage(t *testing.T) {
 
 	if rr.Code != http.StatusBadRequest {
 		t.Fatalf("expected %d, got %d body=%s", http.StatusBadRequest, rr.Code, rr.Body.String())
+	}
+}
+
+func TestImageServingIgnoresStoredPathField(t *testing.T) {
+	t.Parallel()
+
+	imgStore, err := NewImageStore(ImageStoreOptions{
+		Dir:            t.TempDir(),
+		MaxUploadBytes: 1 << 20,
+	})
+	if err != nil {
+		t.Fatalf("NewImageStore: %v", err)
+	}
+
+	s := &Server{
+		store:  store.New(),
+		ws:     newWSBroadcaster(),
+		images: imgStore,
+	}
+
+	pngBytes := []byte{0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a}
+
+	var body bytes.Buffer
+	w := multipart.NewWriter(&body)
+	part, err := w.CreateFormFile("file", "test.png")
+	if err != nil {
+		t.Fatalf("CreateFormFile: %v", err)
+	}
+	if _, err := part.Write(pngBytes); err != nil {
+		t.Fatalf("write png: %v", err)
+	}
+	_ = w.Close()
+
+	createReq := httptest.NewRequest(http.MethodPost, "/api/images", &body)
+	createReq.Header.Set("Content-Type", w.FormDataContentType())
+	createRR := httptest.NewRecorder()
+	s.Handler().ServeHTTP(createRR, createReq)
+	if createRR.Code != http.StatusCreated {
+		t.Fatalf("expected %d, got %d body=%s", http.StatusCreated, createRR.Code, createRR.Body.String())
+	}
+
+	var uploaded uploadImageResponse
+	if err := json.Unmarshal(createRR.Body.Bytes(), &uploaded); err != nil {
+		t.Fatalf("unmarshal response: %v", err)
+	}
+
+	// Corrupt the path metadata to ensure serving logic does not trust it.
+	imgStore.mu.Lock()
+	img := imgStore.images[uploaded.ID]
+	img.Path = "/etc/passwd"
+	imgStore.images[uploaded.ID] = img
+	imgStore.mu.Unlock()
+
+	getReq := httptest.NewRequest(http.MethodGet, uploaded.URL, nil)
+	getRR := httptest.NewRecorder()
+	s.Handler().ServeHTTP(getRR, getReq)
+
+	if getRR.Code != http.StatusOK {
+		t.Fatalf("expected %d, got %d body=%s", http.StatusOK, getRR.Code, getRR.Body.String())
+	}
+	if !bytes.Equal(getRR.Body.Bytes(), pngBytes) {
+		t.Fatalf("unexpected body bytes: got=%v want=%v", getRR.Body.Bytes(), pngBytes)
 	}
 }

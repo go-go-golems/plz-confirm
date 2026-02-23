@@ -6,8 +6,9 @@ import (
 	"strings"
 
 	"github.com/go-go-golems/glazed/pkg/cmds"
-	"github.com/go-go-golems/glazed/pkg/cmds/layers"
-	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
+	"github.com/go-go-golems/glazed/pkg/cmds/fields"
+	"github.com/go-go-golems/glazed/pkg/cmds/schema"
+	"github.com/go-go-golems/glazed/pkg/cmds/values"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/pkg/errors"
@@ -100,98 +101,97 @@ func normalizeDataURIImages(images []string) []string {
 	return out
 }
 
-func NewImageCommand(layersList ...layers.ParameterLayer) (*ImageCommand, error) {
+func NewImageCommand() (*ImageCommand, error) {
 	desc := cmds.NewCommandDescription(
 		"image",
 		cmds.WithShort("Request an image-based selection/confirmation via the agent-ui web frontend"),
 		cmds.WithLong("Creates an image widget request (with one or more images), waits for the user response, and outputs the result."),
 		cmds.WithFlags(
-			parameters.NewParameterDefinition(
+			fields.New(
 				"base-url",
-				parameters.ParameterTypeString,
-				parameters.WithDefault("http://localhost:3000"),
-				parameters.WithHelp("Base URL (default: http://localhost:3000)"),
+				fields.TypeString,
+				fields.WithDefault("http://localhost:3000"),
+				fields.WithHelp("Base URL (default: http://localhost:3000)"),
 			),
-			parameters.NewParameterDefinition(
+			fields.New(
 				"session-id",
-				parameters.ParameterTypeString,
-				parameters.WithDefault("global"),
-				parameters.WithHelp("Session ID (used for WebSocket scoping)"),
+				fields.TypeString,
+				fields.WithDefault("global"),
+				fields.WithHelp("Session ID (used for WebSocket scoping)"),
 			),
-			parameters.NewParameterDefinition(
+			fields.New(
 				"timeout",
-				parameters.ParameterTypeInteger,
-				parameters.WithDefault(300),
-				parameters.WithHelp("Request expiration in seconds (server-side)"),
+				fields.TypeInteger,
+				fields.WithDefault(300),
+				fields.WithHelp("Request expiration in seconds (server-side)"),
 			),
-			parameters.NewParameterDefinition(
+			fields.New(
 				"wait-timeout",
-				parameters.ParameterTypeInteger,
-				parameters.WithDefault(300),
-				parameters.WithHelp("How long to wait for a response in seconds (0 = wait forever)"),
+				fields.TypeInteger,
+				fields.WithDefault(300),
+				fields.WithHelp("How long to wait for a response in seconds (0 = wait forever)"),
 			),
-			parameters.NewParameterDefinition(
+			fields.New(
 				"title",
-				parameters.ParameterTypeString,
-				parameters.WithHelp("Dialog title"),
-				parameters.WithRequired(true),
+				fields.TypeString,
+				fields.WithHelp("Dialog title"),
+				fields.WithRequired(true),
 			),
-			parameters.NewParameterDefinition(
+			fields.New(
 				"message",
-				parameters.ParameterTypeString,
-				parameters.WithHelp("Optional dialog message / question"),
+				fields.TypeString,
+				fields.WithHelp("Optional dialog message / question"),
 			),
-			parameters.NewParameterDefinition(
+			fields.New(
 				"mode",
-				parameters.ParameterTypeString,
-				parameters.WithDefault("select"),
-				parameters.WithHelp("Widget mode: select|confirm"),
+				fields.TypeString,
+				fields.WithDefault("select"),
+				fields.WithHelp("Widget mode: select|confirm"),
 			),
-			parameters.NewParameterDefinition(
+			fields.New(
 				"image",
-				parameters.ParameterTypeStringList,
-				parameters.WithHelp("Image source (repeatable): local file path, URL, or data:image/... URI"),
-				parameters.WithRequired(true),
+				fields.TypeStringList,
+				fields.WithHelp("Image source (repeatable): local file path, URL, or data:image/... URI"),
+				fields.WithRequired(true),
 			),
-			parameters.NewParameterDefinition(
+			fields.New(
 				"image-label",
-				parameters.ParameterTypeStringList,
-				parameters.WithHelp("Optional per-image label (repeatable; must match number of --image entries if provided)"),
+				fields.TypeStringList,
+				fields.WithHelp("Optional per-image label (repeatable; must match number of --image entries if provided)"),
 			),
-			parameters.NewParameterDefinition(
+			fields.New(
 				"image-alt",
-				parameters.ParameterTypeStringList,
-				parameters.WithHelp("Optional per-image alt text (repeatable; must match number of --image entries if provided)"),
+				fields.TypeStringList,
+				fields.WithHelp("Optional per-image alt text (repeatable; must match number of --image entries if provided)"),
 			),
-			parameters.NewParameterDefinition(
+			fields.New(
 				"image-caption",
-				parameters.ParameterTypeStringList,
-				parameters.WithHelp("Optional per-image caption (repeatable; must match number of --image entries if provided)"),
+				fields.TypeStringList,
+				fields.WithHelp("Optional per-image caption (repeatable; must match number of --image entries if provided)"),
 			),
-			parameters.NewParameterDefinition(
+			fields.New(
 				"option",
-				parameters.ParameterTypeStringList,
-				parameters.WithHelp("Option value (repeatable). Used for the \"images-as-context + multi-select question\" variant."),
+				fields.TypeStringList,
+				fields.WithHelp("Option value (repeatable). Used for the \"images-as-context + multi-select question\" variant."),
 			),
-			parameters.NewParameterDefinition(
+			fields.New(
 				"multi",
-				parameters.ParameterTypeBool,
-				parameters.WithDefault(false),
-				parameters.WithHelp("Allow selecting multiple options / multiple images (select mode)"),
+				fields.TypeBool,
+				fields.WithDefault(false),
+				fields.WithHelp("Allow selecting multiple options / multiple images (select mode)"),
 			),
 		),
-		cmds.WithLayersList(layersList...),
 	)
 	return &ImageCommand{CommandDescription: desc}, nil
 }
 
 func (c *ImageCommand) RunIntoGlazeProcessor(
 	ctx context.Context,
-	parsedLayers *layers.ParsedLayers,
+	parsedValues *values.Values,
 	gp middlewares.Processor,
 ) error {
 	settings := &ImageSettings{}
-	if err := parsedLayers.InitializeStruct(layers.DefaultSlug, settings); err != nil {
+	if err := parsedValues.DecodeSectionInto(schema.DefaultSlug, settings); err != nil {
 		return err
 	}
 

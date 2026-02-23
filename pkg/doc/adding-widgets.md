@@ -93,6 +93,27 @@ WaitRequest    GET  /api/requests/{id}/wait  <-------------------------------- u
 CLI prints structured output
 ```
 
+## Script Widget Contract (JS Describe Extension)
+
+For script-driven flows (`type: "script"`), the server executes JavaScript in a constrained runtime. The current contract requires these exports:
+
+- `describe(ctx)` -> metadata object with required `name` and `version`
+- `init(ctx)` -> initial state object
+- `view(state, ctx)` -> renderable object with `widgetType` and optional `input`, `stepId`, `title`, `description`
+- `update(state, event, ctx)` -> next state object or terminal `{ done: true, result: {...} }`
+
+Runtime constraints:
+
+- No host bridge globals such as `require` or `process`.
+- Per-call timeout via `scriptInput.timeoutMs` (defaults apply if omitted).
+- Error mapping on API surface:
+  - `400` validation/shape failures
+  - `422` runtime script faults
+  - `504` timeout
+  - `408` cancellation
+
+When adding features around script execution, keep this contract stable and evolve via additive fields/versioning.
+
 ## Step-by-step: adding a new widget type
 
 Each step starts with *why it exists*, then gives the mechanical checklist.

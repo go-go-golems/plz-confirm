@@ -22,8 +22,53 @@ interface Props {
   loading?: boolean;
 }
 
+const tableRowKey = (row: any): string | number => row.id || JSON.stringify(row);
+
+const resolveDefaultTableSelection = (input: TableInput): Set<string | number> => {
+  const defaults = (input as any)?.defaults;
+  if (!defaults || typeof defaults !== "object") {
+    return new Set();
+  }
+
+  const rows = Array.isArray(input.data) ? input.data : [];
+  const idSet = new Set<string | number>(rows.map(row => tableRowKey(row)));
+  const selected = new Set<string | number>();
+
+  const addCandidate = (candidate: any) => {
+    if (candidate === null || candidate === undefined) return;
+    if (typeof candidate === "object") {
+      const key = tableRowKey(candidate);
+      if (idSet.has(key)) selected.add(key);
+      return;
+    }
+    for (const row of rows) {
+      const rowID = row.id;
+      if (rowID === candidate || String(rowID) === String(candidate)) {
+        selected.add(tableRowKey(row));
+        return;
+      }
+    }
+  };
+
+  if (defaults.selectedSingle !== undefined) {
+    addCandidate(defaults.selectedSingle);
+  }
+  const multiValues = defaults.selectedMulti?.values;
+  if (Array.isArray(multiValues)) {
+    for (const value of multiValues) addCandidate(value);
+  }
+
+  if (!input.multiSelect && selected.size > 1) {
+    const first = selected.values().next().value;
+    return new Set(first ? [first] : []);
+  }
+  return selected;
+};
+
 export const TableDialog: React.FC<Props> = ({ input, onSubmit, loading }) => {
-  const [selectedIds, setSelectedIds] = useState<Set<number | string>>(new Set());
+  const [selectedIds, setSelectedIds] = useState<Set<number | string>>(() =>
+    resolveDefaultTableSelection(input)
+  );
   const [search, setSearch] = useState('');
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -73,7 +118,7 @@ export const TableDialog: React.FC<Props> = ({ input, onSubmit, loading }) => {
   };
 
   const toggleSelection = (row: any) => {
-    const id = row.id || JSON.stringify(row);
+    const id = tableRowKey(row);
     const newSelected = new Set(selectedIds);
     
     if (input.multiSelect) {
@@ -96,7 +141,7 @@ export const TableDialog: React.FC<Props> = ({ input, onSubmit, loading }) => {
     } else {
       const newSelected = new Set();
       processedData.forEach(row => {
-        newSelected.add(row.id || JSON.stringify(row));
+        newSelected.add(tableRowKey(row));
       });
       setSelectedIds(newSelected as Set<string | number>);
     }
@@ -109,7 +154,7 @@ export const TableDialog: React.FC<Props> = ({ input, onSubmit, loading }) => {
     
     // Find full objects for selected IDs
     const selectedObjects = input.data.filter(row => 
-      selectedIds.has(row.id || JSON.stringify(row))
+      selectedIds.has(tableRowKey(row))
     );
 
     const c = normalizeOptionalComment(comment);
@@ -184,7 +229,7 @@ export const TableDialog: React.FC<Props> = ({ input, onSubmit, loading }) => {
                 </TableRow>
               ) : (
                 processedData.map((row, idx) => {
-                  const id = row.id || JSON.stringify(row);
+                  const id = tableRowKey(row);
                   const isSelected = selectedIds.has(id);
                   
                   return (

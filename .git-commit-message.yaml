@@ -1,7 +1,15 @@
-title: "💄 ui: show expiry progress bar"
+title: "🐛 server: serialize script event updates per request"
 description: |
-  Add a small progress bar under the EXPIRES_IN label so the expiry countdown
-  is easier to scan at a glance.
+  Add per-request event locking in the script event handler to prevent
+  concurrent read-modify-write cycles from clobbering script state.
+
+  Changes:
+  - add keyed request lock utility for server-side per-ID exclusion
+  - lock handleScriptEvent by request ID across Get -> UpdateAndView -> Patch/Complete
+  - add concurrent event regression test that validates two simultaneous events
+    produce a completed script result with deterministic state progression
 
   Tests:
-  - pnpm -C agent-ui-system run check
+  - go test ./internal/server -run TestScriptEventUpdatesSerializedPerRequest -count=1 (pass)
+  - go test ./internal/server -count=1 (pass)
+  - go test ./... -count=1 (pass)

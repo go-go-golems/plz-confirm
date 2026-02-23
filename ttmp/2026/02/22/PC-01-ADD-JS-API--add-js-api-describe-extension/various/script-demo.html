@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PC-01 Script Demo</title>
+    <style>
+      body { font-family: ui-monospace, Menlo, monospace; margin: 24px; background: #111; color: #eee; }
+      button, select { padding: 8px 12px; margin-right: 8px; margin-top: 8px; }
+      .card { border: 1px solid #444; padding: 16px; margin-top: 16px; border-radius: 6px; background: #1a1a1a; }
+      .muted { color: #999; }
+      pre { background: #0a0a0a; padding: 12px; border: 1px solid #333; overflow: auto; }
+      .ok { color: #58d68d; }
+    </style>
+  </head>
+  <body>
+    <h1>PC-01 Script Flow Browser Demo</h1>
+    <p class="muted">Backend: <code>http://127.0.0.1:3900</code></p>
+
+    <button id="createBtn">Create Script Request</button>
+
+    <div id="status" class="card muted">No request yet.</div>
+    <div id="widget" class="card"></div>
+
+    <h3>Raw Request</h3>
+    <pre id="raw">{}</pre>
+
+    <script>
+      const API = "http://127.0.0.1:3900";
+      let request = null;
+
+      const demoScript = `
+module.exports = {
+  describe: function() {
+    return { name: "pc01-demo", version: "1.0.0", apiVersion: "v1", capabilities: ["submit"] };
+  },
+  init: function() {
+    return { step: "confirm" };
+  },
+  view: function(state) {
+    if (state.step === "confirm") {
+      return {
+        widgetType: "confirm",
+        stepId: "confirm",
+        input: {
+          title: "Proceed to environment selection?",
+          message: "Choose approve to complete immediately, reject to continue",
+          approveText: "Approve now",
+          rejectText: "Choose env"
+        }
+      };
+    }
+    return {
+      widgetType: "select",
+      stepId: "select",
+      input: {
+        title: "Select target env",
+        options: ["staging", "prod"],
+        multi: false,
+        searchable: false
+      }
+    };
+  },
+  update: function(state, event) {
+    if (state.step === "confirm") {
+      if (event.type === "submit" && event.data && event.data.approved === true) {
+        return { done: true, result: { approved: true, env: "prod" } };
+      }
+      state.step = "select";
+      return state;
+    }
+    if (event.type === "submit") {
+      return { done: true, result: { approved: false, env: event.data.selectedSingle } };
+    }
+    return state;
+  }
+};
+`;
+
+      function setStatus(msg, cls = "") {
+        const el = document.getElementById("status");
+        el.className = `card ${cls}`;
+        el.textContent = msg;
+      }
+
+      function renderRaw() {
+        document.getElementById("raw").textContent = JSON.stringify(request, null, 2);
+      }
+
+      async function createRequest() {
+        setStatus("Creating script request...");
+        const resp = await fetch(`${API}/api/requests`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            type: "script",
+            sessionId: "global",
+            scriptInput: { title: "PC-01 Demo", script: demoScript }
+          })
+        });
+        const data = await resp.json();
+        request = data;
+        setStatus(`Created ${request.id} (${request.status})`, "ok");
+        renderRaw();
+        renderWidget();
+      }
+
+      async function submitEvent(event) {
+        setStatus(`Submitting event ${event.type}...`);
+        const resp = await fetch(`${API}/api/requests/${request.id}/event`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(event)
+        });
+        request = await resp.json();
+        setStatus(`Request status: ${request.status}`, request.status === "completed" ? "ok" : "");
+        renderRaw();
+        renderWidget();
+      }
+
+      function renderWidget() {
+        const root = document.getElementById("widget");
+        root.innerHTML = "";
+
+        if (!request) {
+          root.textContent = "No active request";
+          return;
+        }
+
+        if (request.status === "completed") {
+          root.innerHTML = `<h2>Completed</h2><p class="ok">Result: ${JSON.stringify(request.scriptOutput?.result || {}, null, 2)}</p>`;
+          return;
+        }
+
+        const view = request.scriptView;
+        if (!view) {
+          root.textContent = "Missing scriptView";
+          return;
+        }
+
+        if (view.widgetType === "confirm") {
+          const title = document.createElement("h2");
+          title.textContent = view.input?.title || "Confirm";
+          const msg = document.createElement("p");
+          msg.textContent = view.input?.message || "";
+          const approve = document.createElement("button");
+          approve.textContent = view.input?.approveText || "Approve";
+          approve.onclick = () => submitEvent({ type: "submit", stepId: view.stepId, data: { approved: true } });
+          const reject = document.createElement("button");
+          reject.textContent = view.input?.rejectText || "Reject";
+          reject.onclick = () => submitEvent({ type: "submit", stepId: view.stepId, data: { approved: false } });
+          root.append(title, msg, approve, reject);
+          return;
+        }
+
+        if (view.widgetType === "select") {
+          const title = document.createElement("h2");
+          title.textContent = view.input?.title || "Select";
+          const select = document.createElement("select");
+          for (const opt of view.input?.options || []) {
+            const o = document.createElement("option");
+            o.value = String(opt);
+            o.textContent = String(opt);
+            select.appendChild(o);
+          }
+          const submit = document.createElement("button");
+          submit.textContent = "Submit selection";
+          submit.onclick = () => submitEvent({ type: "submit", stepId: view.stepId, data: { selectedSingle: select.value } });
+          root.append(title, select, submit);
+          return;
+        }
+
+        root.textContent = `Unsupported widgetType: ${view.widgetType}`;
+      }
+
+      document.getElementById("createBtn").addEventListener("click", () => {
+        createRequest().catch(err => {
+          setStatus(`Error: ${err.message}`);
+          console.error(err);
+        });
+      });
+    </script>
+  </body>
+</html>

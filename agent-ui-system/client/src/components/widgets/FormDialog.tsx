@@ -16,6 +16,14 @@ interface Props {
   loading?: boolean;
 }
 
+const resolveInitialFormData = (input: FormInput): Record<string, any> => {
+  const defaults = (input as any)?.defaults;
+  if (!defaults || typeof defaults !== "object" || Array.isArray(defaults)) {
+    return {};
+  }
+  return { ...defaults };
+};
+
 function getSchemaString(v: any): string | undefined {
   return typeof v === 'string' && v.trim().length > 0 ? v : undefined;
 }
@@ -31,7 +39,9 @@ function getFirstExample(v: any): string | undefined {
 }
 
 export const FormDialog: React.FC<Props> = ({ input, onSubmit, loading }) => {
-  const [formData, setFormData] = useState<Record<string, any>>({});
+  const [formData, setFormData] = useState<Record<string, any>>(() =>
+    resolveInitialFormData(input)
+  );
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
   const [comment, setComment] = useState('');

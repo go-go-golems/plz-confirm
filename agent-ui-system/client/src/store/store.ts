@@ -148,16 +148,22 @@ const notificationSlice = createSlice({
   },
 });
 
-export const store = configureStore({
-  reducer: {
-    session: sessionSlice.reducer,
-    request: requestSlice.reducer,
-    notifications: notificationSlice.reducer,
-  },
-});
+const reducers = {
+  session: sessionSlice.reducer,
+  request: requestSlice.reducer,
+  notifications: notificationSlice.reducer,
+};
 
-export type RootState = ReturnType<typeof store.getState>;
-export type AppDispatch = typeof store.dispatch;
+export const createAppStore = () =>
+  configureStore({
+    reducer: reducers,
+  });
+
+export const store = createAppStore();
+
+export type AppStore = ReturnType<typeof createAppStore>;
+export type RootState = ReturnType<AppStore["getState"]>;
+export type AppDispatch = AppStore["dispatch"];
 
 export const { setConnected, setError } = sessionSlice.actions;
 export const {

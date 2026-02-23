@@ -41,6 +41,51 @@ export interface SelectOutputMulti {
   values: string[];
 }
 
+/** Grid Widget (script view extension) */
+export interface GridCell {
+  value: string;
+  style?: string | undefined;
+  disabled?: boolean | undefined;
+  label?: string | undefined;
+  color?: string | undefined;
+}
+
+export interface GridInput {
+  title: string;
+  rows: number;
+  cols: number;
+  cells: GridCell[];
+  cellSize?: string | undefined;
+}
+
+export interface GridSelection {
+  row: number;
+  col: number;
+  cellIndex: number;
+}
+
+/** Rating Widget (script view extension) */
+export interface RatingLabels {
+  low?: string | undefined;
+  high?: string | undefined;
+}
+
+export interface RatingInput {
+  title: string;
+  scale?: number | undefined;
+  labels?:
+    | RatingLabels
+    | undefined;
+  /** "stars" | "numbers" | "emoji" | "slider" */
+  style?: string | undefined;
+  defaultValue?: number | undefined;
+}
+
+export interface RatingOutput {
+  value: number;
+  comment?: string | undefined;
+}
+
 /** Form Widget */
 export interface FormInput {
   title: string;
@@ -133,4 +178,71 @@ export interface ImageOutputNumbers {
 
 export interface ImageOutputStrings {
   values: string[];
+}
+
+/** Script Widget */
+export interface ScriptInput {
+  title: string;
+  script: string;
+  props?: { [key: string]: any } | undefined;
+  timeoutMs?: number | undefined;
+}
+
+export interface ScriptOutput {
+  result?: { [key: string]: any } | undefined;
+  logs: string[];
+  error?: string | undefined;
+}
+
+export interface ScriptEvent {
+  type: string;
+  stepId?: string | undefined;
+  actionId?: string | undefined;
+  data?: { [key: string]: any } | undefined;
+}
+
+export interface ScriptViewSection {
+  widgetType: string;
+  input?: { [key: string]: any } | undefined;
+}
+
+export interface DisplayInput {
+  content: string;
+  /** "markdown" | "text" | "html" */
+  format?: string | undefined;
+}
+
+export interface ScriptProgress {
+  current: number;
+  total: number;
+  label?: string | undefined;
+}
+
+export interface ScriptToast {
+  message: string;
+  durationMs?:
+    | number
+    | undefined;
+  /** "info" | "success" | "warning" | "error" */
+  style?: string | undefined;
+}
+
+export interface ScriptView {
+  widgetType: string;
+  input?: { [key: string]: any } | undefined;
+  stepId?: string | undefined;
+  title?: string | undefined;
+  description?: string | undefined;
+  sections: ScriptViewSection[];
+  progress?: ScriptProgress | undefined;
+  allowBack?: boolean | undefined;
+  backLabel?: string | undefined;
+  toast?: ScriptToast | undefined;
+}
+
+export interface ScriptDescribe {
+  name: string;
+  version: string;
+  apiVersion?: string | undefined;
+  capabilities: string[];
 }

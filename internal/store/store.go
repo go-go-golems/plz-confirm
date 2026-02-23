@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"sort"
 	"sync"
 	"time"
 
@@ -51,14 +52,17 @@ func (s *Store) Create(_ context.Context, req *v1.UIRequest) (*v1.UIRequest, err
 
 	// Clone the request and set required fields
 	reqCopy := &v1.UIRequest{
-		Id:        id,
-		Type:      req.Type,
-		SessionId: req.SessionId,
-		Input:     req.Input, // Copy the oneof field
-		Metadata:  req.Metadata,
-		Status:    v1.RequestStatus_pending,
-		CreatedAt: now.Format(time.RFC3339Nano),
-		ExpiresAt: now.Format(time.RFC3339Nano), // Will be set below
+		Id:             id,
+		Type:           req.Type,
+		SessionId:      req.SessionId,
+		Input:          req.Input, // Copy the oneof field
+		Metadata:       req.Metadata,
+		ScriptState:    req.ScriptState,
+		ScriptView:     req.ScriptView,
+		ScriptDescribe: req.ScriptDescribe,
+		Status:         v1.RequestStatus_pending,
+		CreatedAt:      now.Format(time.RFC3339Nano),
+		ExpiresAt:      now.Format(time.RFC3339Nano), // Will be set below
 	}
 
 	// Parse expiresAt if provided, otherwise use default timeout
@@ -105,6 +109,7 @@ func (s *Store) Pending(_ context.Context) []*v1.UIRequest {
 			out = append(out, e.req)
 		}
 	}
+	sortUIRequestsByCreatedAt(out)
 	return out
 }
 
@@ -122,7 +127,38 @@ func (s *Store) PendingForSession(_ context.Context, sessionID string) []*v1.UIR
 			out = append(out, e.req)
 		}
 	}
+	sortUIRequestsByCreatedAt(out)
 	return out
+}
+
+func sortUIRequestsByCreatedAt(requests []*v1.UIRequest) {
+	sort.SliceStable(requests, func(i, j int) bool {
+		return uiRequestCreatedAtLess(requests[i], requests[j])
+	})
+}
+
+func uiRequestCreatedAtLess(a, b *v1.UIRequest) bool {
+	if a == nil || b == nil {
+		return a != nil
+	}
+
+	at, aErr := time.Parse(time.RFC3339Nano, a.CreatedAt)
+	bt, bErr := time.Parse(time.RFC3339Nano, b.CreatedAt)
+	switch {
+	case aErr == nil && bErr == nil:
+		if !at.Equal(bt) {
+			return at.Before(bt)
+		}
+	case aErr == nil:
+		return true
+	case bErr == nil:
+		return false
+	}
+
+	if a.Id != b.Id {
+		return a.Id < b.Id
+	}
+	return a.CreatedAt < b.CreatedAt
 }
 
 func (s *Store) Expire(now time.Time) []*v1.UIRequest {
@@ -325,6 +361,16 @@ func setDefaultOutputFor(req *v1.UIRequest, now time.Time, comment *string) {
 			},
 		}
 		return
+	case v1.WidgetType_script:
+		st, _ := structpb.NewStruct(map[string]any{})
+		req.Output = &v1.UIRequest_ScriptOutput{
+			ScriptOutput: &v1.ScriptOutput{
+				Result: st,
+				Logs:   []string{},
+				Error:  comment,
+			},
+		}
+		return
 	default:
 		req.Output = nil
 		return
@@ -350,6 +396,36 @@ func (s *Store) Complete(_ context.Context, id string, output *v1.UIRequest) (*v
 	e.req.CompletedAt = &completedAt
 
 	e.doneOnce.Do(func() { close(e.done) })
+
+	return e.req, nil
+}
+
+func (s *Store) PatchScript(
+	_ context.Context,
+	id string,
+	state *structpb.Struct,
+	view *v1.ScriptView,
+) (*v1.UIRequest, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	e, ok := s.requests[id]
+	if !ok {
+		return nil, ErrNotFound
+	}
+	if e.req.Status != v1.RequestStatus_pending {
+		return nil, ErrAlreadyCompleted
+	}
+	if e.req.Type != v1.WidgetType_script {
+		return nil, errors.New("request is not a script widget")
+	}
+
+	if state != nil {
+		e.req.ScriptState = state
+	}
+	if view != nil {
+		e.req.ScriptView = view
+	}
 
 	return e.req, nil
 }

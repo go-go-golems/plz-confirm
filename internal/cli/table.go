@@ -7,8 +7,9 @@ import (
 	"os"
 
 	"github.com/go-go-golems/glazed/pkg/cmds"
-	"github.com/go-go-golems/glazed/pkg/cmds/layers"
-	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
+	"github.com/go-go-golems/glazed/pkg/cmds/fields"
+	"github.com/go-go-golems/glazed/pkg/cmds/schema"
+	"github.com/go-go-golems/glazed/pkg/cmds/values"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/pkg/errors"
@@ -38,67 +39,66 @@ type TableSettings struct {
 	Searchable  bool     `glazed.parameter:"searchable"`
 }
 
-func NewTableCommand(layersList ...layers.ParameterLayer) (*TableCommand, error) {
+func NewTableCommand() (*TableCommand, error) {
 	desc := cmds.NewCommandDescription(
 		"table",
 		cmds.WithShort("Request table selection via the agent-ui web frontend"),
 		cmds.WithLong("Creates a table widget request with rows, waits for the user selection, and outputs the result."),
 		cmds.WithFlags(
-			parameters.NewParameterDefinition(
+			fields.New(
 				"base-url",
-				parameters.ParameterTypeString,
-				parameters.WithDefault("http://localhost:3000"),
-				parameters.WithHelp("Base URL (default: http://localhost:3000)"),
+				fields.TypeString,
+				fields.WithDefault("http://localhost:3000"),
+				fields.WithHelp("Base URL (default: http://localhost:3000)"),
 			),
-			parameters.NewParameterDefinition(
+			fields.New(
 				"session-id",
-				parameters.ParameterTypeString,
-				parameters.WithDefault("global"),
-				parameters.WithHelp("Session ID (used for WebSocket scoping)"),
+				fields.TypeString,
+				fields.WithDefault("global"),
+				fields.WithHelp("Session ID (used for WebSocket scoping)"),
 			),
-			parameters.NewParameterDefinition(
+			fields.New(
 				"timeout",
-				parameters.ParameterTypeInteger,
-				parameters.WithDefault(300),
-				parameters.WithHelp("Request expiration in seconds (server-side)"),
+				fields.TypeInteger,
+				fields.WithDefault(300),
+				fields.WithHelp("Request expiration in seconds (server-side)"),
 			),
-			parameters.NewParameterDefinition(
+			fields.New(
 				"wait-timeout",
-				parameters.ParameterTypeInteger,
-				parameters.WithDefault(300),
-				parameters.WithHelp("How long to wait for a response in seconds (0 = wait forever)"),
+				fields.TypeInteger,
+				fields.WithDefault(300),
+				fields.WithHelp("How long to wait for a response in seconds (0 = wait forever)"),
 			),
-			parameters.NewParameterDefinition(
+			fields.New(
 				"title",
-				parameters.ParameterTypeString,
-				parameters.WithHelp("Dialog title"),
-				parameters.WithRequired(true),
+				fields.TypeString,
+				fields.WithHelp("Dialog title"),
+				fields.WithRequired(true),
 			),
-			parameters.NewParameterDefinition(
+			fields.New(
 				"data",
-				parameters.ParameterTypeString,
-				parameters.WithHelp("Path to JSON file with array of row objects (use @file.json or - for stdin)"),
-				parameters.WithRequired(true),
+				fields.TypeString,
+				fields.WithHelp("Path to JSON file with array of row objects (use @file.json or - for stdin)"),
+				fields.WithRequired(true),
 			),
-			parameters.NewParameterDefinition(
+			fields.New(
 				"columns",
-				parameters.ParameterTypeStringList,
-				parameters.WithHelp("Optional column names (auto-derived if omitted)"),
+				fields.TypeStringList,
+				fields.WithHelp("Optional column names (auto-derived if omitted)"),
 			),
-			parameters.NewParameterDefinition(
+			fields.New(
 				"multi-select",
-				parameters.ParameterTypeBool,
-				parameters.WithDefault(false),
-				parameters.WithHelp("Allow selecting multiple rows"),
+				fields.TypeBool,
+				fields.WithDefault(false),
+				fields.WithHelp("Allow selecting multiple rows"),
 			),
-			parameters.NewParameterDefinition(
+			fields.New(
 				"searchable",
-				parameters.ParameterTypeBool,
-				parameters.WithDefault(true),
-				parameters.WithHelp("Enable search/filter box in the UI"),
+				fields.TypeBool,
+				fields.WithDefault(true),
+				fields.WithHelp("Enable search/filter box in the UI"),
 			),
 		),
-		cmds.WithLayersList(layersList...),
 	)
 
 	return &TableCommand{CommandDescription: desc}, nil
@@ -106,11 +106,11 @@ func NewTableCommand(layersList ...layers.ParameterLayer) (*TableCommand, error)
 
 func (c *TableCommand) RunIntoGlazeProcessor(
 	ctx context.Context,
-	parsedLayers *layers.ParsedLayers,
+	parsedValues *values.Values,
 	gp middlewares.Processor,
 ) error {
 	settings := &TableSettings{}
-	if err := parsedLayers.InitializeStruct(layers.DefaultSlug, settings); err != nil {
+	if err := parsedValues.DecodeSectionInto(schema.DefaultSlug, settings); err != nil {
 		return err
 	}
 

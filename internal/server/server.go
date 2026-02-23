@@ -8,11 +8,11 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"os"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/go-go-golems/plz-confirm/internal/scriptengine"
 	"github.com/go-go-golems/plz-confirm/internal/store"
 	"github.com/go-go-golems/plz-confirm/proto/generated/go/plz_confirm/v1"
 	"golang.org/x/sync/errgroup"
@@ -21,9 +21,11 @@ import (
 )
 
 type Server struct {
-	store  *store.Store
-	ws     *wsBroadcaster
-	images *ImageStore
+	store            *store.Store
+	ws               *wsBroadcaster
+	images           *ImageStore
+	scripts          *scriptengine.Engine
+	scriptEventLocks *keyedLock
 }
 
 type Options struct {
@@ -36,9 +38,11 @@ func New(s *store.Store) *Server {
 		log.Printf("[IMG] failed to initialize image store, uploads disabled: %v", err)
 	}
 	return &Server{
-		store:  s,
-		ws:     newWSBroadcaster(),
-		images: imgStore,
+		store:            s,
+		ws:               newWSBroadcaster(),
+		images:           imgStore,
+		scripts:          scriptengine.New(),
+		scriptEventLocks: newKeyedLock(),
 	}
 }
 
@@ -220,6 +224,44 @@ func (s *Server) handleCreateRequest(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "missing required fields (type + widget input oneof)", http.StatusBadRequest)
 		return
 	}
+	inputType, ok := widgetTypeFromInputOneof(reqProto)
+	if !ok {
+		http.Error(w, "invalid input oneof for UIRequest", http.StatusBadRequest)
+		return
+	}
+	if inputType != reqProto.Type {
+		http.Error(w, "input widget type does not match request type", http.StatusBadRequest)
+		return
+	}
+
+	if reqProto.Type == v1.WidgetType_script {
+		seed, err := newScriptSeed()
+		if err != nil {
+			http.Error(w, "failed to allocate script seed", http.StatusInternalServerError)
+			return
+		}
+		seededInput, err := scriptInputWithSeed(reqProto.GetScriptInput(), seed)
+		if err != nil {
+			http.Error(w, "invalid script input: "+err.Error(), http.StatusBadRequest)
+			return
+		}
+		initResult, err := s.scripts.InitAndView(r.Context(), seededInput)
+		if err != nil {
+			http.Error(w, "script init failed: "+err.Error(), statusForScriptError(err))
+			return
+		}
+		reqProto.Input = &v1.UIRequest_ScriptInput{ScriptInput: seededInput}
+		initResult.State = ensureSeedInState(initResult.State, seed)
+
+		scriptState, scriptView, scriptDescribe, err := scriptInitResultToProto(initResult)
+		if err != nil {
+			http.Error(w, "script init result invalid: "+err.Error(), http.StatusBadRequest)
+			return
+		}
+		reqProto.ScriptState = scriptState
+		reqProto.ScriptView = scriptView
+		reqProto.ScriptDescribe = scriptDescribe
+	}
 	if reqProto.Metadata != nil || r.RemoteAddr != "" || r.UserAgent() != "" {
 		if reqProto.Metadata == nil {
 			reqProto.Metadata = &v1.RequestMetadata{}
@@ -248,7 +290,8 @@ func (s *Server) handleCreateRequest(w http.ResponseWriter, r *http.Request) {
 		log.Printf("[WS] marshal new_request failed: %v", err)
 	}
 
-	log.Printf("[API] Created request %s (%s)", req.Id, req.Type)
+	// #nosec G706 -- req.Id is server-generated and quoted for log safety.
+	log.Printf("[API] Created request %q (%s)", req.Id, req.Type.String())
 	writeProtoJSON(w, http.StatusCreated, req)
 }
 
@@ -295,6 +338,13 @@ func (s *Server) handleRequestsItem(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		s.handleSubmitResponse(w, r, id)
+		return
+	case "event":
+		if r.Method != http.MethodPost {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		s.handleScriptEvent(w, r, id)
 		return
 	case "touch":
 		if r.Method != http.MethodPost {
@@ -397,7 +447,8 @@ func (s *Server) handleSubmitResponse(w http.ResponseWriter, r *http.Request, id
 		log.Printf("[WS] marshal request_completed failed: %v", err)
 	}
 
-	log.Printf("[API] Request %s completed", req.Id)
+	// #nosec G706 -- req.Id is server-generated and quoted for log safety.
+	log.Printf("[API] Request %q completed", req.Id)
 	writeProtoJSON(w, http.StatusOK, req)
 }
 
@@ -415,6 +466,29 @@ func widgetTypeFromOutputOneof(req *v1.UIRequest) (v1.WidgetType, bool) {
 		return v1.WidgetType_table, true
 	case *v1.UIRequest_ImageOutput:
 		return v1.WidgetType_image, true
+	case *v1.UIRequest_ScriptOutput:
+		return v1.WidgetType_script, true
+	default:
+		return v1.WidgetType_widget_type_unspecified, false
+	}
+}
+
+func widgetTypeFromInputOneof(req *v1.UIRequest) (v1.WidgetType, bool) {
+	switch req.Input.(type) {
+	case *v1.UIRequest_ConfirmInput:
+		return v1.WidgetType_confirm, true
+	case *v1.UIRequest_SelectInput:
+		return v1.WidgetType_select, true
+	case *v1.UIRequest_FormInput:
+		return v1.WidgetType_form, true
+	case *v1.UIRequest_UploadInput:
+		return v1.WidgetType_upload, true
+	case *v1.UIRequest_TableInput:
+		return v1.WidgetType_table, true
+	case *v1.UIRequest_ImageInput:
+		return v1.WidgetType_image, true
+	case *v1.UIRequest_ScriptInput:
+		return v1.WidgetType_script, true
 	default:
 		return v1.WidgetType_widget_type_unspecified, false
 	}
@@ -561,7 +635,7 @@ func (s *Server) handleImagesItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	f, err := os.Open(img.Path)
+	f, err := s.images.Open(r.Context(), id)
 	if err != nil {
 		s.images.Delete(context.Background(), id)
 		http.Error(w, "not found", http.StatusNotFound)
@@ -588,6 +662,7 @@ func (s *Server) handleImagesItem(w http.ResponseWriter, r *http.Request) {
 
 func writeJSON(w http.ResponseWriter, status int, v any) {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-Content-Type-Options", "nosniff")
 	w.WriteHeader(status)
 	_ = json.NewEncoder(w).Encode(v)
 }
@@ -595,6 +670,7 @@ func writeJSON(w http.ResponseWriter, status int, v any) {
 // writeProtoJSON writes a protobuf message as JSON using protojson
 func writeProtoJSON(w http.ResponseWriter, status int, msg proto.Message) {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-Content-Type-Options", "nosniff")
 	w.WriteHeader(status)
 	b, err := protojson.MarshalOptions{
 		EmitUnpopulated: true,
@@ -605,5 +681,6 @@ func writeProtoJSON(w http.ResponseWriter, status int, msg proto.Message) {
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
+	// #nosec G705 -- payload is protojson with application/json content-type.
 	_, _ = w.Write(b)
 }

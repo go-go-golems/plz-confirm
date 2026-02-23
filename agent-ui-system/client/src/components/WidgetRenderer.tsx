@@ -1,19 +1,25 @@
 import React from "react";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store/store";
-import { submitResponse, touchRequest } from "@/services/websocket";
+import { submitResponse, submitScriptEvent, touchRequest } from "@/services/websocket";
 import { ConfirmDialog } from "./widgets/ConfirmDialog";
 import { SelectDialog } from "./widgets/SelectDialog";
 import { TableDialog } from "./widgets/TableDialog";
 import { FormDialog } from "./widgets/FormDialog";
 import { UploadDialog } from "./widgets/UploadDialog";
 import { ImageDialog } from "./widgets/ImageDialog";
+import { GridDialog } from "./widgets/GridDialog";
+import { DisplayWidget } from "./widgets/DisplayWidget";
+import { RatingDialog } from "./widgets/RatingDialog";
 import { Loader2 } from "lucide-react";
 import { WidgetType } from "@/proto/generated/plz_confirm/v1/request";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 export const WidgetRenderer: React.FC = () => {
   const { active, loading } = useSelector((state: RootState) => state.request);
   const lastTouchedId = React.useRef<string | null>(null);
+  const lastToastKey = React.useRef<string>("");
   const [nowMs, setNowMs] = React.useState(() => Date.now());
 
   React.useEffect(() => {
@@ -23,6 +29,42 @@ export const WidgetRenderer: React.FC = () => {
     const t = setInterval(() => setNowMs(Date.now()), 1000);
     return () => clearInterval(t);
   }, [active?.id, active?.expiryDisabled]);
+
+  React.useEffect(() => {
+    if (!active || active.type !== WidgetType.script) return;
+    const scriptToast = active.scriptView?.toast;
+    if (!scriptToast?.message) return;
+
+    const style = String(scriptToast.style || "info").toLowerCase();
+    const duration = Number(scriptToast.durationMs ?? 3000);
+    const toastKey = `${active.id}:${active.scriptView?.stepId || ""}:${
+      scriptToast.message
+    }:${style}:${duration}`;
+    if (lastToastKey.current === toastKey) return;
+    lastToastKey.current = toastKey;
+
+    switch (style) {
+      case "success":
+        toast.success(scriptToast.message, { duration });
+        break;
+      case "warning":
+        toast.warning(scriptToast.message, { duration });
+        break;
+      case "error":
+        toast.error(scriptToast.message, { duration });
+        break;
+      default:
+        toast(scriptToast.message, { duration });
+        break;
+    }
+  }, [
+    active?.id,
+    active?.type,
+    active?.scriptView?.stepId,
+    active?.scriptView?.toast?.message,
+    active?.scriptView?.toast?.style,
+    active?.scriptView?.toast?.durationMs,
+  ]);
 
   if (!active) {
     return (
@@ -107,6 +149,142 @@ export const WidgetRenderer: React.FC = () => {
     loading: loading,
   };
 
+  const submitScriptWidgetEvent = async (eventType: string, data?: any) => {
+    try {
+      await submitScriptEvent(active.id, {
+        type: eventType,
+        stepId: active.scriptView?.stepId,
+        data,
+      });
+    } catch (error) {
+      console.error(`Failed to submit script event (${eventType})`, error);
+    }
+  };
+
+  const handleScriptSubmit = async (output: any) =>
+    submitScriptWidgetEvent("submit", output);
+
+  const handleScriptBack = async () => submitScriptWidgetEvent("back");
+
+  const renderScriptView = () => {
+    if (!active.scriptView) {
+      return (
+        <div className="p-8 border border-destructive/50 bg-destructive/10 text-destructive">
+          ERROR: SCRIPT_VIEW_MISSING
+        </div>
+      );
+    }
+
+    const scriptCommonProps = {
+      requestId: active.id,
+      onSubmit: handleScriptSubmit,
+      loading: loading,
+    };
+    const allowBack = Boolean(active.scriptView.allowBack);
+    const backLabel = String(active.scriptView.backLabel || "BACK");
+
+    const wrapWithBackControl = (content: React.ReactNode) => {
+      if (!allowBack) return content;
+      return (
+        <div className="space-y-2">
+          <div className="flex justify-start px-1">
+            <Button
+              type="button"
+              variant="outline"
+              className="cyber-button h-8 px-3 text-xs font-mono"
+              onClick={() => void handleScriptBack()}
+              disabled={loading}
+            >
+              {backLabel}
+            </Button>
+          </div>
+          {content}
+        </div>
+      );
+    };
+
+    const renderInteractiveScriptWidget = (
+      widgetType: string,
+      input: any,
+      renderKey: string
+    ) => {
+      switch (widgetType) {
+        case "confirm":
+          return <ConfirmDialog key={renderKey} {...scriptCommonProps} input={input} />;
+        case "select":
+          return <SelectDialog key={renderKey} {...scriptCommonProps} input={input} />;
+        case "table":
+          return <TableDialog key={renderKey} {...scriptCommonProps} input={input} />;
+        case "form":
+          return <FormDialog key={renderKey} {...scriptCommonProps} input={input} />;
+        case "upload":
+          return <UploadDialog key={renderKey} {...scriptCommonProps} input={input} />;
+        case "image":
+          return <ImageDialog key={renderKey} {...scriptCommonProps} input={input} />;
+        case "grid":
+          return <GridDialog key={renderKey} {...scriptCommonProps} input={input} />;
+        case "rating":
+          return <RatingDialog key={renderKey} {...scriptCommonProps} input={input} />;
+        default:
+          return (
+            <div className="p-8 border border-destructive/50 bg-destructive/10 text-destructive">
+              ERROR: UNSUPPORTED_SCRIPT_WIDGET [{widgetType || "unknown"}]
+            </div>
+          );
+      }
+    };
+
+    const sections = Array.isArray(active.scriptView.sections)
+      ? active.scriptView.sections.map(section => ({
+          widgetType: String(section.widgetType || "")
+            .trim()
+            .toLowerCase(),
+          input: (section.input ?? {}) as any,
+        }))
+      : [];
+
+    if (sections.length === 0) {
+      const widgetType = String(active.scriptView.widgetType || "")
+        .trim()
+        .toLowerCase();
+      const input = (active.scriptView.input ?? {}) as any;
+      const renderKey = active.scriptView.stepId || `${widgetType}-single`;
+      return wrapWithBackControl(
+        renderInteractiveScriptWidget(widgetType, input, renderKey)
+      );
+    }
+
+    const interactiveSections = sections.filter(
+      section => section.widgetType !== "display"
+    );
+    if (interactiveSections.length !== 1) {
+      return (
+        <div className="p-8 border border-destructive/50 bg-destructive/10 text-destructive">
+          ERROR: INVALID_SCRIPT_SECTIONS [exactly one interactive section is required]
+        </div>
+      );
+    }
+
+    return wrapWithBackControl(
+      <div className="space-y-3">
+        {sections.map((section, idx) => {
+          if (section.widgetType === "display") {
+            return <DisplayWidget key={`display-${idx}`} input={section.input} />;
+          }
+          return (
+            <React.Fragment key={`interactive-${idx}`}>
+              {renderInteractiveScriptWidget(
+                section.widgetType,
+                section.input,
+                `${active.scriptView?.stepId || "section-step"}-${idx}`
+              )}
+            </React.Fragment>
+          );
+        })}
+      </div>
+    );
+  };
+
   const renderWidget = () => {
     const typeLabel = (WidgetType as any)[active.type] ?? "unknown";
     switch (active.type) {
@@ -134,6 +312,8 @@ export const WidgetRenderer: React.FC = () => {
         return active.imageInput ? (
           <ImageDialog {...commonProps} input={active.imageInput} />
         ) : null;
+      case WidgetType.script:
+        return renderScriptView();
       default:
         return (
           <div className="p-8 border border-destructive/50 bg-destructive/10 text-destructive">
@@ -142,6 +322,22 @@ export const WidgetRenderer: React.FC = () => {
         );
     }
   };
+
+  const scriptProgress =
+    active.type === WidgetType.script ? active.scriptView?.progress : undefined;
+  const progressCurrent = Number(scriptProgress?.current ?? 0);
+  const progressTotal = Number(scriptProgress?.total ?? 0);
+  const hasScriptProgress =
+    Number.isFinite(progressCurrent) &&
+    Number.isFinite(progressTotal) &&
+    progressTotal > 0 &&
+    progressCurrent >= 0 &&
+    progressCurrent <= progressTotal;
+  const scriptProgressLabel =
+    scriptProgress?.label || `STEP ${progressCurrent} OF ${progressTotal}`;
+  const scriptProgressPct = hasScriptProgress
+    ? Math.max(0, Math.min(100, (progressCurrent / progressTotal) * 100))
+    : 0;
 
   return (
     <div className="w-full max-w-3xl mx-auto animate-in slide-in-from-bottom-4 duration-500">
@@ -175,6 +371,23 @@ export const WidgetRenderer: React.FC = () => {
           ).toUpperCase()}
         </span>
       </div>
+
+      {hasScriptProgress && (
+        <div className="mb-2 rounded border border-primary/30 bg-primary/5 px-3 py-2">
+          <div className="mb-1 flex items-center justify-between text-[10px] font-mono uppercase text-primary/90">
+            <span>{scriptProgressLabel}</span>
+            <span>
+              {progressCurrent}/{progressTotal}
+            </span>
+          </div>
+          <div className="h-1.5 w-full overflow-hidden rounded bg-primary/20">
+            <div
+              className="h-full bg-primary transition-[width] duration-300"
+              style={{ width: `${scriptProgressPct}%` }}
+            />
+          </div>
+        </div>
+      )}
 
       <div
         className="cyber-card p-1"

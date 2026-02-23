@@ -8,6 +8,7 @@ import {
 } from "@/store/store";
 import { browserNotificationService } from "./notifications";
 import {
+  RequestStatus,
   UIRequest,
   WidgetType,
 } from "@/proto/generated/plz_confirm/v1/request";
@@ -45,6 +46,14 @@ const markTouchedConfirmed = (requestId: string) => {
     if (!oldest) continue;
     touchedConfirmedIds.delete(oldest);
   }
+};
+
+const isKnownRequest = (requestId: string): boolean => {
+  const requestState = store.getState().request;
+  if (requestState.active?.id === requestId) return true;
+  if (requestState.pending.some(r => r.id === requestId)) return true;
+  if (requestState.history.some(r => r.id === requestId)) return true;
+  return false;
 };
 
 export const connectWebSocket = () => {
@@ -99,6 +108,20 @@ export const connectWebSocket = () => {
         if (completedIds.has(completedReq.id)) return;
         markCompleted(completedReq.id);
         store.dispatch(completeRequest(completedReq));
+      } else if (data.type === "request_updated") {
+        const updatedReq: UIRequest = normalizeUIRequest(data.request);
+        if (completedIds.has(updatedReq.id)) return;
+        if (updatedReq.status === RequestStatus.completed) {
+          markCompleted(updatedReq.id);
+          store.dispatch(completeRequest(updatedReq));
+          return;
+        }
+
+        if (isKnownRequest(updatedReq.id)) {
+          store.dispatch(patchRequest(updatedReq));
+          return;
+        }
+        store.dispatch(enqueueRequest(updatedReq));
       }
     } catch (e) {
       console.error("Failed to parse WS message", e);
@@ -203,6 +226,45 @@ export const submitResponse = async (
     return completedReq;
   } catch (error) {
     console.error("Error submitting response:", error);
+    throw error;
+  }
+};
+
+export const submitScriptEvent = async (
+  requestId: string,
+  event: {
+    type: string;
+    stepId?: string;
+    actionId?: string;
+    data?: Record<string, any>;
+  }
+) => {
+  try {
+    const response = await fetch(`/api/requests/${requestId}/event`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(event),
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to submit script event");
+    }
+
+    const json = await response.json();
+    const req = normalizeUIRequest(json);
+    if (req.status === RequestStatus.completed) {
+      if (!completedIds.has(requestId)) {
+        markCompleted(requestId);
+      }
+      store.dispatch(completeRequest(req));
+    } else {
+      store.dispatch(patchRequest(req));
+    }
+    return req;
+  } catch (error) {
+    console.error("Error submitting script event:", error);
     throw error;
   }
 };

@@ -11,6 +11,7 @@ import (
 
 type wsBroadcaster struct {
 	mu               sync.Mutex
+	writeMu          sync.Mutex
 	clientsBySession map[string]map[*websocket.Conn]struct{}
 	sessionByConn    map[*websocket.Conn]string
 }
@@ -75,7 +76,7 @@ func (b *wsBroadcaster) BroadcastJSON(sessionID string, msg any) {
 	conns := b.snapshot(sessionID)
 	for _, c := range conns {
 		_ = c.SetWriteDeadline(time.Now().Add(5 * time.Second))
-		if err := c.WriteJSON(msg); err != nil {
+		if err := b.writeJSON(c, msg); err != nil {
 			log.Printf("[WS] write failed, dropping client: %v", err)
 			_ = c.Close()
 			b.remove(c)
@@ -87,12 +88,24 @@ func (b *wsBroadcaster) BroadcastRawJSON(sessionID string, msg []byte) {
 	conns := b.snapshot(sessionID)
 	for _, c := range conns {
 		_ = c.SetWriteDeadline(time.Now().Add(5 * time.Second))
-		if err := c.WriteMessage(websocket.TextMessage, msg); err != nil {
+		if err := b.writeText(c, msg); err != nil {
 			log.Printf("[WS] write failed, dropping client: %v", err)
 			_ = c.Close()
 			b.remove(c)
 		}
 	}
+}
+
+func (b *wsBroadcaster) writeJSON(conn *websocket.Conn, msg any) error {
+	b.writeMu.Lock()
+	defer b.writeMu.Unlock()
+	return conn.WriteJSON(msg)
+}
+
+func (b *wsBroadcaster) writeText(conn *websocket.Conn, msg []byte) error {
+	b.writeMu.Lock()
+	defer b.writeMu.Unlock()
+	return conn.WriteMessage(websocket.TextMessage, msg)
 }
 
 var wsUpgrader = websocket.Upgrader{
@@ -116,7 +129,8 @@ func (s *Server) handleWS(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.ws.add(sessionID, conn)
-	log.Printf("[WS] client connected (sessionId=%s)", sessionID)
+	// #nosec G706 -- sessionId is quoted to neutralize control characters.
+	log.Printf("[WS] client connected (sessionId=%q)", sessionID)
 
 	// On connect, send all currently pending requests.
 	pending := s.store.PendingForSession(r.Context(), sessionID)
@@ -129,7 +143,7 @@ func (s *Server) handleWS(w http.ResponseWriter, r *http.Request) {
 			s.ws.remove(conn)
 			return
 		}
-		if err := conn.WriteMessage(websocket.TextMessage, msg); err != nil {
+		if err := s.ws.writeText(conn, msg); err != nil {
 			log.Printf("[WS] initial send failed: %v", err)
 			_ = conn.Close()
 			s.ws.remove(conn)

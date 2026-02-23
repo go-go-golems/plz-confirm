@@ -9,6 +9,7 @@ package v1
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	structpb "google.golang.org/protobuf/types/known/structpb"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
@@ -92,6 +93,7 @@ const (
 	WidgetType_upload                  WidgetType = 4
 	WidgetType_table                   WidgetType = 5
 	WidgetType_image                   WidgetType = 6
+	WidgetType_script                  WidgetType = 7
 )
 
 // Enum value maps for WidgetType.
@@ -104,6 +106,7 @@ var (
 		4: "upload",
 		5: "table",
 		6: "image",
+		7: "script",
 	}
 	WidgetType_value = map[string]int32{
 		"widget_type_unspecified": 0,
@@ -113,6 +116,7 @@ var (
 		"upload":                  4,
 		"table":                   5,
 		"image":                   6,
+		"script":                  7,
 	}
 )
 
@@ -303,6 +307,7 @@ type UIRequest struct {
 	//	*UIRequest_UploadInput
 	//	*UIRequest_TableInput
 	//	*UIRequest_ImageInput
+	//	*UIRequest_ScriptInput
 	Input isUIRequest_Input `protobuf_oneof:"input"`
 	// Widget-specific output (oneof for type safety)
 	//
@@ -314,6 +319,7 @@ type UIRequest struct {
 	//	*UIRequest_UploadOutput
 	//	*UIRequest_TableOutput
 	//	*UIRequest_ImageOutput
+	//	*UIRequest_ScriptOutput
 	Output         isUIRequest_Output `protobuf_oneof:"output"`
 	Status         RequestStatus      `protobuf:"varint,16,opt,name=status,proto3,enum=plz_confirm.v1.RequestStatus" json:"status,omitempty"`
 	CreatedAt      string             `protobuf:"bytes,17,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"` // RFC3339Nano timestamp
@@ -323,6 +329,9 @@ type UIRequest struct {
 	Metadata       *RequestMetadata   `protobuf:"bytes,21,opt,name=metadata,proto3,oneof" json:"metadata,omitempty"`
 	TouchedAt      *string            `protobuf:"bytes,22,opt,name=touched_at,json=touchedAt,proto3,oneof" json:"touched_at,omitempty"`                 // RFC3339Nano timestamp (first UI interaction)
 	ExpiryDisabled *bool              `protobuf:"varint,23,opt,name=expiry_disabled,json=expiryDisabled,proto3,oneof" json:"expiry_disabled,omitempty"` // If true, server will not auto-complete on expires_at
+	ScriptState    *structpb.Struct   `protobuf:"bytes,26,opt,name=script_state,json=scriptState,proto3,oneof" json:"script_state,omitempty"`
+	ScriptView     *ScriptView        `protobuf:"bytes,27,opt,name=script_view,json=scriptView,proto3,oneof" json:"script_view,omitempty"`
+	ScriptDescribe *ScriptDescribe    `protobuf:"bytes,28,opt,name=script_describe,json=scriptDescribe,proto3,oneof" json:"script_describe,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -439,6 +448,15 @@ func (x *UIRequest) GetImageInput() *ImageInput {
 	return nil
 }
 
+func (x *UIRequest) GetScriptInput() *ScriptInput {
+	if x != nil {
+		if x, ok := x.Input.(*UIRequest_ScriptInput); ok {
+			return x.ScriptInput
+		}
+	}
+	return nil
+}
+
 func (x *UIRequest) GetOutput() isUIRequest_Output {
 	if x != nil {
 		return x.Output
@@ -500,6 +518,15 @@ func (x *UIRequest) GetImageOutput() *ImageOutput {
 	return nil
 }
 
+func (x *UIRequest) GetScriptOutput() *ScriptOutput {
+	if x != nil {
+		if x, ok := x.Output.(*UIRequest_ScriptOutput); ok {
+			return x.ScriptOutput
+		}
+	}
+	return nil
+}
+
 func (x *UIRequest) GetStatus() RequestStatus {
 	if x != nil {
 		return x.Status
@@ -556,6 +583,27 @@ func (x *UIRequest) GetExpiryDisabled() bool {
 	return false
 }
 
+func (x *UIRequest) GetScriptState() *structpb.Struct {
+	if x != nil {
+		return x.ScriptState
+	}
+	return nil
+}
+
+func (x *UIRequest) GetScriptView() *ScriptView {
+	if x != nil {
+		return x.ScriptView
+	}
+	return nil
+}
+
+func (x *UIRequest) GetScriptDescribe() *ScriptDescribe {
+	if x != nil {
+		return x.ScriptDescribe
+	}
+	return nil
+}
+
 type isUIRequest_Input interface {
 	isUIRequest_Input()
 }
@@ -584,6 +632,10 @@ type UIRequest_ImageInput struct {
 	ImageInput *ImageInput `protobuf:"bytes,9,opt,name=image_input,json=imageInput,proto3,oneof"`
 }
 
+type UIRequest_ScriptInput struct {
+	ScriptInput *ScriptInput `protobuf:"bytes,24,opt,name=script_input,json=scriptInput,proto3,oneof"`
+}
+
 func (*UIRequest_ConfirmInput) isUIRequest_Input() {}
 
 func (*UIRequest_SelectInput) isUIRequest_Input() {}
@@ -595,6 +647,8 @@ func (*UIRequest_UploadInput) isUIRequest_Input() {}
 func (*UIRequest_TableInput) isUIRequest_Input() {}
 
 func (*UIRequest_ImageInput) isUIRequest_Input() {}
+
+func (*UIRequest_ScriptInput) isUIRequest_Input() {}
 
 type isUIRequest_Output interface {
 	isUIRequest_Output()
@@ -624,6 +678,10 @@ type UIRequest_ImageOutput struct {
 	ImageOutput *ImageOutput `protobuf:"bytes,15,opt,name=image_output,json=imageOutput,proto3,oneof"`
 }
 
+type UIRequest_ScriptOutput struct {
+	ScriptOutput *ScriptOutput `protobuf:"bytes,25,opt,name=script_output,json=scriptOutput,proto3,oneof"`
+}
+
 func (*UIRequest_ConfirmOutput) isUIRequest_Output() {}
 
 func (*UIRequest_SelectOutput) isUIRequest_Output() {}
@@ -636,11 +694,13 @@ func (*UIRequest_TableOutput) isUIRequest_Output() {}
 
 func (*UIRequest_ImageOutput) isUIRequest_Output() {}
 
+func (*UIRequest_ScriptOutput) isUIRequest_Output() {}
+
 var File_plz_confirm_v1_request_proto protoreflect.FileDescriptor
 
 const file_plz_confirm_v1_request_proto_rawDesc = "" +
 	"\n" +
-	"\x1cplz_confirm/v1/request.proto\x12\x0eplz_confirm.v1\x1a\x1cplz_confirm/v1/widgets.proto\"w\n" +
+	"\x1cplz_confirm/v1/request.proto\x12\x0eplz_confirm.v1\x1a\x1cplz_confirm/v1/widgets.proto\x1a\x1cgoogle/protobuf/struct.proto\"w\n" +
 	"\vProcessInfo\x12\x10\n" +
 	"\x03pid\x18\x01 \x01(\x03R\x03pid\x12\x17\n" +
 	"\x04ppid\x18\x02 \x01(\x03H\x00R\x04ppid\x88\x01\x01\x12\x17\n" +
@@ -659,8 +719,7 @@ const file_plz_confirm_v1_request_proto_rawDesc = "" +
 	"\x04_cwdB\a\n" +
 	"\x05_selfB\x0e\n" +
 	"\f_remote_addrB\r\n" +
-	"\v_user_agent\"\xac\n" +
-	"\n" +
+	"\v_user_agent\"\xb9\r\n" +
 	"\tUIRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12.\n" +
 	"\x04type\x18\x02 \x01(\x0e2\x1a.plz_confirm.v1.WidgetTypeR\x04type\x12\x1d\n" +
@@ -674,7 +733,8 @@ const file_plz_confirm_v1_request_proto_rawDesc = "" +
 	"\vtable_input\x18\b \x01(\v2\x1a.plz_confirm.v1.TableInputH\x00R\n" +
 	"tableInput\x12=\n" +
 	"\vimage_input\x18\t \x01(\v2\x1a.plz_confirm.v1.ImageInputH\x00R\n" +
-	"imageInput\x12F\n" +
+	"imageInput\x12@\n" +
+	"\fscript_input\x18\x18 \x01(\v2\x1b.plz_confirm.v1.ScriptInputH\x00R\vscriptInput\x12F\n" +
 	"\x0econfirm_output\x18\n" +
 	" \x01(\v2\x1d.plz_confirm.v1.ConfirmOutputH\x01R\rconfirmOutput\x12C\n" +
 	"\rselect_output\x18\v \x01(\v2\x1c.plz_confirm.v1.SelectOutputH\x01R\fselectOutput\x12=\n" +
@@ -682,7 +742,8 @@ const file_plz_confirm_v1_request_proto_rawDesc = "" +
 	"formOutput\x12C\n" +
 	"\rupload_output\x18\r \x01(\v2\x1c.plz_confirm.v1.UploadOutputH\x01R\fuploadOutput\x12@\n" +
 	"\ftable_output\x18\x0e \x01(\v2\x1b.plz_confirm.v1.TableOutputH\x01R\vtableOutput\x12@\n" +
-	"\fimage_output\x18\x0f \x01(\v2\x1b.plz_confirm.v1.ImageOutputH\x01R\vimageOutput\x125\n" +
+	"\fimage_output\x18\x0f \x01(\v2\x1b.plz_confirm.v1.ImageOutputH\x01R\vimageOutput\x12C\n" +
+	"\rscript_output\x18\x19 \x01(\v2\x1c.plz_confirm.v1.ScriptOutputH\x01R\fscriptOutput\x125\n" +
 	"\x06status\x18\x10 \x01(\x0e2\x1d.plz_confirm.v1.RequestStatusR\x06status\x12\x1d\n" +
 	"\n" +
 	"created_at\x18\x11 \x01(\tR\tcreatedAt\x12&\n" +
@@ -693,20 +754,27 @@ const file_plz_confirm_v1_request_proto_rawDesc = "" +
 	"\bmetadata\x18\x15 \x01(\v2\x1f.plz_confirm.v1.RequestMetadataH\x04R\bmetadata\x88\x01\x01\x12\"\n" +
 	"\n" +
 	"touched_at\x18\x16 \x01(\tH\x05R\ttouchedAt\x88\x01\x01\x12,\n" +
-	"\x0fexpiry_disabled\x18\x17 \x01(\bH\x06R\x0eexpiryDisabled\x88\x01\x01B\a\n" +
+	"\x0fexpiry_disabled\x18\x17 \x01(\bH\x06R\x0eexpiryDisabled\x88\x01\x01\x12?\n" +
+	"\fscript_state\x18\x1a \x01(\v2\x17.google.protobuf.StructH\aR\vscriptState\x88\x01\x01\x12@\n" +
+	"\vscript_view\x18\x1b \x01(\v2\x1a.plz_confirm.v1.ScriptViewH\bR\n" +
+	"scriptView\x88\x01\x01\x12L\n" +
+	"\x0fscript_describe\x18\x1c \x01(\v2\x1e.plz_confirm.v1.ScriptDescribeH\tR\x0escriptDescribe\x88\x01\x01B\a\n" +
 	"\x05inputB\b\n" +
 	"\x06outputB\x0f\n" +
 	"\r_completed_atB\b\n" +
 	"\x06_errorB\v\n" +
 	"\t_metadataB\r\n" +
 	"\v_touched_atB\x12\n" +
-	"\x10_expiry_disabled*c\n" +
+	"\x10_expiry_disabledB\x0f\n" +
+	"\r_script_stateB\x0e\n" +
+	"\f_script_viewB\x12\n" +
+	"\x10_script_describe*c\n" +
 	"\rRequestStatus\x12\x1e\n" +
 	"\x1arequest_status_unspecified\x10\x00\x12\v\n" +
 	"\apending\x10\x01\x12\r\n" +
 	"\tcompleted\x10\x02\x12\v\n" +
 	"\atimeout\x10\x03\x12\t\n" +
-	"\x05error\x10\x04*n\n" +
+	"\x05error\x10\x04*z\n" +
 	"\n" +
 	"WidgetType\x12\x1b\n" +
 	"\x17widget_type_unspecified\x10\x00\x12\v\n" +
@@ -717,7 +785,9 @@ const file_plz_confirm_v1_request_proto_rawDesc = "" +
 	"\n" +
 	"\x06upload\x10\x04\x12\t\n" +
 	"\x05table\x10\x05\x12\t\n" +
-	"\x05image\x10\x06BGZEgithub.com/go-go-golems/plz-confirm/proto/generated/go/plz_confirm/v1b\x06proto3"
+	"\x05image\x10\x06\x12\n" +
+	"\n" +
+	"\x06script\x10\aBGZEgithub.com/go-go-golems/plz-confirm/proto/generated/go/plz_confirm/v1b\x06proto3"
 
 var (
 	file_plz_confirm_v1_request_proto_rawDescOnce sync.Once
@@ -745,12 +815,17 @@ var file_plz_confirm_v1_request_proto_goTypes = []any{
 	(*UploadInput)(nil),     // 8: plz_confirm.v1.UploadInput
 	(*TableInput)(nil),      // 9: plz_confirm.v1.TableInput
 	(*ImageInput)(nil),      // 10: plz_confirm.v1.ImageInput
-	(*ConfirmOutput)(nil),   // 11: plz_confirm.v1.ConfirmOutput
-	(*SelectOutput)(nil),    // 12: plz_confirm.v1.SelectOutput
-	(*FormOutput)(nil),      // 13: plz_confirm.v1.FormOutput
-	(*UploadOutput)(nil),    // 14: plz_confirm.v1.UploadOutput
-	(*TableOutput)(nil),     // 15: plz_confirm.v1.TableOutput
-	(*ImageOutput)(nil),     // 16: plz_confirm.v1.ImageOutput
+	(*ScriptInput)(nil),     // 11: plz_confirm.v1.ScriptInput
+	(*ConfirmOutput)(nil),   // 12: plz_confirm.v1.ConfirmOutput
+	(*SelectOutput)(nil),    // 13: plz_confirm.v1.SelectOutput
+	(*FormOutput)(nil),      // 14: plz_confirm.v1.FormOutput
+	(*UploadOutput)(nil),    // 15: plz_confirm.v1.UploadOutput
+	(*TableOutput)(nil),     // 16: plz_confirm.v1.TableOutput
+	(*ImageOutput)(nil),     // 17: plz_confirm.v1.ImageOutput
+	(*ScriptOutput)(nil),    // 18: plz_confirm.v1.ScriptOutput
+	(*structpb.Struct)(nil), // 19: google.protobuf.Struct
+	(*ScriptView)(nil),      // 20: plz_confirm.v1.ScriptView
+	(*ScriptDescribe)(nil),  // 21: plz_confirm.v1.ScriptDescribe
 }
 var file_plz_confirm_v1_request_proto_depIdxs = []int32{
 	2,  // 0: plz_confirm.v1.RequestMetadata.self:type_name -> plz_confirm.v1.ProcessInfo
@@ -762,19 +837,24 @@ var file_plz_confirm_v1_request_proto_depIdxs = []int32{
 	8,  // 6: plz_confirm.v1.UIRequest.upload_input:type_name -> plz_confirm.v1.UploadInput
 	9,  // 7: plz_confirm.v1.UIRequest.table_input:type_name -> plz_confirm.v1.TableInput
 	10, // 8: plz_confirm.v1.UIRequest.image_input:type_name -> plz_confirm.v1.ImageInput
-	11, // 9: plz_confirm.v1.UIRequest.confirm_output:type_name -> plz_confirm.v1.ConfirmOutput
-	12, // 10: plz_confirm.v1.UIRequest.select_output:type_name -> plz_confirm.v1.SelectOutput
-	13, // 11: plz_confirm.v1.UIRequest.form_output:type_name -> plz_confirm.v1.FormOutput
-	14, // 12: plz_confirm.v1.UIRequest.upload_output:type_name -> plz_confirm.v1.UploadOutput
-	15, // 13: plz_confirm.v1.UIRequest.table_output:type_name -> plz_confirm.v1.TableOutput
-	16, // 14: plz_confirm.v1.UIRequest.image_output:type_name -> plz_confirm.v1.ImageOutput
-	0,  // 15: plz_confirm.v1.UIRequest.status:type_name -> plz_confirm.v1.RequestStatus
-	3,  // 16: plz_confirm.v1.UIRequest.metadata:type_name -> plz_confirm.v1.RequestMetadata
-	17, // [17:17] is the sub-list for method output_type
-	17, // [17:17] is the sub-list for method input_type
-	17, // [17:17] is the sub-list for extension type_name
-	17, // [17:17] is the sub-list for extension extendee
-	0,  // [0:17] is the sub-list for field type_name
+	11, // 9: plz_confirm.v1.UIRequest.script_input:type_name -> plz_confirm.v1.ScriptInput
+	12, // 10: plz_confirm.v1.UIRequest.confirm_output:type_name -> plz_confirm.v1.ConfirmOutput
+	13, // 11: plz_confirm.v1.UIRequest.select_output:type_name -> plz_confirm.v1.SelectOutput
+	14, // 12: plz_confirm.v1.UIRequest.form_output:type_name -> plz_confirm.v1.FormOutput
+	15, // 13: plz_confirm.v1.UIRequest.upload_output:type_name -> plz_confirm.v1.UploadOutput
+	16, // 14: plz_confirm.v1.UIRequest.table_output:type_name -> plz_confirm.v1.TableOutput
+	17, // 15: plz_confirm.v1.UIRequest.image_output:type_name -> plz_confirm.v1.ImageOutput
+	18, // 16: plz_confirm.v1.UIRequest.script_output:type_name -> plz_confirm.v1.ScriptOutput
+	0,  // 17: plz_confirm.v1.UIRequest.status:type_name -> plz_confirm.v1.RequestStatus
+	3,  // 18: plz_confirm.v1.UIRequest.metadata:type_name -> plz_confirm.v1.RequestMetadata
+	19, // 19: plz_confirm.v1.UIRequest.script_state:type_name -> google.protobuf.Struct
+	20, // 20: plz_confirm.v1.UIRequest.script_view:type_name -> plz_confirm.v1.ScriptView
+	21, // 21: plz_confirm.v1.UIRequest.script_describe:type_name -> plz_confirm.v1.ScriptDescribe
+	22, // [22:22] is the sub-list for method output_type
+	22, // [22:22] is the sub-list for method input_type
+	22, // [22:22] is the sub-list for extension type_name
+	22, // [22:22] is the sub-list for extension extendee
+	0,  // [0:22] is the sub-list for field type_name
 }
 
 func init() { file_plz_confirm_v1_request_proto_init() }
@@ -792,12 +872,14 @@ func file_plz_confirm_v1_request_proto_init() {
 		(*UIRequest_UploadInput)(nil),
 		(*UIRequest_TableInput)(nil),
 		(*UIRequest_ImageInput)(nil),
+		(*UIRequest_ScriptInput)(nil),
 		(*UIRequest_ConfirmOutput)(nil),
 		(*UIRequest_SelectOutput)(nil),
 		(*UIRequest_FormOutput)(nil),
 		(*UIRequest_UploadOutput)(nil),
 		(*UIRequest_TableOutput)(nil),
 		(*UIRequest_ImageOutput)(nil),
+		(*UIRequest_ScriptOutput)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{

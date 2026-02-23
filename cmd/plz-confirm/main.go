@@ -7,10 +7,9 @@ import (
 	"syscall"
 
 	glazed_cli "github.com/go-go-golems/glazed/pkg/cli"
-	"github.com/go-go-golems/glazed/pkg/cmds/layers"
+	"github.com/go-go-golems/glazed/pkg/cmds/schema"
 	"github.com/go-go-golems/glazed/pkg/help"
 	help_cmd "github.com/go-go-golems/glazed/pkg/help/cmd"
-	"github.com/go-go-golems/glazed/pkg/settings"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
@@ -29,103 +28,77 @@ func main() {
 		Short: "plz-confirm: CLI + backend for agent-ui-system (Go port)",
 	}
 
-	// Glazed standard output layers (adds --output, --fields, etc.)
-	glazedLayer, err := settings.NewGlazedParameterLayers(
-		settings.WithOutputParameterLayerOptions(
-			layers.WithDefaults(map[string]interface{}{
-				"output": "yaml",
-			}),
-		),
-	)
-	if err != nil {
-		fatal(err)
+	parserConfig := glazed_cli.CobraParserConfig{
+		ShortHelpSections: []string{schema.DefaultSlug},
+		MiddlewaresFunc:   glazed_cli.CobraCommandDefaultMiddlewares,
 	}
-	layersList := []layers.ParameterLayer{glazedLayer}
 
-	confirmCmd, err := agentcli.NewConfirmCommand(layersList...)
+	confirmCmd, err := agentcli.NewConfirmCommand()
 	if err != nil {
 		fatal(err)
 	}
 	cobraConfirmCmd, err := glazed_cli.BuildCobraCommand(confirmCmd,
-		glazed_cli.WithParserConfig(glazed_cli.CobraParserConfig{
-			ShortHelpLayers: []string{layers.DefaultSlug},
-			MiddlewaresFunc: glazed_cli.CobraCommandDefaultMiddlewares,
-		}),
+		glazed_cli.WithParserConfig(parserConfig),
 	)
 	if err != nil {
 		fatal(err)
 	}
 	rootCmd.AddCommand(cobraConfirmCmd)
 
-	selectCmd, err := agentcli.NewSelectCommand(layersList...)
+	selectCmd, err := agentcli.NewSelectCommand()
 	if err != nil {
 		fatal(err)
 	}
 	cobraSelectCmd, err := glazed_cli.BuildCobraCommand(selectCmd,
-		glazed_cli.WithParserConfig(glazed_cli.CobraParserConfig{
-			ShortHelpLayers: []string{layers.DefaultSlug},
-			MiddlewaresFunc: glazed_cli.CobraCommandDefaultMiddlewares,
-		}),
+		glazed_cli.WithParserConfig(parserConfig),
 	)
 	if err != nil {
 		fatal(err)
 	}
 	rootCmd.AddCommand(cobraSelectCmd)
 
-	formCmd, err := agentcli.NewFormCommand(layersList...)
+	formCmd, err := agentcli.NewFormCommand()
 	if err != nil {
 		fatal(err)
 	}
 	cobraFormCmd, err := glazed_cli.BuildCobraCommand(formCmd,
-		glazed_cli.WithParserConfig(glazed_cli.CobraParserConfig{
-			ShortHelpLayers: []string{layers.DefaultSlug},
-			MiddlewaresFunc: glazed_cli.CobraCommandDefaultMiddlewares,
-		}),
+		glazed_cli.WithParserConfig(parserConfig),
 	)
 	if err != nil {
 		fatal(err)
 	}
 	rootCmd.AddCommand(cobraFormCmd)
 
-	tableCmd, err := agentcli.NewTableCommand(layersList...)
+	tableCmd, err := agentcli.NewTableCommand()
 	if err != nil {
 		fatal(err)
 	}
 	cobraTableCmd, err := glazed_cli.BuildCobraCommand(tableCmd,
-		glazed_cli.WithParserConfig(glazed_cli.CobraParserConfig{
-			ShortHelpLayers: []string{layers.DefaultSlug},
-			MiddlewaresFunc: glazed_cli.CobraCommandDefaultMiddlewares,
-		}),
+		glazed_cli.WithParserConfig(parserConfig),
 	)
 	if err != nil {
 		fatal(err)
 	}
 	rootCmd.AddCommand(cobraTableCmd)
 
-	uploadCmd, err := agentcli.NewUploadCommand(layersList...)
+	uploadCmd, err := agentcli.NewUploadCommand()
 	if err != nil {
 		fatal(err)
 	}
 	cobraUploadCmd, err := glazed_cli.BuildCobraCommand(uploadCmd,
-		glazed_cli.WithParserConfig(glazed_cli.CobraParserConfig{
-			ShortHelpLayers: []string{layers.DefaultSlug},
-			MiddlewaresFunc: glazed_cli.CobraCommandDefaultMiddlewares,
-		}),
+		glazed_cli.WithParserConfig(parserConfig),
 	)
 	if err != nil {
 		fatal(err)
 	}
 	rootCmd.AddCommand(cobraUploadCmd)
 
-	imageCmd, err := agentcli.NewImageCommand(layersList...)
+	imageCmd, err := agentcli.NewImageCommand()
 	if err != nil {
 		fatal(err)
 	}
 	cobraImageCmd, err := glazed_cli.BuildCobraCommand(imageCmd,
-		glazed_cli.WithParserConfig(glazed_cli.CobraParserConfig{
-			ShortHelpLayers: []string{layers.DefaultSlug},
-			MiddlewaresFunc: glazed_cli.CobraCommandDefaultMiddlewares,
-		}),
+		glazed_cli.WithParserConfig(parserConfig),
 	)
 	if err != nil {
 		fatal(err)

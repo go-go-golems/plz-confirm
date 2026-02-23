@@ -4,8 +4,9 @@ import (
 	"context"
 
 	"github.com/go-go-golems/glazed/pkg/cmds"
-	"github.com/go-go-golems/glazed/pkg/cmds/layers"
-	"github.com/go-go-golems/glazed/pkg/cmds/parameters"
+	"github.com/go-go-golems/glazed/pkg/cmds/fields"
+	"github.com/go-go-golems/glazed/pkg/cmds/schema"
+	"github.com/go-go-golems/glazed/pkg/cmds/values"
 	"github.com/go-go-golems/glazed/pkg/middlewares"
 	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/pkg/errors"
@@ -32,59 +33,58 @@ type ConfirmSettings struct {
 	RejectText  *string `glazed.parameter:"reject-text"`
 }
 
-func NewConfirmCommand(layersList ...layers.ParameterLayer) (*ConfirmCommand, error) {
+func NewConfirmCommand() (*ConfirmCommand, error) {
 	desc := cmds.NewCommandDescription(
 		"confirm",
 		cmds.WithShort("Request a confirmation via the agent-ui web frontend"),
 		cmds.WithLong("Creates a confirm widget request, waits for the user response, and outputs the result."),
 		cmds.WithFlags(
-			parameters.NewParameterDefinition(
+			fields.New(
 				"base-url",
-				parameters.ParameterTypeString,
-				parameters.WithDefault("http://localhost:3000"),
-				parameters.WithHelp("Base URL (default: http://localhost:3000)"),
+				fields.TypeString,
+				fields.WithDefault("http://localhost:3000"),
+				fields.WithHelp("Base URL (default: http://localhost:3000)"),
 			),
-			parameters.NewParameterDefinition(
+			fields.New(
 				"session-id",
-				parameters.ParameterTypeString,
-				parameters.WithDefault("global"),
-				parameters.WithHelp("Session ID (used for WebSocket scoping)"),
+				fields.TypeString,
+				fields.WithDefault("global"),
+				fields.WithHelp("Session ID (used for WebSocket scoping)"),
 			),
-			parameters.NewParameterDefinition(
+			fields.New(
 				"timeout",
-				parameters.ParameterTypeInteger,
-				parameters.WithDefault(300),
-				parameters.WithHelp("Request expiration in seconds (server-side)"),
+				fields.TypeInteger,
+				fields.WithDefault(300),
+				fields.WithHelp("Request expiration in seconds (server-side)"),
 			),
-			parameters.NewParameterDefinition(
+			fields.New(
 				"wait-timeout",
-				parameters.ParameterTypeInteger,
-				parameters.WithDefault(300),
-				parameters.WithHelp("How long to wait for a response in seconds (0 = wait forever)"),
+				fields.TypeInteger,
+				fields.WithDefault(300),
+				fields.WithHelp("How long to wait for a response in seconds (0 = wait forever)"),
 			),
-			parameters.NewParameterDefinition(
+			fields.New(
 				"title",
-				parameters.ParameterTypeString,
-				parameters.WithHelp("Dialog title"),
-				parameters.WithRequired(true),
+				fields.TypeString,
+				fields.WithHelp("Dialog title"),
+				fields.WithRequired(true),
 			),
-			parameters.NewParameterDefinition(
+			fields.New(
 				"message",
-				parameters.ParameterTypeString,
-				parameters.WithHelp("Optional dialog message"),
+				fields.TypeString,
+				fields.WithHelp("Optional dialog message"),
 			),
-			parameters.NewParameterDefinition(
+			fields.New(
 				"approve-text",
-				parameters.ParameterTypeString,
-				parameters.WithHelp("Optional approve button text"),
+				fields.TypeString,
+				fields.WithHelp("Optional approve button text"),
 			),
-			parameters.NewParameterDefinition(
+			fields.New(
 				"reject-text",
-				parameters.ParameterTypeString,
-				parameters.WithHelp("Optional reject button text"),
+				fields.TypeString,
+				fields.WithHelp("Optional reject button text"),
 			),
 		),
-		cmds.WithLayersList(layersList...),
 	)
 
 	return &ConfirmCommand{CommandDescription: desc}, nil
@@ -92,11 +92,11 @@ func NewConfirmCommand(layersList ...layers.ParameterLayer) (*ConfirmCommand, er
 
 func (c *ConfirmCommand) RunIntoGlazeProcessor(
 	ctx context.Context,
-	parsedLayers *layers.ParsedLayers,
+	parsedValues *values.Values,
 	gp middlewares.Processor,
 ) error {
 	settings := &ConfirmSettings{}
-	if err := parsedLayers.InitializeStruct(layers.DefaultSlug, settings); err != nil {
+	if err := parsedValues.DecodeSectionInto(schema.DefaultSlug, settings); err != nil {
 		return err
 	}
 

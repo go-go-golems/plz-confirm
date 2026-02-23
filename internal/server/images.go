@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -41,17 +42,22 @@ func NewImageStore(opts ImageStoreOptions) (*ImageStore, error) {
 	if dir == "" {
 		dir = filepath.Join(os.TempDir(), "plz-confirm-images")
 	}
+	absDir, err := filepath.Abs(dir)
+	if err != nil {
+		return nil, errors.Wrap(err, "resolve image store dir")
+	}
+	absDir = filepath.Clean(absDir)
 	if opts.MaxUploadBytes <= 0 {
 		opts.MaxUploadBytes = 50 << 20 // 50MB default
 	}
 
 	// Ensure directory exists (no-op if already present).
-	if err := os.MkdirAll(dir, 0o755); err != nil {
+	if err := os.MkdirAll(absDir, 0o750); err != nil {
 		return nil, errors.Wrap(err, "create image store dir")
 	}
 
 	return &ImageStore{
-		dir:            dir,
+		dir:            absDir,
 		maxUploadBytes: opts.MaxUploadBytes,
 		images:         make(map[string]StoredImage),
 	}, nil
@@ -69,8 +75,12 @@ func (s *ImageStore) Put(
 ) (StoredImage, error) {
 	now := time.Now().UTC()
 	id := uuid.NewString()
-	dstPath := filepath.Join(s.dir, id)
+	dstPath, err := s.pathForID(id)
+	if err != nil {
+		return StoredImage{}, err
+	}
 
+	// #nosec G304,G703 -- dstPath is constrained to image store root by pathForID.
 	f, err := os.OpenFile(dstPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o600)
 	if err != nil {
 		return StoredImage{}, errors.Wrap(err, "open destination file")
@@ -81,6 +91,7 @@ func (s *ImageStore) Put(
 
 	n, err := io.Copy(f, r)
 	if err != nil {
+		// #nosec G304,G703 -- dstPath is constrained to image store root by pathForID.
 		_ = os.Remove(dstPath)
 		return StoredImage{}, errors.Wrap(err, "write destination file")
 	}
@@ -110,14 +121,17 @@ func (s *ImageStore) Get(_ context.Context, id string) (StoredImage, bool) {
 
 func (s *ImageStore) Delete(_ context.Context, id string) {
 	s.mu.Lock()
-	img, ok := s.images[id]
+	_, ok := s.images[id]
 	if ok {
 		delete(s.images, id)
 	}
 	s.mu.Unlock()
 
 	if ok {
-		_ = os.Remove(img.Path)
+		if dstPath, err := s.pathForID(id); err == nil {
+			// #nosec G304,G703 -- dstPath is constrained to image store root by pathForID.
+			_ = os.Remove(dstPath)
+		}
 	}
 }
 
@@ -140,4 +154,29 @@ func (s *ImageStore) Cleanup(_ context.Context, now time.Time) int {
 	}
 
 	return deleted
+}
+
+func (s *ImageStore) Open(_ context.Context, id string) (*os.File, error) {
+	dstPath, err := s.pathForID(id)
+	if err != nil {
+		return nil, err
+	}
+	// #nosec G304,G703 -- dstPath is constrained to image store root by pathForID.
+	return os.Open(dstPath)
+}
+
+func (s *ImageStore) pathForID(id string) (string, error) {
+	if _, err := uuid.Parse(id); err != nil {
+		return "", errors.Wrap(err, "invalid image id")
+	}
+	base := filepath.Clean(s.dir)
+	p := filepath.Clean(filepath.Join(base, id))
+	rel, err := filepath.Rel(base, p)
+	if err != nil {
+		return "", errors.Wrap(err, "resolve image path")
+	}
+	if rel == ".." || strings.HasPrefix(rel, ".."+string(os.PathSeparator)) {
+		return "", errors.New("image path escaped store root")
+	}
+	return p, nil
 }

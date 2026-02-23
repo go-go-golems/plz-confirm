@@ -1,0 +1,129 @@
+# Changelog
+
+## 2026-02-22
+
+- Initial workspace created
+
+
+## 2026-02-22
+
+Step 1: Implemented Proposal 1 script sidebar display improvements and tests (commit 42b3293af19d9203e06b95b26e529b37c2c1bb52)
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/agent-ui-system/client/src/pages/Home.tsx — Script-specific request history display fields
+- /home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/agent-ui-system/client/src/pages/homeRequestHistoryDisplay.test.ts — New tests for display helper
+- /home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/agent-ui-system/client/src/pages/homeRequestHistoryDisplay.ts — Display helper introduced
+
+
+## 2026-02-22
+
+Step 2: Implemented Proposal 2 grid widget with proto/schema validation, frontend rendering, and backend/frontend tests (commit 525c3afc1e59fc7f69595eb74a69c62dc8107f91)
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/agent-ui-system/client/src/components/widgets/GridDialog.tsx — Grid dialog implementation
+- /home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/internal/server/script.go — Grid validation in script view mapping
+- /home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/proto/plz_confirm/v1/widgets.proto — Grid message definitions
+
+
+## 2026-02-22
+
+Step 3: Implemented Proposal 3 composite ScriptView sections with display widget support and validation (commit 1a59f58479adb530240e649fc569fbc96b72bd27)
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/agent-ui-system/client/src/components/WidgetRenderer.tsx — Composite sections renderer path
+- /home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/agent-ui-system/client/src/components/widgets/DisplayWidget.tsx — Display section component
+- /home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/internal/server/script.go — Composite section contract enforcement
+
+
+## 2026-02-22
+
+Step 4: Implemented Proposal 4 ScriptView progress indicators with backend validation and frontend rendering (commit dbd5f70e37d480e0d24afa0e7e9136938b383b30)
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/agent-ui-system/client/src/components/WidgetRenderer.tsx — Progress UI
+- /home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/internal/server/script.go — Progress parsing/validation
+
+
+## 2026-02-22
+
+Step 5: Implemented Proposal 5 back navigation controls (allowBack/backLabel) with back event wiring (commit e0d3e8ae8293820093c388b294888c6550a72473)
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/agent-ui-system/client/src/components/WidgetRenderer.tsx — Back control UI + event sender
+- /home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/internal/server/script.go — Back fields mapping
+
+## 2026-02-22
+
+Step 6: Implemented Proposal 6 rating widget with style variants, backend validation, and frontend/backend tests (commit 0cd92c1bcf9f06fb313eba9dccf57f6bf62e0754)
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/agent-ui-system/client/src/components/widgets/RatingDialog.tsx — Rating UI component
+- /home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/internal/server/script.go — Rating contract validation
+
+
+## 2026-02-22
+
+Step 7: Implemented Proposal 7 prefilled defaults across select/form/table/rating and stepId-based rerender preservation (commit c79449e6afd67592c9ef14aa43d54329fbfac996)
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/agent-ui-system/client/src/components/widgets/FormDialog.tsx — Defaults support
+- /home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/agent-ui-system/client/src/components/widgets/RatingDialog.tsx — Defaults support
+- /home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/agent-ui-system/client/src/components/widgets/SelectDialog.tsx — Defaults support
+- /home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/agent-ui-system/client/src/components/widgets/TableDialog.tsx — Defaults support
+
+
+## 2026-02-22
+
+Step 8: Implemented Proposal 9 ScriptView toast notifications with backend validation and frontend Sonner integration (commit e4e291b8ff1926756d4178f7922868bc0642c959)
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/agent-ui-system/client/src/components/WidgetRenderer.tsx — Toast effect
+- /home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/internal/server/script.go — Toast mapper
+
+
+## 2026-02-22
+
+Step 9: Implemented Proposal 14 seeded randomness helpers (ctx.seed/random/randomInt) with deterministic lifecycle behavior (commit 6cfaea5ab9623983a8f0fd1ae462e0a94938248e)
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/internal/scriptengine/engine.go — Seeded random context helpers
+- /home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/internal/server/script.go — Seed persistence plumbing
+
+
+## 2026-02-22
+
+Step 10: Implemented Proposal 15 rich select options with backward-compatible value output and server validation (commit b66786dda8a49b7d0697cd04787a426a4d6f28e8)
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/agent-ui-system/client/src/components/widgets/SelectDialog.tsx — Rich option UI
+- /home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/internal/server/script.go — Rich option validation
+
+
+## 2026-02-22
+
+Step 11: Implemented Proposal 11 declarative branching helper API (ctx.branch) with route/predicate integration tests (commit ae1d495f822216a293bd824abf4d49f5696a3630)
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/internal/scriptengine/engine.go — ctx.branch helper
+- /home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/internal/scriptengine/engine_test.go — branch helper tests
+
+
+## 2026-02-23
+
+Added security findings analysis reference covering G115/G404/G704/G703/G705/G706 triage, exploitability, and project-specific mitigation strategy.
+
+### Related Files
+
+- ttmp/2026/02/22/PC-02-JS-API-IMPROVEMENTS--js-script-api-improvements/reference/02-security-findings-analysis-and-mitigation-strategy.md — New detailed security triage and mitigation matrix
+
