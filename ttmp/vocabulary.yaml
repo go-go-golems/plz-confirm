@@ -11,6 +11,14 @@ topics:
       description: Go language
     - slug: porting
       description: Porting/migration work
+    - slug: architecture
+      description: Architecture and system design
+    - slug: frontend
+      description: Frontend UI and client architecture
+    - slug: javascript
+      description: JavaScript and TypeScript ecosystem work
+    - slug: ux
+      description: User experience and interaction design
 docTypes:
     - slug: index
       description: Ticket index document
