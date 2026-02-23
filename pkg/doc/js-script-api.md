@@ -155,7 +155,7 @@ view: function (state, ctx) {
 
 The return object must include:
 
-- **`widgetType`** — one of `confirm`, `select`, `form`, `table`, `upload`, or `image`. See the Widget Type Reference below for what each one expects.
+- **`widgetType`** — one of `confirm`, `select`, `grid`, `form`, `table`, `upload`, or `image`. See the Widget Type Reference below for what each one expects.
 - **`input`** — the configuration object for that widget type (title, options, schema, etc.).
 
 You can also include `stepId` (a string that gets echoed back in the event, useful for correlating which step the user responded to), `title`, and `description` (both shown in the UI above the widget).
@@ -263,6 +263,28 @@ For multi-select (`multi: true`):
 - `selectedMulti` (`{ values: ["a", "b"] }`) — array of chosen options wrapped in an object.
 
 Both may include an optional `comment`.
+
+### `grid` — Spatial Grid Selection
+
+Renders a clickable 2D board for spatial interactions (games, seating, calendars).
+
+**What you put in `input`:**
+
+| Field | Type | Default | Description |
+|---|---|---|---|
+| `title` | string | (required) | Heading above the grid |
+| `rows` | number | (required) | Number of rows |
+| `cols` | number | (required) | Number of columns |
+| `cells` | array | (required) | Flat array of `rows * cols` cells. Each cell can include `value`, `style`, `disabled`, `label`, and `color`. |
+| `cellSize` | string | `"medium"` | One of `"small"`, `"medium"`, `"large"` |
+
+**What you get back in `event.data`:**
+
+| Field | Type | Description |
+|---|---|---|
+| `row` | number | Zero-based row index |
+| `col` | number | Zero-based column index |
+| `cellIndex` | number | Flat zero-based index in the `cells` array |
 
 ### `form` — Dynamic Form
 
@@ -591,7 +613,7 @@ These are the issues that come up most often when writing scripts. Each one has 
 | You forgot one of the four required exports (`describe`, `init`, `view`, `update`) | `400` on create | Make sure `module.exports` has all four functions |
 | `init` or `view` returned a string, number, or array instead of a plain object | `400` — "invalid return shape" | Always return `{}` objects, even if they're simple like `{ step: "start" }` |
 | You returned `{ done: true }` but `result` isn't an object (or is missing) | `400` — invalid terminal shape | Use `{ done: true, result: { ... } }` — result must be a `{}` |
-| `view` returned a `widgetType` that doesn't exist | Browser shows "unsupported widget" error | Use one of: `confirm`, `select`, `table`, `form`, `upload`, `image` |
+| `view` returned a `widgetType` that doesn't exist | Browser shows "unsupported widget" error | Use one of: `confirm`, `select`, `grid`, `table`, `form`, `upload`, `image` |
 | Your script has a tight loop or expensive computation | `504` timeout after `timeoutMs` | Keep callbacks lightweight. If you need more time, increase `timeoutMs` |
 | You accessed `event.data.approved` without checking if `event.data` exists | `422` runtime error — script crashed | Guard with `event.data && event.data.approved` |
 

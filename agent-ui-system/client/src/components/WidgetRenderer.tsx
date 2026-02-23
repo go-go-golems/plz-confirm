@@ -8,6 +8,7 @@ import { TableDialog } from "./widgets/TableDialog";
 import { FormDialog } from "./widgets/FormDialog";
 import { UploadDialog } from "./widgets/UploadDialog";
 import { ImageDialog } from "./widgets/ImageDialog";
+import { GridDialog } from "./widgets/GridDialog";
 import { Loader2 } from "lucide-react";
 import { WidgetType } from "@/proto/generated/plz_confirm/v1/request";
 
@@ -151,6 +152,8 @@ export const WidgetRenderer: React.FC = () => {
         return <UploadDialog {...scriptCommonProps} input={input} />;
       case "image":
         return <ImageDialog {...scriptCommonProps} input={input} />;
+      case "grid":
+        return <GridDialog {...scriptCommonProps} input={input} />;
       default:
         return (
           <div className="p-8 border border-destructive/50 bg-destructive/10 text-destructive">

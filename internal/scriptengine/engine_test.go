@@ -133,6 +133,38 @@ func TestUpdateDone(t *testing.T) {
 	}
 }
 
+func TestInitAndViewSupportsGridWidget(t *testing.T) {
+	t.Parallel()
+
+	e := New()
+	out, err := e.InitAndView(context.Background(), &v1.ScriptInput{
+		Script: `
+module.exports = {
+  describe: function () { return { name: "grid-flow", version: "1.0.0" }; },
+  init: function () { return { step: "board" }; },
+  view: function () {
+    return {
+      widgetType: "grid",
+      input: {
+        title: "Play",
+        rows: 2,
+        cols: 2,
+        cells: [{value:""}, {value:""}, {value:""}, {value:""}]
+      }
+    };
+  },
+  update: function (state, event) { return { done: true, result: event.data || {} }; }
+};
+`,
+	})
+	if err != nil {
+		t.Fatalf("InitAndView returned error: %v", err)
+	}
+	if got := out.View["widgetType"]; got != "grid" {
+		t.Fatalf("unexpected widgetType: %v", got)
+	}
+}
+
 func TestTimeout(t *testing.T) {
 	t.Parallel()
 

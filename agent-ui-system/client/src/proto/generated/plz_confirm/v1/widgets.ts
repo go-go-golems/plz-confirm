@@ -41,6 +41,29 @@ export interface SelectOutputMulti {
   values: string[];
 }
 
+/** Grid Widget (script view extension) */
+export interface GridCell {
+  value: string;
+  style?: string | undefined;
+  disabled?: boolean | undefined;
+  label?: string | undefined;
+  color?: string | undefined;
+}
+
+export interface GridInput {
+  title: string;
+  rows: number;
+  cols: number;
+  cells: GridCell[];
+  cellSize?: string | undefined;
+}
+
+export interface GridSelection {
+  row: number;
+  col: number;
+  cellIndex: number;
+}
+
 /** Form Widget */
 export interface FormInput {
   title: string;

@@ -200,6 +200,9 @@ func mapToScriptView(m map[string]any) (*v1.ScriptView, error) {
 		}
 		inputMap = typed
 	}
+	if err := validateScriptViewInput(widgetType, inputMap); err != nil {
+		return nil, err
+	}
 	inputStruct, err := mapToStruct(inputMap)
 	if err != nil {
 		return nil, err
@@ -218,6 +221,83 @@ func mapToScriptView(m map[string]any) (*v1.ScriptView, error) {
 		view.Description = &description
 	}
 	return view, nil
+}
+
+func validateScriptViewInput(widgetType string, input map[string]any) error {
+	switch strings.ToLower(strings.TrimSpace(widgetType)) {
+	case "grid":
+		return validateGridInput(input)
+	default:
+		return nil
+	}
+}
+
+func validateGridInput(input map[string]any) error {
+	rows, ok := numberAsPositiveInt(input["rows"])
+	if !ok {
+		return fmt.Errorf("view.input.rows must be a positive integer for grid widget")
+	}
+	cols, ok := numberAsPositiveInt(input["cols"])
+	if !ok {
+		return fmt.Errorf("view.input.cols must be a positive integer for grid widget")
+	}
+	if rows*cols > 400 {
+		return fmt.Errorf("view.input grid size exceeds max cells (400)")
+	}
+
+	cellsV, ok := input["cells"]
+	if !ok {
+		return fmt.Errorf("view.input.cells is required for grid widget")
+	}
+	cells, ok := cellsV.([]any)
+	if !ok {
+		return fmt.Errorf("view.input.cells must be an array for grid widget")
+	}
+	if len(cells) != rows*cols {
+		return fmt.Errorf("view.input.cells length must equal rows*cols for grid widget")
+	}
+	for i, cellV := range cells {
+		cell, ok := cellV.(map[string]any)
+		if !ok {
+			return fmt.Errorf("view.input.cells[%d] must be an object for grid widget", i)
+		}
+		if v, ok := cell["value"]; ok {
+			if _, ok := v.(string); !ok {
+				return fmt.Errorf("view.input.cells[%d].value must be string", i)
+			}
+		}
+		if v, ok := cell["style"]; ok {
+			if _, ok := v.(string); !ok {
+				return fmt.Errorf("view.input.cells[%d].style must be string", i)
+			}
+		}
+		if v, ok := cell["disabled"]; ok {
+			if _, ok := v.(bool); !ok {
+				return fmt.Errorf("view.input.cells[%d].disabled must be boolean", i)
+			}
+		}
+	}
+
+	return nil
+}
+
+func numberAsPositiveInt(v any) (int, bool) {
+	switch n := v.(type) {
+	case int:
+		return n, n > 0
+	case int32:
+		return int(n), n > 0
+	case int64:
+		return int(n), n > 0
+	case float32:
+		i := int(n)
+		return i, float32(i) == n && i > 0
+	case float64:
+		i := int(n)
+		return i, float64(i) == n && i > 0
+	default:
+		return 0, false
+	}
 }
 
 func mapToScriptDescribe(m map[string]any) (*v1.ScriptDescribe, error) {

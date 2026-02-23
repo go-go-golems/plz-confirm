@@ -242,6 +242,127 @@ module.exports = {
 	}
 }
 
+func TestScriptLifecycleWithGridWidget(t *testing.T) {
+	t.Parallel()
+
+	s := New(store.New())
+	h := s.Handler()
+
+	gridScript := `
+module.exports = {
+  describe: function () { return { name: "grid-demo", version: "1.0.0" }; },
+  init: function () { return { step: "grid" }; },
+  view: function () {
+    return {
+      widgetType: "grid",
+      stepId: "board",
+      input: {
+        title: "Pick a cell",
+        rows: 2,
+        cols: 2,
+        cells: [
+          { value: "" },
+          { value: "X", disabled: true },
+          { value: "" },
+          { value: "O", disabled: true }
+        ],
+        cellSize: "small"
+      }
+    };
+  },
+  update: function (state, event) {
+    return { done: true, result: event.data || {} };
+  }
+};
+`
+
+	createReq := &v1.UIRequest{
+		Type:      v1.WidgetType_script,
+		SessionId: "global",
+		Input: &v1.UIRequest_ScriptInput{
+			ScriptInput: &v1.ScriptInput{
+				Title:  "Grid demo",
+				Script: gridScript,
+			},
+		},
+	}
+
+	created := postUIRequest(t, h, "/api/requests", createReq)
+	if created.GetScriptView() == nil {
+		t.Fatalf("expected script_view on create")
+	}
+	if got := created.GetScriptView().GetWidgetType(); got != "grid" {
+		t.Fatalf("expected grid view on create, got %q", got)
+	}
+
+	event := &v1.ScriptEvent{
+		Type:   "submit",
+		StepId: toPtr("board"),
+		Data:   mustStruct(t, map[string]any{"row": 1, "col": 0, "cellIndex": 2}),
+	}
+	completed := postScriptEvent(t, h, created.Id, event)
+	if completed.GetStatus() != v1.RequestStatus_completed {
+		t.Fatalf("expected completed status, got %v", completed.GetStatus())
+	}
+	result := completed.GetScriptOutput().GetResult().AsMap()
+	if result["cellIndex"] != float64(2) {
+		t.Fatalf("unexpected grid result payload: %#v", result)
+	}
+}
+
+func TestScriptCreateRejectsInvalidGridViewShape(t *testing.T) {
+	t.Parallel()
+
+	s := New(store.New())
+	h := s.Handler()
+
+	invalidGridScript := `
+module.exports = {
+  describe: function () { return { name: "grid-bad", version: "1.0.0" }; },
+  init: function () { return { step: "grid" }; },
+  view: function () {
+    return {
+      widgetType: "grid",
+      input: {
+        title: "Broken board",
+        rows: 2,
+        cols: 2,
+        cells: [{ value: "" }]
+      }
+    };
+  },
+  update: function (state) { return state; }
+};
+`
+
+	createReq := &v1.UIRequest{
+		Type:      v1.WidgetType_script,
+		SessionId: "global",
+		Input: &v1.UIRequest_ScriptInput{
+			ScriptInput: &v1.ScriptInput{
+				Title:  "Invalid grid",
+				Script: invalidGridScript,
+			},
+		},
+	}
+
+	body, err := protojson.Marshal(createReq)
+	if err != nil {
+		t.Fatalf("marshal create req: %v", err)
+	}
+	req := httptest.NewRequest(http.MethodPost, "/api/requests", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400 for invalid grid view, got %d body=%s", rr.Code, rr.Body.String())
+	}
+	if !bytes.Contains(rr.Body.Bytes(), []byte("rows*cols")) {
+		t.Fatalf("expected rows*cols validation message, got body=%s", rr.Body.String())
+	}
+}
+
 func postUIRequest(t *testing.T, h http.Handler, path string, reqProto *v1.UIRequest) *v1.UIRequest {
 	t.Helper()
 

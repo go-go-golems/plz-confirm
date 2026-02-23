@@ -41,6 +41,29 @@ message SelectOutputMulti {
   repeated string values = 1;
 }
 
+// Grid Widget (script view extension)
+message GridCell {
+  string value = 1;
+  optional string style = 2;
+  optional bool disabled = 3;
+  optional string label = 4;
+  optional string color = 5;
+}
+
+message GridInput {
+  string title = 1;
+  int32 rows = 2;
+  int32 cols = 3;
+  repeated GridCell cells = 4;
+  optional string cell_size = 5;
+}
+
+message GridSelection {
+  int32 row = 1;
+  int32 col = 2;
+  int32 cell_index = 3;
+}
+
 // Form Widget
 message FormInput {
   string title = 1;

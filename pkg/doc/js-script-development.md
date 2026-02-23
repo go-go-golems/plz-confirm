@@ -51,7 +51,7 @@ These files handle HTTP routing, event dispatch, and WebSocket broadcasting.
 The browser side handles rendering script widgets and sending events back to the server.
 
 - **`services/websocket.ts`** — The WebSocket client. Handles `request_updated` events (new for scripts — regular widgets only have `new_request` and `request_completed`). Includes a guard against stale updates: if a `request_updated` arrives for a request that's already completed, it's ignored. Also provides `submitScriptEvent()`, which posts to `/api/requests/{id}/event`.
-- **`components/WidgetRenderer.tsx`** — The component that decides what to render. For script requests, it reads `scriptView.widgetType` and `scriptView.input`, then renders the matching widget component (`ConfirmDialog`, `SelectDialog`, etc.). On submit, it calls `submitScriptEvent` instead of the regular response endpoint.
+- **`components/WidgetRenderer.tsx`** — The component that decides what to render. For script requests, it reads `scriptView.widgetType` and `scriptView.input`, then renders the matching widget component (`ConfirmDialog`, `SelectDialog`, `GridDialog`, etc.). On submit, it calls `submitScriptEvent` instead of the regular response endpoint.
 - **`store/store.ts`** — Zustand store with a `patchRequest` reducer for in-place updates. Also exports `createAppStore()` as a factory function for test isolation (so tests don't share state).
 
 ### Proto Schema (`proto/plz_confirm/v1/`)
@@ -183,7 +183,7 @@ When `WidgetRenderer.tsx` detects that the active request has a `scriptView`, it
 
 1. Reads `scriptView.widgetType`, lowercased and trimmed.
 2. Reads `scriptView.input` as the widget props.
-3. Renders the matching widget component (`ConfirmDialog`, `SelectDialog`, `TableDialog`, `FormDialog`, `UploadDialog`, or `ImageDialog`).
+3. Renders the matching widget component (`ConfirmDialog`, `SelectDialog`, `GridDialog`, `TableDialog`, `FormDialog`, `UploadDialog`, or `ImageDialog`).
 4. When the user submits, it calls `submitScriptEvent(requestId, { type: "submit", stepId, data: output })` instead of the regular `/response` endpoint.
 
 This means script widgets look and behave exactly like regular widgets from the user's perspective — the only difference is what happens when they submit.
@@ -244,7 +244,7 @@ When something goes wrong in the script engine, the symptoms usually point to a 
 | `400` on create with "invalid return shape" | `init` or `view` returned a non-object (string, number, array) | Check what your script functions return. Look at shape validation in `engine.go`. |
 | `422` on event submission | Script threw an unhandled exception during `update` or the subsequent `view` call | Check script logic — most commonly, `event.data` is undefined and the script accesses a property on it. |
 | `504` on create or event | A script function took longer than `timeoutMs` | Simplify the callback logic or increase the timeout. Check `runWithTimeout` in `engine.go`. |
-| Browser shows "unsupported widget" | `view()` returned a `widgetType` that's not in the renderer's switch statement | Check `WidgetRenderer.tsx` — supported types are `confirm`, `select`, `table`, `form`, `upload`, `image`. |
+| Browser shows "unsupported widget" | `view()` returned a `widgetType` that's not in the renderer's switch statement | Check `WidgetRenderer.tsx` — supported types are `confirm`, `select`, `grid`, `table`, `form`, `upload`, `image`. |
 | Request is stuck in pending forever | `update` keeps returning non-terminal states and never returns `{ done: true }` | Walk through the script's update logic and verify the terminal condition. |
 | WebSocket events arrive in wrong order | Concurrent writes to the same WS connection, or client reconnected mid-flow | Check `ws.go` write mutex. Check `websocket.ts` stale-update guard. |
 | A `request_updated` event overwrites completed state in the UI | A stale update arrived after the request was already completed | The `websocket.ts` client should be ignoring these — check the completion guard logic. |

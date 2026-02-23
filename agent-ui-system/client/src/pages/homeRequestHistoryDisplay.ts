@@ -15,7 +15,10 @@ export interface RequestHistoryDisplay {
 const UNKNOWN_REQUEST = "UNKNOWN_REQUEST";
 
 const resolveRequestTypeLabel = (req: UIRequest): string =>
-  String(req.type).toUpperCase();
+  String(
+    (WidgetType as unknown as Record<number, string>)[req.type as unknown as number] ??
+      req.type
+  ).toUpperCase();
 
 const resolveScriptTitle = (req: UIRequest): string =>
   req.scriptInput?.title?.trim() ||

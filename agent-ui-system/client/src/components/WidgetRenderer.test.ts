@@ -29,6 +29,9 @@ vi.mock("@/components/widgets/UploadDialog", () => ({
 vi.mock("@/components/widgets/ImageDialog", () => ({
   ImageDialog: ({ input }: any) => `MOCK_IMAGE:${input?.title ?? ""}`,
 }));
+vi.mock("@/components/widgets/GridDialog", () => ({
+  GridDialog: ({ input }: any) => `MOCK_GRID:${input?.title ?? ""}`,
+}));
 
 const buildScriptRequest = (
   overrides: Partial<UIRequest> = {}
@@ -95,5 +98,24 @@ describe("WidgetRenderer script branch", () => {
       })
     );
     expect(html).toContain("ERROR: UNSUPPORTED_SCRIPT_WIDGET [custom-widget]");
+  });
+
+  it("renders grid script views via GridDialog mapping", () => {
+    const html = renderWithStore(
+      buildScriptRequest({
+        id: "req-render-grid",
+        scriptView: {
+          widgetType: "grid",
+          input: {
+            title: "Your move",
+            rows: 3,
+            cols: 3,
+            cells: Array.from({ length: 9 }).map(() => ({ value: "" })),
+          },
+          stepId: "grid-step",
+        },
+      })
+    );
+    expect(html).toContain("MOCK_GRID:Your move");
   });
 });
