@@ -6,20 +6,40 @@ import (
 	"fmt"
 	"math"
 	"math/rand"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/dop251/goja"
+	ggjengine "github.com/go-go-golems/go-go-goja/engine"
 	"github.com/go-go-golems/plz-confirm/proto/generated/go/plz_confirm/v1"
 )
 
 const defaultTimeout = 2 * time.Second
 const contextSeedPropKey = "__pc_seed"
+const maxScriptLogLines = 200
+const maxScriptLogBytes = 64 * 1024
+const scriptLogTruncatedLine = "[system] log output truncated"
 
-type Engine struct{}
+var (
+	ErrScriptSetup      = errors.New("script setup failed")
+	ErrScriptValidation = errors.New("script validation failed")
+	ErrScriptRuntime    = errors.New("script runtime failed")
+	ErrScriptTimeout    = errors.New("script execution timeout")
+	ErrScriptCancelled  = errors.New("script execution cancelled")
+)
+
+type Engine struct {
+	runtimeFactory *ggjengine.Factory
+	factoryErr     error
+}
 
 func New() *Engine {
-	return &Engine{}
+	factory, err := ggjengine.NewBuilder().Build()
+	return &Engine{
+		runtimeFactory: factory,
+		factoryErr:     err,
+	}
 }
 
 type InitAndViewResult struct {
@@ -37,53 +57,178 @@ type UpdateAndViewResult struct {
 	Logs   []string
 }
 
+type runLogCollector struct {
+	lines     []string
+	bytes     int
+	truncated bool
+}
+
+func newRunLogCollector() *runLogCollector {
+	return &runLogCollector{
+		lines: make([]string, 0, 8),
+	}
+}
+
+func (c *runLogCollector) Add(level string, args ...goja.Value) {
+	if c == nil {
+		return
+	}
+	if c.truncated {
+		return
+	}
+	line := "[" + level + "] " + formatConsoleArgs(args)
+	if len(c.lines) >= maxScriptLogLines || c.bytes+len(line) > maxScriptLogBytes {
+		c.lines = append(c.lines, scriptLogTruncatedLine)
+		c.bytes += len(scriptLogTruncatedLine)
+		c.truncated = true
+		return
+	}
+	c.lines = append(c.lines, line)
+	c.bytes += len(line)
+}
+
+func (c *runLogCollector) Snapshot() []string {
+	if c == nil || len(c.lines) == 0 {
+		return []string{}
+	}
+	out := make([]string, len(c.lines))
+	copy(out, c.lines)
+	return out
+}
+
+func formatConsoleArgs(args []goja.Value) string {
+	if len(args) == 0 {
+		return ""
+	}
+	parts := make([]string, 0, len(args))
+	for _, arg := range args {
+		parts = append(parts, formatConsoleValue(arg))
+	}
+	return strings.Join(parts, " ")
+}
+
+func formatConsoleValue(v goja.Value) string {
+	if v == nil {
+		return "undefined"
+	}
+	if goja.IsUndefined(v) {
+		return "undefined"
+	}
+	if goja.IsNull(v) {
+		return "null"
+	}
+	switch value := v.Export().(type) {
+	case string:
+		return value
+	case bool:
+		return strconv.FormatBool(value)
+	case int:
+		return strconv.Itoa(value)
+	case int64:
+		return strconv.FormatInt(value, 10)
+	case int32:
+		return strconv.FormatInt(int64(value), 10)
+	case float64:
+		return strconv.FormatFloat(value, 'f', -1, 64)
+	case float32:
+		return strconv.FormatFloat(float64(value), 'f', -1, 32)
+	default:
+		return fmt.Sprint(value)
+	}
+}
+
+func installConsoleCapture(vm *goja.Runtime, collector *runLogCollector) error {
+	consoleObj := vm.NewObject()
+	for _, level := range []string{"log", "info", "warn", "error"} {
+		logLevel := level
+		if err := consoleObj.Set(logLevel, func(call goja.FunctionCall) goja.Value {
+			collector.Add(logLevel, call.Arguments...)
+			return goja.Undefined()
+		}); err != nil {
+			return fmt.Errorf("%w: set console.%s: %v", ErrScriptSetup, logLevel, err)
+		}
+	}
+	if err := vm.Set("console", consoleObj); err != nil {
+		return fmt.Errorf("%w: set console object: %v", ErrScriptSetup, err)
+	}
+	return nil
+}
+
+func (e *Engine) newRuntime(ctx context.Context, collector *runLogCollector) (*ggjengine.Runtime, error) {
+	if e == nil {
+		return nil, fmt.Errorf("%w: engine is nil", ErrScriptSetup)
+	}
+	if e.factoryErr != nil {
+		return nil, fmt.Errorf("%w: runtime factory build: %v", ErrScriptSetup, e.factoryErr)
+	}
+	if e.runtimeFactory == nil {
+		return nil, fmt.Errorf("%w: runtime factory is nil", ErrScriptSetup)
+	}
+	rt, err := e.runtimeFactory.NewRuntime(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("%w: new runtime: %v", ErrScriptSetup, err)
+	}
+	if err := installConsoleCapture(rt.VM, collector); err != nil {
+		_ = rt.Close(ctx)
+		return nil, err
+	}
+	return rt, nil
+}
+
 func (e *Engine) InitAndView(ctx context.Context, in *v1.ScriptInput) (*InitAndViewResult, error) {
 	if in == nil {
-		return nil, errors.New("script input is required")
+		return nil, fmt.Errorf("%w: script input is required", ErrScriptValidation)
 	}
 	if strings.TrimSpace(in.GetScript()) == "" {
-		return nil, errors.New("script source is required")
+		return nil, fmt.Errorf("%w: script source is required", ErrScriptValidation)
 	}
 
-	vm := goja.New()
+	collector := newRunLogCollector()
+	rt, err := e.newRuntime(ctx, collector)
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		_ = rt.Close(ctx)
+	}()
 
 	var out InitAndViewResult
 	run := func() error {
-		if _, err := vm.RunString(buildExportsProgram(in.GetScript())); err != nil {
-			return fmt.Errorf("script load failed: %w", err)
+		if _, err := rt.VM.RunString(buildExportsProgram(in.GetScript())); err != nil {
+			return fmt.Errorf("%w: script load failed: %v", ErrScriptValidation, err)
 		}
 
-		hasDescribe, err := evalBool(vm.RunString(`typeof __pc_exports.describe === "function"`))
+		hasDescribe, err := evalBool(rt.VM.RunString(`typeof __pc_exports.describe === "function"`))
 		if err != nil {
 			return err
 		}
-		hasInit, err := evalBool(vm.RunString(`typeof __pc_exports.init === "function"`))
+		hasInit, err := evalBool(rt.VM.RunString(`typeof __pc_exports.init === "function"`))
 		if err != nil {
 			return err
 		}
-		hasView, err := evalBool(vm.RunString(`typeof __pc_exports.view === "function"`))
+		hasView, err := evalBool(rt.VM.RunString(`typeof __pc_exports.view === "function"`))
 		if err != nil {
 			return err
 		}
-		hasUpdate, err := evalBool(vm.RunString(`typeof __pc_exports.update === "function"`))
+		hasUpdate, err := evalBool(rt.VM.RunString(`typeof __pc_exports.update === "function"`))
 		if err != nil {
 			return err
 		}
 		if !hasDescribe || !hasInit || !hasView || !hasUpdate {
-			return errors.New("script must export describe/init/view/update functions")
+			return fmt.Errorf("%w: script must export describe/init/view/update functions", ErrScriptValidation)
 		}
 
 		scriptCtx := defaultScriptContext(in.GetProps())
-		if err := vm.Set("__pc_ctx", scriptCtx); err != nil {
-			return fmt.Errorf("set ctx failed: %w", err)
+		if err := rt.VM.Set("__pc_ctx", scriptCtx); err != nil {
+			return fmt.Errorf("%w: set ctx failed: %v", ErrScriptSetup, err)
 		}
-		if err := attachContextHelpers(vm); err != nil {
+		if err := attachContextHelpers(rt.VM); err != nil {
 			return err
 		}
 
-		describeVal, err := vm.RunString(`__pc_exports.describe(__pc_ctx)`)
+		describeVal, err := rt.VM.RunString(`__pc_exports.describe(__pc_ctx)`)
 		if err != nil {
-			return fmt.Errorf("describe() failed: %w", err)
+			return fmt.Errorf("%w: describe() failed: %v", ErrScriptRuntime, err)
 		}
 		describeMap, err := expectMap(describeVal.Export(), "describe result")
 		if err != nil {
@@ -91,9 +236,9 @@ func (e *Engine) InitAndView(ctx context.Context, in *v1.ScriptInput) (*InitAndV
 		}
 		out.Describe = describeMap
 
-		stateVal, err := vm.RunString(`__pc_exports.init(__pc_ctx)`)
+		stateVal, err := rt.VM.RunString(`__pc_exports.init(__pc_ctx)`)
 		if err != nil {
-			return fmt.Errorf("init() failed: %w", err)
+			return fmt.Errorf("%w: init() failed: %v", ErrScriptRuntime, err)
 		}
 		stateMap, err := expectMap(stateVal.Export(), "init result")
 		if err != nil {
@@ -101,13 +246,13 @@ func (e *Engine) InitAndView(ctx context.Context, in *v1.ScriptInput) (*InitAndV
 		}
 		out.State = stateMap
 
-		if err := vm.Set("__pc_state", stateMap); err != nil {
-			return fmt.Errorf("set state failed: %w", err)
+		if err := rt.VM.Set("__pc_state", stateMap); err != nil {
+			return fmt.Errorf("%w: set state failed: %v", ErrScriptSetup, err)
 		}
 
-		viewVal, err := vm.RunString(`__pc_exports.view(__pc_state, __pc_ctx)`)
+		viewVal, err := rt.VM.RunString(`__pc_exports.view(__pc_state, __pc_ctx)`)
 		if err != nil {
-			return fmt.Errorf("view() failed: %w", err)
+			return fmt.Errorf("%w: view() failed: %v", ErrScriptRuntime, err)
 		}
 		viewMap, err := expectMap(viewVal.Export(), "view result")
 		if err != nil {
@@ -118,9 +263,10 @@ func (e *Engine) InitAndView(ctx context.Context, in *v1.ScriptInput) (*InitAndV
 		return nil
 	}
 
-	if err := runWithTimeout(ctx, vm, timeoutFromInput(in), run); err != nil {
+	if err := runWithTimeout(ctx, rt.VM, timeoutFromInput(in), run); err != nil {
 		return nil, err
 	}
+	out.Logs = collector.Snapshot()
 
 	return &out, nil
 }
@@ -132,10 +278,10 @@ func (e *Engine) UpdateAndView(
 	event map[string]any,
 ) (*UpdateAndViewResult, error) {
 	if in == nil {
-		return nil, errors.New("script input is required")
+		return nil, fmt.Errorf("%w: script input is required", ErrScriptValidation)
 	}
 	if strings.TrimSpace(in.GetScript()) == "" {
-		return nil, errors.New("script source is required")
+		return nil, fmt.Errorf("%w: script source is required", ErrScriptValidation)
 	}
 	if state == nil {
 		state = map[string]any{}
@@ -144,43 +290,50 @@ func (e *Engine) UpdateAndView(
 		event = map[string]any{}
 	}
 
-	vm := goja.New()
+	collector := newRunLogCollector()
+	rt, err := e.newRuntime(ctx, collector)
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		_ = rt.Close(ctx)
+	}()
 
 	var out UpdateAndViewResult
 	run := func() error {
-		if _, err := vm.RunString(buildExportsProgram(in.GetScript())); err != nil {
-			return fmt.Errorf("script load failed: %w", err)
+		if _, err := rt.VM.RunString(buildExportsProgram(in.GetScript())); err != nil {
+			return fmt.Errorf("%w: script load failed: %v", ErrScriptValidation, err)
 		}
 
-		hasUpdate, err := evalBool(vm.RunString(`typeof __pc_exports.update === "function"`))
+		hasUpdate, err := evalBool(rt.VM.RunString(`typeof __pc_exports.update === "function"`))
 		if err != nil {
 			return err
 		}
-		hasView, err := evalBool(vm.RunString(`typeof __pc_exports.view === "function"`))
+		hasView, err := evalBool(rt.VM.RunString(`typeof __pc_exports.view === "function"`))
 		if err != nil {
 			return err
 		}
 		if !hasUpdate || !hasView {
-			return errors.New("script must export update/view functions")
+			return fmt.Errorf("%w: script must export update/view functions", ErrScriptValidation)
 		}
 
 		scriptCtx := defaultScriptContext(in.GetProps())
-		if err := vm.Set("__pc_ctx", scriptCtx); err != nil {
-			return fmt.Errorf("set ctx failed: %w", err)
+		if err := rt.VM.Set("__pc_ctx", scriptCtx); err != nil {
+			return fmt.Errorf("%w: set ctx failed: %v", ErrScriptSetup, err)
 		}
-		if err := attachContextHelpers(vm); err != nil {
+		if err := attachContextHelpers(rt.VM); err != nil {
 			return err
 		}
-		if err := vm.Set("__pc_state", state); err != nil {
-			return fmt.Errorf("set state failed: %w", err)
+		if err := rt.VM.Set("__pc_state", state); err != nil {
+			return fmt.Errorf("%w: set state failed: %v", ErrScriptSetup, err)
 		}
-		if err := vm.Set("__pc_event", event); err != nil {
-			return fmt.Errorf("set event failed: %w", err)
+		if err := rt.VM.Set("__pc_event", event); err != nil {
+			return fmt.Errorf("%w: set event failed: %v", ErrScriptSetup, err)
 		}
 
-		updateVal, err := vm.RunString(`__pc_exports.update(__pc_state, __pc_event, __pc_ctx)`)
+		updateVal, err := rt.VM.RunString(`__pc_exports.update(__pc_state, __pc_event, __pc_ctx)`)
 		if err != nil {
-			return fmt.Errorf("update() failed: %w", err)
+			return fmt.Errorf("%w: update() failed: %v", ErrScriptRuntime, err)
 		}
 
 		updateMap, err := expectMap(updateVal.Export(), "update result")
@@ -199,13 +352,13 @@ func (e *Engine) UpdateAndView(
 		}
 
 		out.State = updateMap
-		if err := vm.Set("__pc_state", out.State); err != nil {
-			return fmt.Errorf("set next state failed: %w", err)
+		if err := rt.VM.Set("__pc_state", out.State); err != nil {
+			return fmt.Errorf("%w: set next state failed: %v", ErrScriptSetup, err)
 		}
 
-		viewVal, err := vm.RunString(`__pc_exports.view(__pc_state, __pc_ctx)`)
+		viewVal, err := rt.VM.RunString(`__pc_exports.view(__pc_state, __pc_ctx)`)
 		if err != nil {
-			return fmt.Errorf("view() failed: %w", err)
+			return fmt.Errorf("%w: view() failed: %v", ErrScriptRuntime, err)
 		}
 		viewMap, err := expectMap(viewVal.Export(), "view result")
 		if err != nil {
@@ -215,9 +368,10 @@ func (e *Engine) UpdateAndView(
 		return nil
 	}
 
-	if err := runWithTimeout(ctx, vm, timeoutFromInput(in), run); err != nil {
+	if err := runWithTimeout(ctx, rt.VM, timeoutFromInput(in), run); err != nil {
 		return nil, err
 	}
+	out.Logs = collector.Snapshot()
 
 	return &out, nil
 }
@@ -298,21 +452,21 @@ if (__pc_ctx && typeof __pc_ctx === "object") {
   };
 }
 `); err != nil {
-		return fmt.Errorf("attach ctx helpers failed: %w", err)
+		return fmt.Errorf("%w: attach ctx helpers failed: %v", ErrScriptSetup, err)
 	}
 	return nil
 }
 
 func evalBool(v goja.Value, err error) (bool, error) {
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("%w: bool evaluation failed: %v", ErrScriptValidation, err)
 	}
 	if v == nil {
-		return false, errors.New("expected bool result, got nil")
+		return false, fmt.Errorf("%w: expected bool result, got nil", ErrScriptValidation)
 	}
 	b, ok := v.Export().(bool)
 	if !ok {
-		return false, errors.New("expected bool result")
+		return false, fmt.Errorf("%w: expected bool result", ErrScriptValidation)
 	}
 	return b, nil
 }
@@ -320,7 +474,7 @@ func evalBool(v goja.Value, err error) (bool, error) {
 func expectMap(v any, name string) (map[string]any, error) {
 	m, ok := v.(map[string]any)
 	if !ok {
-		return nil, fmt.Errorf("%s must be an object", name)
+		return nil, fmt.Errorf("%w: %s must be an object", ErrScriptValidation, name)
 	}
 	return m, nil
 }
@@ -413,14 +567,14 @@ func runWithTimeout(
 	if runErr := runCtx.Err(); runErr != nil {
 		if errors.Is(runErr, context.DeadlineExceeded) {
 			if err != nil {
-				return fmt.Errorf("script execution timeout: %w", err)
+				return errors.Join(ErrScriptTimeout, runErr, err)
 			}
-			return errors.New("script execution timeout")
+			return errors.Join(ErrScriptTimeout, runErr)
 		}
 		if err != nil {
-			return fmt.Errorf("script execution cancelled: %w", err)
+			return errors.Join(ErrScriptCancelled, runErr, err)
 		}
-		return runErr
+		return errors.Join(ErrScriptCancelled, runErr)
 	}
 	return err
 }

@@ -60,6 +60,7 @@ func (s *Store) Create(_ context.Context, req *v1.UIRequest) (*v1.UIRequest, err
 		ScriptState:    req.ScriptState,
 		ScriptView:     req.ScriptView,
 		ScriptDescribe: req.ScriptDescribe,
+		ScriptLogs:     append([]string(nil), req.ScriptLogs...),
 		Status:         v1.RequestStatus_pending,
 		CreatedAt:      now.Format(time.RFC3339Nano),
 		ExpiresAt:      now.Format(time.RFC3339Nano), // Will be set below
@@ -391,6 +392,7 @@ func (s *Store) Complete(_ context.Context, id string, output *v1.UIRequest) (*v
 
 	now := time.Now().UTC().Format(time.RFC3339Nano)
 	e.req.Output = output.Output // Copy the output oneof field
+	e.req.ScriptLogs = append([]string(nil), output.ScriptLogs...)
 	e.req.Status = v1.RequestStatus_completed
 	completedAt := now
 	e.req.CompletedAt = &completedAt
@@ -405,6 +407,7 @@ func (s *Store) PatchScript(
 	id string,
 	state *structpb.Struct,
 	view *v1.ScriptView,
+	logs []string,
 ) (*v1.UIRequest, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -425,6 +428,9 @@ func (s *Store) PatchScript(
 	}
 	if view != nil {
 		e.req.ScriptView = view
+	}
+	if logs != nil {
+		e.req.ScriptLogs = append([]string(nil), logs...)
 	}
 
 	return e.req, nil

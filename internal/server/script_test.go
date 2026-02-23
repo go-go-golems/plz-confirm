@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"sync"
 	"testing"
 
@@ -135,6 +136,80 @@ func TestScriptRequestLifecycle(t *testing.T) {
 	}
 	if env := completed.GetScriptOutput().GetResult().AsMap()["env"]; env != "staging" {
 		t.Fatalf("unexpected script result env: %v", env)
+	}
+}
+
+func TestScriptResponsesIncludeCapturedLogs(t *testing.T) {
+	t.Parallel()
+
+	s := New(store.New())
+	h := s.Handler()
+
+	logScript := `
+module.exports = {
+  describe: function () {
+    console.log("describe-log");
+    return { name: "log-flow", version: "1.0.0" };
+  },
+  init: function () {
+    console.info("init-info");
+    return { step: "confirm" };
+  },
+  view: function () {
+    console.warn("view-warn");
+    return { widgetType: "confirm", input: { title: "Continue?" } };
+  },
+  update: function (state, event) {
+    console.error("update-error");
+    return { done: true, result: { ok: true } };
+  }
+};
+`
+	createReq := &v1.UIRequest{
+		Type:      v1.WidgetType_script,
+		SessionId: "global",
+		Input: &v1.UIRequest_ScriptInput{
+			ScriptInput: &v1.ScriptInput{
+				Title:  "Log flow",
+				Script: logScript,
+			},
+		},
+	}
+	created := postUIRequest(t, h, "/api/requests", createReq)
+	if len(created.GetScriptLogs()) == 0 {
+		t.Fatalf("expected scriptLogs on create response")
+	}
+	createdLogs := strings.Join(created.GetScriptLogs(), "\n")
+	if !strings.Contains(createdLogs, "describe-log") {
+		t.Fatalf("expected describe log in create response, got %v", created.GetScriptLogs())
+	}
+	if !strings.Contains(createdLogs, "init-info") {
+		t.Fatalf("expected init log in create response, got %v", created.GetScriptLogs())
+	}
+	if !strings.Contains(createdLogs, "view-warn") {
+		t.Fatalf("expected view log in create response, got %v", created.GetScriptLogs())
+	}
+
+	completed := postScriptEvent(t, h, created.Id, &v1.ScriptEvent{
+		Type: "submit",
+		Data: mustStruct(t, map[string]any{"approved": true}),
+	})
+	if completed.GetStatus() != v1.RequestStatus_completed {
+		t.Fatalf("expected completed status, got %v", completed.GetStatus())
+	}
+	if len(completed.GetScriptLogs()) == 0 {
+		t.Fatalf("expected scriptLogs on completion response")
+	}
+	if len(completed.GetScriptOutput().GetLogs()) == 0 {
+		t.Fatalf("expected scriptOutput.logs on completion response")
+	}
+	finalLogs := strings.Join(completed.GetScriptLogs(), "\n")
+	if !strings.Contains(finalLogs, "update-error") {
+		t.Fatalf("expected update log in top-level scriptLogs, got %v", completed.GetScriptLogs())
+	}
+	outputLogs := strings.Join(completed.GetScriptOutput().GetLogs(), "\n")
+	if !strings.Contains(outputLogs, "update-error") {
+		t.Fatalf("expected update log in scriptOutput.logs, got %v", completed.GetScriptOutput().GetLogs())
 	}
 }
 

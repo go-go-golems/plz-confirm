@@ -162,11 +162,12 @@ func (s *Server) handleScriptEvent(w http.ResponseWriter, r *http.Request, id st
 			return
 		}
 		outputReq := &v1.UIRequest{
-			Type: v1.WidgetType_script,
+			Type:       v1.WidgetType_script,
+			ScriptLogs: append([]string(nil), updateResult.Logs...),
 			Output: &v1.UIRequest_ScriptOutput{
 				ScriptOutput: &v1.ScriptOutput{
 					Result: resultStruct,
-					Logs:   updateResult.Logs,
+					Logs:   append([]string(nil), updateResult.Logs...),
 				},
 			},
 		}
@@ -199,7 +200,7 @@ func (s *Server) handleScriptEvent(w http.ResponseWriter, r *http.Request, id st
 		return
 	}
 
-	req, err := s.store.PatchScript(r.Context(), id, stateStruct, viewProto)
+	req, err := s.store.PatchScript(r.Context(), id, stateStruct, viewProto, updateResult.Logs)
 	if err != nil {
 		if stderrors.Is(err, store.ErrNotFound) {
 			http.Error(w, "request not found", http.StatusNotFound)
@@ -834,6 +835,21 @@ func mapToScriptDescribe(m map[string]any) (*v1.ScriptDescribe, error) {
 func statusForScriptError(err error) int {
 	if err == nil {
 		return http.StatusBadRequest
+	}
+	if stderrors.Is(err, scriptengine.ErrScriptTimeout) {
+		return http.StatusGatewayTimeout
+	}
+	if stderrors.Is(err, scriptengine.ErrScriptCancelled) {
+		return http.StatusRequestTimeout
+	}
+	if stderrors.Is(err, scriptengine.ErrScriptValidation) {
+		return http.StatusBadRequest
+	}
+	if stderrors.Is(err, scriptengine.ErrScriptSetup) {
+		return http.StatusInternalServerError
+	}
+	if stderrors.Is(err, scriptengine.ErrScriptRuntime) {
+		return http.StatusUnprocessableEntity
 	}
 	if stderrors.Is(err, context.DeadlineExceeded) {
 		return http.StatusGatewayTimeout
