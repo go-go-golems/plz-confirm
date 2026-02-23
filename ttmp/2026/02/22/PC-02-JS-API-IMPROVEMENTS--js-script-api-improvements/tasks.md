@@ -10,7 +10,7 @@
 - [x] [Proposal 5] Add back/undo navigation contract (showBack, backLabel) plus back event wiring from UI through server/engine to scripts.
 - [x] [Proposal 6] Add rating/likert widget type with configurable scale, labels, defaults, and submit payload validation.
 - [x] [Proposal 7] Support prefilled defaults/initial values consistently across widgets and preserve user edits during rerenders.
-- [ ] [Proposal 9] Add toast/flash message event type and frontend transient notification handling with severity + timeout.
+- [x] [Proposal 9] Add toast/flash message event type and frontend transient notification handling with severity + timeout.
 - [ ] [Proposal 14] Add deterministic seeded randomness via ctx.random and ctx.randomInt with per-run seed and reproducibility tests.
 - [ ] [Proposal 15] Add rich select options with description, disabled state, and metadata/icon rendering while preserving backward compatibility.
 - [ ] [Proposal 11] Implement declarative branching helper API (branch tables/predicates) and runtime integration tests for multi-path flows.

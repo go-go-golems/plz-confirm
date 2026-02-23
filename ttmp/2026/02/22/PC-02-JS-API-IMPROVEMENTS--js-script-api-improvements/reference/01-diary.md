@@ -26,6 +26,7 @@ RelatedFiles:
         Back button rendering and back event dispatch
         Script renderer mapping for rating widget
         stepId-based keying for state reset/preserve behavior
+        Sonner toast emission and dedupe keying
     - Path: agent-ui-system/client/src/components/widgets/DisplayWidget.test.tsx
       Note: Display widget rendering tests
     - Path: agent-ui-system/client/src/components/widgets/DisplayWidget.tsx
@@ -67,6 +68,7 @@ RelatedFiles:
         Progress mapping and validation
         Maps allowBack/showBack and backLabel from script view
         Rating input validation in script view mapper
+        Toast mapping and validation
     - Path: internal/server/script_test.go
       Note: |-
         Grid script lifecycle + invalid input validation tests
@@ -74,6 +76,7 @@ RelatedFiles:
         Progress mapping and invalid-shape tests
         Back navigation field mapping test
         Rating lifecycle and invalid-style tests
+        Toast mapping and invalid style tests
     - Path: pkg/doc/js-script-api.md
       Note: |-
         Grid API documentation
@@ -89,6 +92,7 @@ RelatedFiles:
         Added ScriptProgress field on ScriptView
         Added allow_back/back_label fields on ScriptView
         Added rating widget schema messages
+        Added ScriptToast and ScriptView.toast field
     - Path: ttmp/2026/02/22/PC-02-JS-API-IMPROVEMENTS--js-script-api-improvements/tasks.md
       Note: Proposal task tracking and checkoffs
 ExternalSources: []
@@ -97,6 +101,7 @@ LastUpdated: 2026-02-22T20:37:13.424677713-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 
 
@@ -625,3 +630,69 @@ The implementation intentionally applies defaults only at component initializati
 
 ### Technical details
 - Defaults are consumed from `input.defaults` and are not reapplied after user interaction within the same step.
+
+## Step 8: Proposal 9 - Toast/Flash Messages
+
+This step implemented view-level toast metadata so scripts can emit transient feedback messages when a view updates, without forcing title/message rewrites in interactive widgets.
+
+I wired the toast contract from server mapping into frontend Sonner notifications with deduplication keyed by request + step + toast payload.
+
+### Prompt Context
+
+**User prompt (verbatim):** (see Step 1)
+
+**Assistant interpretation:** Implement proposal 9 as an additive ScriptView field and render-side transient notification behavior.
+
+**Inferred user intent:** Enable lightweight, non-blocking status feedback in script flows.
+
+**Commit (code):** e4e291b8ff1926756d4178f7922868bc0642c959 - "feat(script): add script view toast notifications"
+
+### What I did
+- Added `ScriptToast` proto message and `toast` field on `ScriptView`.
+- Regenerated protobuf outputs.
+- Added `mapToScriptToast` in `internal/server/script.go`:
+- validates object shape,
+- requires `message`,
+- supports `duration` and `durationMs` aliases (1..30000),
+- validates `style` enum (`info|success|warning|error`).
+- Extended `mapToScriptView` to include `toast`.
+- Added frontend toast emission in `WidgetRenderer` using Sonner:
+- emits on script view transitions,
+- deduplicates repeated renders with `lastToastKey`.
+- Added backend tests for toast mapping and invalid style rejection.
+- Updated API and dev docs with toast contract and runtime behavior.
+
+### Why
+- Scripts need short-lived feedback ("saved", "computer moved", etc.) that should not alter persistent widget content.
+
+### What worked
+- Toast metadata maps cleanly through request lifecycle.
+- Invalid toast config fails early with `400`.
+- Frontend emits correct toast style with duration.
+
+### What didn't work
+- No blockers in this step.
+
+### What I learned
+- Toast deduplication needs explicit keying; otherwise same-step rerenders can spam notifications.
+
+### What was tricky to build
+- The main edge was avoiding duplicate toast emission on benign rerenders. I solved this by caching a composite key (`requestId + stepId + message + style + duration`) and only firing when key changes.
+
+### What warrants a second pair of eyes
+- Toast dedupe key currently includes content and step metadata only; if future requirements need repeated identical toasts intentionally, we may need an explicit nonce field.
+
+### What should be done in the future
+- Consider exposing a toast ID/nonce field in `ScriptToast` for explicit replay behavior.
+
+### Code review instructions
+- Review `proto/plz_confirm/v1/widgets.proto` (`ScriptToast` and `ScriptView.toast`).
+- Review `internal/server/script.go` (`mapToScriptToast`).
+- Review `agent-ui-system/client/src/components/WidgetRenderer.tsx` toast effect/dedupe logic.
+- Validate with:
+- `go test ./internal/server -count=1`
+- `pnpm -C agent-ui-system run check`
+- `pnpm -C agent-ui-system exec vitest run client/src/components/WidgetRenderer.test.ts`
+
+### Technical details
+- Supported toast styles: `info`, `success`, `warning`, `error`.

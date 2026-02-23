@@ -78,3 +78,13 @@ Step 7: Implemented Proposal 7 prefilled defaults across select/form/table/ratin
 - /home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/agent-ui-system/client/src/components/widgets/SelectDialog.tsx — Defaults support
 - /home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/agent-ui-system/client/src/components/widgets/TableDialog.tsx — Defaults support
 
+
+## 2026-02-22
+
+Step 8: Implemented Proposal 9 ScriptView toast notifications with backend validation and frontend Sonner integration (commit e4e291b8ff1926756d4178f7922868bc0642c959)
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/agent-ui-system/client/src/components/WidgetRenderer.tsx — Toast effect
+- /home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/internal/server/script.go — Toast mapper
+
