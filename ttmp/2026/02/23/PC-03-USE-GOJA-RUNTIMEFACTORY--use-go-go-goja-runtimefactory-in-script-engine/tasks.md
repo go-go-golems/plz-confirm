@@ -30,10 +30,10 @@
 - [x] C1. Commit schema + codegen changes (E1-E2).
 - [x] C2. Commit runtime and server/store plumbing changes (E3-E8).
 - [x] C3. Commit tests and docs updates (E9-E11).
-- [ ] C4. Commit ticket diary/changelog/task updates if separated from code commits.
+- [x] C4. Commit ticket diary/changelog/task updates if separated from code commits.
 
 ## Documentation and Delivery
 
 - [x] D1. Keep detailed diary updated after each implementation step and commit.
 - [x] D2. Record decision points and validation outputs in ticket changelog.
-- [ ] D3. Upload refreshed ticket bundle to reMarkable after implementation completes.
+- [x] D3. Upload refreshed ticket bundle to reMarkable after implementation completes.

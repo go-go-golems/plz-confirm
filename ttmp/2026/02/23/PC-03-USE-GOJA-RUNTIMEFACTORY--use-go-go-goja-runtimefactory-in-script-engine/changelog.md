@@ -36,3 +36,10 @@
 - Validation run results:
   - `go test ./internal/scriptengine ./internal/server ./internal/store -count=1` passed
   - `pnpm -C agent-ui-system run check` passed
+- Updated documentation for the new runtime and response contract (commit `5fd50e4`):
+  - `pkg/doc/js-script-api.md`
+  - `pkg/doc/js-script-development.md`
+- Recorded implementation work and detailed execution diary in ticket docs (commit `197cab8`).
+- Uploaded final implementation bundle to reMarkable:
+  - Name: `PC-03 RuntimeFactory Implementation (require + logs)`
+  - Remote path: `/ai/2026/02/23/PC-03-USE-GOJA-RUNTIMEFACTORY`

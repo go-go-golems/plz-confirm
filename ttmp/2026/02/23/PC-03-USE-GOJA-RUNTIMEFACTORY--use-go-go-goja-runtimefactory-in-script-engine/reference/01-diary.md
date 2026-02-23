@@ -319,3 +319,63 @@ This step is intentionally separate from runtime code so reviewers can evaluate 
 
 ### Technical details
 - No code behavior changes in this step; docs-only alignment with commits `e460038` and `c943016`.
+
+## Step 5: Final Ticket Bookkeeping and reMarkable Delivery
+
+I finalized ticket bookkeeping after implementation commits: checklist status, changelog evidence, and final document bundle upload. This closes the execution loop so review and handoff can start from a fully synchronized ticket state.
+
+The final bundle now includes the current implementation plan and the detailed diary, not just planning artifacts.
+
+### Prompt Context
+
+**User prompt (verbatim):** (see Step 1)
+
+**Assistant interpretation:** Finish the execution cycle by publishing and documenting the final state of work.
+
+**Inferred user intent:** Ensure the implemented work is not only coded but also fully traceable and delivered to reMarkable.
+
+**Commit (code):** N/A (ticket bookkeeping and delivery step)
+
+### What I did
+- Marked final checklist items complete in `tasks.md` (`C4`, `D3`).
+- Updated `changelog.md` with:
+  - commit references (`e460038`, `c943016`, `5fd50e4`, `197cab8`)
+  - validation command results
+  - final upload artifact information
+- Uploaded final bundle to reMarkable:
+  - `PC-03 RuntimeFactory Implementation (require + logs)`
+- Verified cloud folder contents with `remarquee cloud ls`.
+
+### Why
+- User requested detailed and frequent diary + ticket-managed execution. Final bookkeeping is required for review readiness.
+
+### What worked
+- Upload succeeded and appears in target remote directory.
+- Ticket checklist now reflects completed implementation and delivery.
+
+### What didn't work
+- N/A.
+
+### What I learned
+- Keeping delivery artifacts in changelog reduces ambiguity when multiple bundles exist in the same remote folder.
+
+### What was tricky to build
+- Multiple interim bundles existed for the same ticket. To avoid confusion, I had to produce a clearly named final implementation bundle and verify all artifacts in remote listing.
+
+### What warrants a second pair of eyes
+- Confirm the final bundle naming convention is acceptable and that earlier interim bundles should remain or be cleaned up.
+
+### What should be done in the future
+- Optionally remove superseded reMarkable bundle variants once reviewers confirm the final one is sufficient.
+
+### Code review instructions
+- Review ticket docs in this order:
+  - `/home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/ttmp/2026/02/23/PC-03-USE-GOJA-RUNTIMEFACTORY--use-go-go-goja-runtimefactory-in-script-engine/tasks.md`
+  - `/home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/ttmp/2026/02/23/PC-03-USE-GOJA-RUNTIMEFACTORY--use-go-go-goja-runtimefactory-in-script-engine/changelog.md`
+  - `/home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/ttmp/2026/02/23/PC-03-USE-GOJA-RUNTIMEFACTORY--use-go-go-goja-runtimefactory-in-script-engine/reference/01-diary.md`
+
+### Technical details
+- Final upload command:
+  - `remarquee upload bundle ... --name "PC-03 RuntimeFactory Implementation (require + logs)" --remote-dir "/ai/2026/02/23/PC-03-USE-GOJA-RUNTIMEFACTORY" --toc-depth 3`
+- Verification command:
+  - `remarquee cloud ls /ai/2026/02/23/PC-03-USE-GOJA-RUNTIMEFACTORY --long --non-interactive`
