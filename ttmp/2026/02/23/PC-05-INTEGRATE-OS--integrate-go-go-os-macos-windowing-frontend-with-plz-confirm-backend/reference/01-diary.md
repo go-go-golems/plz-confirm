@@ -1492,3 +1492,86 @@ How can I add timestamps to the responses? shouldn't be so hard?"
 - `plz-confirm` files:
   - `/home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/plz-confirm/internal/server/server.go`
   - `/home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/plz-confirm/internal/server/response_timestamp_test.go`
+
+## Step 17: Add composite confirm-runtime script stories for handoff-complete coverage
+
+This step implemented the planned Storybook polish tranche by adding full-window composite scenarios for `ConfirmRequestWindowHost` in inventory Storybook. These stories cover script sections with display + interactive combinations, plus back/progress states and a two-step transition flow.
+
+I then synced both PC-05 and PC-06 ticket docs so handoff to design can happen immediately with concrete scenario references.
+
+### Prompt Context
+
+**User prompt (verbatim):** "cool, implement them and log them in both tickets, so that I can then pass over to the designer, I think we're done after that, right?"
+
+**Assistant interpretation:** Implement composite confirm-runtime stories now and record them in both integration and UI-handoff tickets.
+
+**Inferred user intent:** Reach a clean “handoff-ready” state with high-fidelity scenario coverage and complete documentation trace.
+
+**Commit (code):** `e1b2023` — "feat(inventory): add composite confirm-runtime script section stories"
+
+### What I did
+
+- Added new story suite:
+  - `/home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/go-go-os/apps/inventory/src/features/confirm/stories/ConfirmRuntimeComposite.stories.tsx`
+- Added nine composite scenarios:
+  - `DisplayAndConfirmSection`
+  - `DisplayAndSelectSection`
+  - `DisplayAndFormSection`
+  - `DisplayAndTableSection`
+  - `DisplayAndUploadSection`
+  - `DisplayAndImageSection`
+  - `BackAndProgressRating`
+  - `TwoStepConfirmThenRating`
+  - `InvalidSectionsContract`
+- Implemented a local harness in the story file to show:
+  - step/widget state,
+  - last script event payload,
+  - last response payload.
+- Updated ticket docs:
+  - PC-05: tasks/changelog/diary
+  - PC-06: design-doc/tasks/changelog/diary
+
+### Why
+
+- Primitive widget stories were already strong, but we lacked composed request-window scenarios to validate visual rhythm and transitions across real script flows.
+
+### What worked
+
+- Story taxonomy check passed with new stories:
+  - `cd /home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/go-go-os && npm run storybook:check`
+- New stories sit under canonical path:
+  - `Apps/Inventory/ConfirmRuntime/CompositeScriptSections`
+
+### What didn't work
+
+- No blockers in this step.
+
+### What I learned
+
+- Composite stories with explicit event payload readouts are significantly better for cross-functional handoff than primitives alone.
+
+### What was tricky to build
+
+- The main complexity was modeling multi-step script flow transitions in Storybook while keeping the host API unchanged and preserving deterministic render behavior per story.
+
+### What warrants a second pair of eyes
+
+- Confirm whether designers want additional long-content stress variants now or in a follow-up polish pass.
+
+### What should be done in the future
+
+- Add style variants of the composite suite (compact/default/high-contrast) after design direction is finalized.
+
+### Code review instructions
+
+- Review story implementation:
+  - `/home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/go-go-os/apps/inventory/src/features/confirm/stories/ConfirmRuntimeComposite.stories.tsx`
+- Validate taxonomy:
+  - `cd /home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/go-go-os && npm run storybook:check`
+- Review doc updates in both tickets:
+  - `/home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/plz-confirm/ttmp/2026/02/23/PC-05-INTEGRATE-OS--integrate-go-go-os-macos-windowing-frontend-with-plz-confirm-backend/`
+  - `/home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/plz-confirm/ttmp/2026/02/23/PC-06-UI-CONSISTENCY-HANDOFF--confirm-widget-visual-consistency-handoff/`
+
+### Technical details
+
+- This story suite targets composition and state transitions; it does not alter confirm protocol encoding or backend contracts.

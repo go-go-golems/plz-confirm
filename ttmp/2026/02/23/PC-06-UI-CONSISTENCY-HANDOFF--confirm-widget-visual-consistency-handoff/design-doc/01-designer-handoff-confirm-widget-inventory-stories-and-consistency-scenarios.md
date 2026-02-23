@@ -15,6 +15,8 @@ RelatedFiles:
       Note: Current in-context queue/request window UI host surfaces
     - Path: go-go-os/apps/inventory/src/app/store.ts
       Note: confirmRuntime reducer integration point
+    - Path: go-go-os/apps/inventory/src/features/confirm/stories/ConfirmRuntimeComposite.stories.tsx
+      Note: Composite confirm-runtime script-section stories for full-window design review
     - Path: go-go-os/packages/confirm-runtime/src/components/ConfirmRequestWindowHost.tsx
       Note: |-
         Current package-level composition of widgets into confirm request UI
@@ -57,7 +59,7 @@ RelatedFiles:
       Note: Dev proxy and alias behavior affecting UI integration
 ExternalSources: []
 Summary: Designer-facing handoff documenting all new confirm-related widgets, their stories, usage patterns, and the remaining scenario/style work needed to reach full visual consistency.
-LastUpdated: 2026-02-23T17:14:00-05:00
+LastUpdated: 2026-02-23T18:35:00-05:00
 WhatFor: Enable a design colleague to immediately align the new confirm widgets with the established application visual language.
 WhenToUse: Use before any UI polish work on confirm widgets and as the canonical checklist for visual consistency scope.
 ---
@@ -411,6 +413,20 @@ Path: `/home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/go-go-os/package
 3. `Large`
 4. `InteractiveSelection`
 
+### Composite confirm-runtime stories
+
+Path: `/home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/go-go-os/apps/inventory/src/features/confirm/stories/ConfirmRuntimeComposite.stories.tsx`
+
+1. `DisplayAndConfirmSection`
+2. `DisplayAndSelectSection`
+3. `DisplayAndFormSection`
+4. `DisplayAndTableSection`
+5. `DisplayAndUploadSection`
+6. `DisplayAndImageSection`
+7. `BackAndProgressRating`
+8. `TwoStepConfirmThenRating`
+9. `InvalidSectionsContract`
+
 ## Where Widgets Are Used Right Now
 
 Current package-level usage reference:
@@ -504,6 +520,8 @@ The following scenario groups are still needed for full consistency pass.
 2. Footer actions should anchor consistently across widget types.
 3. Title/message/comment surfaces should feel unified.
 4. Script flow (future) should inherit same action/footer language.
+5. Back/progress framing should stay visually stable across step transitions.
+6. Display sections should have clear hierarchy separation from interactive sections.
 
 ## Future UI Work Planned (Graphical)
 
@@ -513,7 +531,7 @@ Priority order for remaining visual work:
 2. Complete script sections polish pass (display rendering fidelity, back/progress affordances, toast styling integration).
 3. Upgrade upload flow visuals from placeholder to full file lifecycle states.
 4. Add final design token adjustments across all eight widgets after designer pass.
-5. Add confirm-runtime story set (composite request-window stories) once host integration is in.
+5. Add visual polish variants for composite stories (dense, spacious, warning/error heavy, long-content stress).
 
 ## Proposed Designer Workflow
 
@@ -524,8 +542,14 @@ Priority order for remaining visual work:
    - state colors,
    - interaction affordances.
 3. Apply visual rules in shared CSS/token layer first, then widget-local adjustments.
-4. Validate no regression in legacy widget stories.
-5. Hand back a checklist of accepted/rejected scenario states.
+4. Run composite flow review in this order:
+   - `DisplayAndConfirmSection`
+   - `BackAndProgressRating`
+   - `TwoStepConfirmThenRating`
+   - `DisplayAndTableSection`
+   - `DisplayAndUploadSection`
+5. Validate no regression in legacy widget stories.
+6. Hand back a checklist of accepted/rejected scenario states.
 
 ## Open Questions
 
@@ -547,3 +571,4 @@ Priority order for remaining visual work:
 8. `/home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/go-go-os/packages/engine/src/components/widgets/RequestActionBar.stories.tsx`
 9. `/home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/go-go-os/packages/engine/src/components/widgets/RatingPicker.stories.tsx`
 10. `/home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/go-go-os/packages/engine/src/components/widgets/GridBoard.stories.tsx`
+11. `/home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/go-go-os/apps/inventory/src/features/confirm/stories/ConfirmRuntimeComposite.stories.tsx`

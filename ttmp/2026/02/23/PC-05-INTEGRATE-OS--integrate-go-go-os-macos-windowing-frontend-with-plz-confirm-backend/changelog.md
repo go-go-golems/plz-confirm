@@ -211,3 +211,30 @@ Validation snapshots:
 - /home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/plz-confirm/internal/server/server.go — backend timestamp auto-fill guardrail
 - /home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/plz-confirm/internal/server/response_timestamp_test.go — server regression tests for timestamp fill
 - /home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/plz-confirm/ttmp/2026/02/23/PC-05-INTEGRATE-OS--integrate-go-go-os-macos-windowing-frontend-with-plz-confirm-backend/reference/01-diary.md — Step 16 implementation diary
+
+## 2026-02-23
+
+Added composite confirm-runtime script-section stories for handoff-complete coverage (commit `e1b2023` in `go-go-os`) and updated both PC-05 + PC-06 ticket docs accordingly.
+
+Composite scenarios added:
+
+1. `DisplayAndConfirmSection`
+2. `DisplayAndSelectSection`
+3. `DisplayAndFormSection`
+4. `DisplayAndTableSection`
+5. `DisplayAndUploadSection`
+6. `DisplayAndImageSection`
+7. `BackAndProgressRating`
+8. `TwoStepConfirmThenRating`
+9. `InvalidSectionsContract`
+
+Validation snapshot:
+
+- `npm run storybook:check` (pass, 63 stories)
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/go-go-os/apps/inventory/src/features/confirm/stories/ConfirmRuntimeComposite.stories.tsx — New composite script-section story suite for request-window composition
+- /home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/plz-confirm/ttmp/2026/02/23/PC-05-INTEGRATE-OS--integrate-go-go-os-macos-windowing-frontend-with-plz-confirm-backend/tasks.md — Marked C4 manual lifecycle validation done
+- /home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/plz-confirm/ttmp/2026/02/23/PC-05-INTEGRATE-OS--integrate-go-go-os-macos-windowing-frontend-with-plz-confirm-backend/reference/01-diary.md — Step 17 records composite story tranche
+- /home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/plz-confirm/ttmp/2026/02/23/PC-06-UI-CONSISTENCY-HANDOFF--confirm-widget-visual-consistency-handoff/design-doc/01-designer-handoff-confirm-widget-inventory-stories-and-consistency-scenarios.md — Composite stories added to handoff inventory and workflow

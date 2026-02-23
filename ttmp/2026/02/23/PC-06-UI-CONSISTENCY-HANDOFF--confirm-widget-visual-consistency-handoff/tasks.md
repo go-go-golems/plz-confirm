@@ -6,6 +6,7 @@
 - [x] Inventory all newly created widgets
 - [x] Inventory all Storybook stories for new widgets
 - [x] Document current usage mapping in confirm-runtime
+- [x] Inventory composite confirm-runtime request-window stories for script sections/back/progress
 - [x] Document future consistency scenarios and UI backlog
 
 ## Design Handoff Checklist

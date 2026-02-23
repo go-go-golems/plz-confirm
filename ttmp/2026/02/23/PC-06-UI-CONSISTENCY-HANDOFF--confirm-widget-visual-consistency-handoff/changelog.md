@@ -35,3 +35,30 @@ Updated designer handoff scope for newly added engine widgets and script host co
 - /home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/plz-confirm/ttmp/2026/02/23/PC-06-UI-CONSISTENCY-HANDOFF--confirm-widget-visual-consistency-handoff/design-doc/01-designer-handoff-confirm-widget-inventory-stories-and-consistency-scenarios.md — Updated inventory/story/scenario matrix
 - /home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/go-go-os/packages/engine/src/components/widgets/RatingPicker.stories.tsx — New rating story matrix
 - /home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/go-go-os/packages/engine/src/components/widgets/GridBoard.stories.tsx — New grid story matrix
+
+## 2026-02-23
+
+Added composite confirm-runtime Storybook suite for designer handoff coverage (commit `e1b2023` in `go-go-os`) and refreshed this ticket’s design-doc/tasks/diary to include those scenarios.
+
+Composite stories added:
+
+1. `DisplayAndConfirmSection`
+2. `DisplayAndSelectSection`
+3. `DisplayAndFormSection`
+4. `DisplayAndTableSection`
+5. `DisplayAndUploadSection`
+6. `DisplayAndImageSection`
+7. `BackAndProgressRating`
+8. `TwoStepConfirmThenRating`
+9. `InvalidSectionsContract`
+
+Validation snapshot:
+
+- `npm run storybook:check` (pass, 63 story files)
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/go-go-os/apps/inventory/src/features/confirm/stories/ConfirmRuntimeComposite.stories.tsx — New composite scenario suite for script-section/back/progress review
+- /home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/plz-confirm/ttmp/2026/02/23/PC-06-UI-CONSISTENCY-HANDOFF--confirm-widget-visual-consistency-handoff/design-doc/01-designer-handoff-confirm-widget-inventory-stories-and-consistency-scenarios.md — Updated story inventory and review workflow
+- /home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/plz-confirm/ttmp/2026/02/23/PC-06-UI-CONSISTENCY-HANDOFF--confirm-widget-visual-consistency-handoff/tasks.md — Added checked composite-story inventory task
+- /home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/plz-confirm/ttmp/2026/02/23/PC-06-UI-CONSISTENCY-HANDOFF--confirm-widget-visual-consistency-handoff/reference/01-diary.md — Step 4 records implementation and handoff update

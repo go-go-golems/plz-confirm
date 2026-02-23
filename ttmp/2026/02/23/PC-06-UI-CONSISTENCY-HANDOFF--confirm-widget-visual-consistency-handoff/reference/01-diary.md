@@ -254,3 +254,86 @@ This step updates the UI-consistency handoff after introducing two additional co
 ### Technical details
 
 - This step is documentation synchronization for UI handoff scope and does not change backend/runtime protocol contracts directly.
+
+## Step 4: Add composite confirm-runtime story suite and refresh designer handoff inventory
+
+This step closes the remaining handoff gap by adding full-window composite stories for script sections/back/progress behavior, then syncing the UI handoff ticket with the new scenarios.
+
+The new story suite sits in inventory app Storybook taxonomy but exercises `@hypercard/confirm-runtime` directly, so the designer can review both primitive widgets and realistic composed request windows in one place.
+
+### Prompt Context
+
+**User prompt (verbatim):** "cool, implement them and log them in both tickets, so that I can then pass over to the designer, I think we're done after that, right?"
+
+**Assistant interpretation:** Implement the previously proposed composite confirm-runtime stories and update both integration and UI-handoff tickets with full traceability.
+
+**Inferred user intent:** Reach a practical handoff-complete point where the designer has immediate, scenario-rich Storybook references and up-to-date docs.
+
+**Commit (code):** `e1b2023` — "feat(inventory): add composite confirm-runtime script section stories"
+
+### What I did
+
+- Added new Storybook suite:
+  - `/home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/go-go-os/apps/inventory/src/features/confirm/stories/ConfirmRuntimeComposite.stories.tsx`
+- Added nine composite scenarios:
+  - `DisplayAndConfirmSection`
+  - `DisplayAndSelectSection`
+  - `DisplayAndFormSection`
+  - `DisplayAndTableSection`
+  - `DisplayAndUploadSection`
+  - `DisplayAndImageSection`
+  - `BackAndProgressRating`
+  - `TwoStepConfirmThenRating`
+  - `InvalidSectionsContract`
+- Built an in-story harness that surfaces:
+  - current `stepId`/`widgetType`,
+  - last script event payload,
+  - last response payload.
+- Updated this UI handoff ticket documentation:
+  - design doc story inventory now includes the composite suite,
+  - workflow section now prescribes composite review order,
+  - future work section moved from "add composite stories" to "add polish variants",
+  - tasks include a checked composite-story inventory item.
+
+### Why
+
+- Primitive widget stories alone are not sufficient for visual consistency decisions around spacing rhythm, back/progress framing, and display-to-interactive transitions.
+
+### What worked
+
+- Story taxonomy validation passed:
+  - `cd /home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/go-go-os && npm run storybook:check`
+- Composite stories render in the canonical `Apps/Inventory` Storybook tree and are now documented in the handoff artifact.
+
+### What didn't work
+
+- No blockers in this step.
+
+### What I learned
+
+- A small interactive harness embedded in stories significantly improves designer/developer communication because event payload expectations stay visible next to UI states.
+
+### What was tricky to build
+
+- The key edge was modeling a realistic two-step script flow (`confirm -> rating -> complete`) while preserving deterministic per-story state and keeping the host contract unchanged.
+
+### What warrants a second pair of eyes
+
+- Confirm the chosen composite scenario set is sufficient for designer signoff, or whether additional stress variants (very long markdown, dense table, many files selected) should be added immediately.
+
+### What should be done in the future
+
+- Add style-variant duplicates of the composite stories after design direction is finalized (compact, standard, elevated-contrast).
+
+### Code review instructions
+
+- Review new composite story suite:
+  - `/home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/go-go-os/apps/inventory/src/features/confirm/stories/ConfirmRuntimeComposite.stories.tsx`
+- Review updated handoff doc:
+  - `/home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/plz-confirm/ttmp/2026/02/23/PC-06-UI-CONSISTENCY-HANDOFF--confirm-widget-visual-consistency-handoff/design-doc/01-designer-handoff-confirm-widget-inventory-stories-and-consistency-scenarios.md`
+- Validate taxonomy:
+  - `cd /home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/go-go-os && npm run storybook:check`
+
+### Technical details
+
+- The harness intentionally records both `onSubmitScriptEvent` and `onSubmitResponse` payloads to help reviewers compare UI output shape with backend proto expectations during design QA.
