@@ -14,8 +14,7 @@ import (
 	"github.com/spf13/cobra"
 
 	agentcli "github.com/go-go-golems/plz-confirm/internal/cli"
-	"github.com/go-go-golems/plz-confirm/internal/server"
-	"github.com/go-go-golems/plz-confirm/internal/store"
+	"github.com/go-go-golems/plz-confirm/pkg/backend"
 	"github.com/go-go-golems/plz-confirm/pkg/doc"
 )
 
@@ -127,9 +126,8 @@ func newServeCmd(ctx context.Context) *cobra.Command {
 		Use:   "serve",
 		Short: "Run the plz-confirm backend server",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			st := store.New()
-			srv := server.New(st)
-			return srv.ListenAndServe(ctx, server.Options{Addr: addr})
+			srv := backend.NewServer()
+			return srv.ListenAndServe(ctx, backend.ListenOptions{Addr: addr})
 		},
 	}
 
