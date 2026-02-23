@@ -15,10 +15,12 @@ RelatedFiles:
       Note: |-
         Grid renderer mapping test
         Composite section renderer coverage
+        Progress rendering coverage
     - Path: agent-ui-system/client/src/components/WidgetRenderer.tsx
       Note: |-
         Script renderer supports grid widget type
         Composite sections rendering in script branch
+        Script progress bar rendering
     - Path: agent-ui-system/client/src/components/widgets/DisplayWidget.test.tsx
       Note: Display widget rendering tests
     - Path: agent-ui-system/client/src/components/widgets/DisplayWidget.tsx
@@ -39,10 +41,12 @@ RelatedFiles:
       Note: |-
         Script view input validation now enforces grid contract
         Composite section parsing and validation in script view mapping
+        Progress mapping and validation
     - Path: internal/server/script_test.go
       Note: |-
         Grid script lifecycle + invalid input validation tests
         Composite section lifecycle and invalid-shape tests
+        Progress mapping and invalid-shape tests
     - Path: pkg/doc/js-script-api.md
       Note: |-
         Grid API documentation
@@ -55,6 +59,7 @@ RelatedFiles:
       Note: |-
         Added GridInput/GridCell/GridSelection for proposal 2
         ScriptView sections and DisplayInput schema additions
+        Added ScriptProgress field on ScriptView
     - Path: ttmp/2026/02/22/PC-02-JS-API-IMPROVEMENTS--js-script-api-improvements/tasks.md
       Note: Proposal task tracking and checkoffs
 ExternalSources: []
@@ -63,6 +68,7 @@ LastUpdated: 2026-02-22T20:37:13.424677713-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 
 
@@ -318,3 +324,67 @@ The compatibility path remains intact: existing single-widget `widgetType/input`
 ### Technical details
 - Composite rule: exactly one non-`display` section is required.
 - If `view.widgetType` is absent and sections exist, server derives it from the interactive section.
+
+## Step 4: Proposal 4 - Progress Indicators
+
+I added an explicit `progress` contract to `ScriptView` and wired it through server mapping and frontend rendering. Scripts can now return `{ progress: { current, total, label? } }` and the UI shows a progress strip above the active widget.
+
+This was intentionally implemented as an optional additive field so existing scripts remain unaffected.
+
+### Prompt Context
+
+**User prompt (verbatim):** (see Step 1)
+
+**Assistant interpretation:** Implement proposal 4 with contract-level support and visible UI feedback.
+
+**Inferred user intent:** Improve multi-step UX without introducing breaking changes.
+
+**Commit (code):** dbd5f70e37d480e0d24afa0e7e9136938b383b30 - "feat(script): add progress indicators for script views"
+
+### What I did
+- Added `ScriptProgress` message and `progress` field to `ScriptView` in `proto/plz_confirm/v1/widgets.proto`.
+- Regenerated protobuf code for Go and TypeScript.
+- Added `mapToScriptProgress` in `internal/server/script.go`:
+- validates object shape and integer fields,
+- enforces `total > 0`, `0 <= current <= total`,
+- maps optional `label`.
+- Updated `WidgetRenderer` to show a script progress bar when `scriptView.progress` is present.
+- Added tests:
+- `internal/server/script_test.go` for valid and invalid progress payloads.
+- `agent-ui-system/client/src/components/WidgetRenderer.test.ts` for progress rendering.
+- Updated docs (`pkg/doc/js-script-api.md`, `pkg/doc/js-script-development.md`) to describe view-level progress metadata.
+
+### Why
+- Multi-step flows need explicit completion context; adding progress at the view level keeps this concern out of individual widget payloads.
+
+### What worked
+- Progress now appears in script flows with valid `current/total`.
+- Invalid progress shapes fail early with HTTP `400`.
+- All checks passed in pre-commit (`go test ./...`, lint, `tsc`).
+
+### What didn't work
+- No functional blockers in this step.
+
+### What I learned
+- View-level metadata fields (`progress`, later `toast`) are easier to evolve when parsed in dedicated mapping helpers rather than inline conditionals.
+
+### What was tricky to build
+- Choosing validation boundaries for progress required balancing strictness and script flexibility. I enforced integer semantics and logical bounds (`current <= total`) to prevent UI confusion while leaving label generation optional.
+
+### What warrants a second pair of eyes
+- Current progress rendering is intentionally minimal; design refinements (color/spacing/animation) may be warranted if this becomes a primary UX signal.
+
+### What should be done in the future
+- Reuse the same view-level metadata pattern for task 9 toast messaging.
+
+### Code review instructions
+- Review `proto/plz_confirm/v1/widgets.proto` for `ScriptProgress`.
+- Review `internal/server/script.go` (`mapToScriptProgress`) for validation behavior.
+- Review `agent-ui-system/client/src/components/WidgetRenderer.tsx` for progress UI rendering.
+- Validate with:
+- `go test ./internal/server -count=1`
+- `pnpm -C agent-ui-system run check`
+- `pnpm -C agent-ui-system exec vitest run client/src/components/WidgetRenderer.test.ts client/src/components/widgets/DisplayWidget.test.tsx`
+
+### Technical details
+- Fallback progress label in UI: `STEP {current} OF {total}` when `label` is absent.
