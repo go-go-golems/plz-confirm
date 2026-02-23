@@ -17,12 +17,14 @@ RelatedFiles:
         Composite section renderer coverage
         Progress rendering coverage
         Back button render test
+        Rating renderer mapping test
     - Path: agent-ui-system/client/src/components/WidgetRenderer.tsx
       Note: |-
         Script renderer supports grid widget type
         Composite sections rendering in script branch
         Script progress bar rendering
         Back button rendering and back event dispatch
+        Script renderer mapping for rating widget
     - Path: agent-ui-system/client/src/components/widgets/DisplayWidget.test.tsx
       Note: Display widget rendering tests
     - Path: agent-ui-system/client/src/components/widgets/DisplayWidget.tsx
@@ -31,6 +33,10 @@ RelatedFiles:
       Note: Grid dialog component test
     - Path: agent-ui-system/client/src/components/widgets/GridDialog.tsx
       Note: New frontend grid widget renderer
+    - Path: agent-ui-system/client/src/components/widgets/RatingDialog.test.tsx
+      Note: Rating dialog component test
+    - Path: agent-ui-system/client/src/components/widgets/RatingDialog.tsx
+      Note: Rating dialog implementation
     - Path: agent-ui-system/client/src/pages/Home.tsx
       Note: Sidebar request history rendering for script requests (proposal 1
     - Path: agent-ui-system/client/src/pages/homeRequestHistoryDisplay.test.ts
@@ -45,12 +51,14 @@ RelatedFiles:
         Composite section parsing and validation in script view mapping
         Progress mapping and validation
         Maps allowBack/showBack and backLabel from script view
+        Rating input validation in script view mapper
     - Path: internal/server/script_test.go
       Note: |-
         Grid script lifecycle + invalid input validation tests
         Composite section lifecycle and invalid-shape tests
         Progress mapping and invalid-shape tests
         Back navigation field mapping test
+        Rating lifecycle and invalid-style tests
     - Path: pkg/doc/js-script-api.md
       Note: |-
         Grid API documentation
@@ -65,6 +73,7 @@ RelatedFiles:
         ScriptView sections and DisplayInput schema additions
         Added ScriptProgress field on ScriptView
         Added allow_back/back_label fields on ScriptView
+        Added rating widget schema messages
     - Path: ttmp/2026/02/22/PC-02-JS-API-IMPROVEMENTS--js-script-api-improvements/tasks.md
       Note: Proposal task tracking and checkoffs
 ExternalSources: []
@@ -73,6 +82,7 @@ LastUpdated: 2026-02-22T20:37:13.424677713-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 
 
@@ -461,3 +471,74 @@ The behavior remains script-managed: the engine/server do not auto-undo state; s
 
 ### Technical details
 - Back event payload: `{ type: "back", stepId }` with no `data` payload.
+
+## Step 6: Proposal 6 - Rating/Likert Widget
+
+This step added a dedicated `rating` script widget with style variants (`stars`, `numbers`, `emoji`, `slider`), configurable scale, optional low/high labels, and typed validation in the server mapping layer.
+
+The goal was to replace awkward rating flows implemented via `select` or `form` with a purpose-built input primitive.
+
+### Prompt Context
+
+**User prompt (verbatim):** (see Step 1)
+
+**Assistant interpretation:** Implement proposal 6 as a new script widget path with renderer support, validation, tests, and docs.
+
+**Inferred user intent:** Expand script feedback primitives with a natural rating UX.
+
+**Commit (code):** 0cd92c1bcf9f06fb313eba9dccf57f6bf62e0754 - "feat(script): add rating widget support for script views"
+
+### What I did
+- Added `RatingLabels`, `RatingInput`, and `RatingOutput` messages in proto.
+- Regenerated Go/TS protobuf outputs.
+- Implemented `RatingDialog` frontend component with:
+- scale normalization (`2..10`),
+- style modes (`stars`, `numbers`, `emoji`, `slider`),
+- optional comment submission.
+- Wired `rating` into `WidgetRenderer` script widget switch.
+- Added server-side rating input validation in `validateRatingInput`:
+- required title,
+- scale bounds,
+- style enum validation,
+- labels object typing,
+- defaultValue range checks.
+- Added tests:
+- frontend: `WidgetRenderer.test.ts` rating mapping + `RatingDialog.test.tsx`,
+- backend: rating lifecycle success and invalid-style rejection in `internal/server/script_test.go`.
+- Updated docs (`js-script-api`, `js-script-development`) to include rating widget support.
+
+### Why
+- A dedicated rating widget improves both UX clarity and script ergonomics for common Likert-style questions.
+
+### What worked
+- Rating views now render and submit through script event flow.
+- Invalid rating configuration is rejected early with clear `400` messages.
+- Full pre-commit suite passed on commit.
+
+### What didn't work
+- First focused `go test ./internal/server -count=1` run failed in `ws_test.go` with an event-order assertion mismatch (`expected request_updated, got new_request`). Re-running the same command passed immediately, indicating a timing-related/flaky test path unrelated to rating changes.
+
+### What I learned
+- Even focused package tests can expose unrelated timing flakes; rerun confirmation is useful before debugging feature code that is not touching those paths.
+
+### What was tricky to build
+- The main tricky point was balancing widget flexibility and safe contract validation. I kept frontend style rendering permissive but enforced strict server-side input typing and bounded numeric values so scripts fail fast on invalid view payloads.
+
+### What warrants a second pair of eyes
+- Emoji mapping for high scales is heuristic; product/design may want explicit per-scale emoji sets.
+- Slider style currently uses native range input visuals; may need design-system alignment later.
+
+### What should be done in the future
+- Add real interaction tests (browser-level) for rating style modes if this becomes heavily used.
+
+### Code review instructions
+- Review `agent-ui-system/client/src/components/widgets/RatingDialog.tsx`.
+- Review `internal/server/script.go` (`validateRatingInput`).
+- Review `internal/server/script_test.go` rating tests.
+- Validate with:
+- `go test ./internal/server -count=1`
+- `pnpm -C agent-ui-system run check`
+- `pnpm -C agent-ui-system exec vitest run client/src/components/WidgetRenderer.test.ts client/src/components/widgets/RatingDialog.test.tsx`
+
+### Technical details
+- Rating event payload shape: `{ value: number, comment?: string }`.
