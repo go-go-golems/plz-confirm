@@ -1395,3 +1395,100 @@ After finishing protocol and script-event parity, I moved the remaining high-pri
 ### Technical details
 
 - Added stories increased taxonomy inventory and now cover both primitive-level and interactive usage for rating/grid inputs.
+
+## Step 16: Resolve stale-queue 409 behavior and restore response timestamps end-to-end
+
+This step addressed the concrete runtime failure reported during manual C4 testing: confirm windows could return `409 request already completed` when a stale queued item was opened, and successful confirmations could still produce empty `timestamp` fields in CLI output.
+
+The fix was split intentionally across frontend runtime and backend API safety-net. Frontend now reconciles stale requests and always emits timestamped proto outputs; backend now auto-populates timestamps when clients omit them, so all clients get consistent completion data.
+
+### Prompt Context
+
+**User prompt (verbatim):** "But when I open one of the queued confirms and confirm it, I get a 409 from the backend \"request already completed\" 
+
+How can I add timestamps to the responses? shouldn't be so hard?"
+
+**Assistant interpretation:** Diagnose the stale queue/completion race causing 409s and implement timestamp population so response payloads are never empty for timestamp fields.
+
+**Inferred user intent:** Make interactive confirm behavior reliable under concurrent/queued flows and restore predictable operator-visible output fields.
+
+**Commit (code):**
+- `686006b` (`go-go-os`) — "fix(confirm-runtime): reconcile stale queue and stamp response timestamps"
+- `850b79c` (`plz-confirm`) — "fix(server): auto-populate response timestamps when clients omit them"
+
+### What I did
+
+- In `go-go-os/packages/confirm-runtime`:
+  - Added request `status/completedAt` mapping from protojson and used it to immediately evict non-pending requests from active queue state.
+  - Added explicit `ConfirmApiError` with status/body for HTTP error-aware handling.
+  - Updated inventory confirm window submit handlers to reconcile `409` by refetching request state; if completed, mark complete and close window instead of surfacing stale failure.
+  - Added timestamp defaults in proto output mapping for:
+    - `confirmOutput.timestamp`
+    - `imageOutput.timestamp`
+  - Updated adapter tests for status mapping and timestamp emission.
+  - Relaxed selector root typing for app `RootState` compatibility (`ConfirmRuntimeRootLike` index signature).
+- In `plz-confirm/internal/server`:
+  - Added `ensureOutputTimestamps()` in `handleSubmitResponse` to populate missing timestamps for confirm/image outputs before completion write.
+  - Added regression tests in `internal/server/response_timestamp_test.go`:
+    - `TestSubmitResponse_AssignsConfirmTimestampWhenMissing`
+    - `TestSubmitResponse_AssignsImageTimestampWhenMissing`
+
+### Why
+
+- `409 already completed` is valid server behavior when a stale request is submitted; frontend needed to treat it as state reconciliation, not as hard failure.
+- Timestamp fields are part of operator-facing output and should not depend on every individual client remembering to set them.
+
+### What worked
+
+- `go-go-os` confirm-runtime adapter tests passed:
+  - `npm exec vitest run packages/confirm-runtime/src/proto/confirmProtoAdapter.test.ts`
+- `plz-confirm` server tests passed (including new timestamp regressions):
+  - `go test ./internal/server -count=1`
+- Full `plz-confirm` pre-commit checks passed (`golangci-lint` + `go test ./...`).
+
+### What didn't work
+
+- Workspace-wide TypeScript builds remain noisy due pre-existing unrelated engine typing issues; verification used focused runtime tests and targeted error-grep instead of full clean `tsc -b`.
+
+### What I learned
+
+- Stale queue handling must be explicit in the desktop host; relying only on WS completion events is insufficient under reconnect/replay timing.
+- Backend timestamp normalization is a low-cost guardrail that improves CLI/operator consistency across mixed clients.
+
+### What was tricky to build
+
+- The key subtlety was preserving existing submit flow while handling `409` without hiding real errors. The implemented path only special-cases `ConfirmApiError` with `status===409`; all other errors still surface in logs.
+
+### What warrants a second pair of eyes
+
+- Confirm whether queue UX should also show a transient “request already completed” toast before auto-close, or silently reconcile as currently implemented.
+- Confirm that RFC3339Nano timestamp granularity is preferred over frontend `toISOString()` millisecond precision for consistency.
+
+### What should be done in the future
+
+- Add a dedicated confirm-runtime state unit test file covering stale replay transitions (`new_request` -> completed replay -> submit 409 reconcile).
+- Add one integration test in inventory app harness validating that opening stale queued request auto-closes cleanly.
+
+### Code review instructions
+
+- Frontend runtime commit review:
+  - `git -C /home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/go-go-os show --name-only 686006b`
+- Backend safety-net commit review:
+  - `git -C /home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/plz-confirm show --name-only 850b79c`
+- Validation commands:
+  - `cd /home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/go-go-os && npm exec vitest run packages/confirm-runtime/src/proto/confirmProtoAdapter.test.ts`
+  - `cd /home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/plz-confirm && go test ./internal/server -count=1`
+
+### Technical details
+
+- `go-go-os` files:
+  - `/home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/go-go-os/apps/inventory/src/App.tsx`
+  - `/home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/go-go-os/packages/confirm-runtime/src/api/confirmApiClient.ts`
+  - `/home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/go-go-os/packages/confirm-runtime/src/proto/confirmProtoAdapter.ts`
+  - `/home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/go-go-os/packages/confirm-runtime/src/proto/confirmProtoAdapter.test.ts`
+  - `/home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/go-go-os/packages/confirm-runtime/src/state/confirmRuntimeSlice.ts`
+  - `/home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/go-go-os/packages/confirm-runtime/src/state/selectors.ts`
+  - `/home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/go-go-os/packages/confirm-runtime/src/types.ts`
+- `plz-confirm` files:
+  - `/home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/plz-confirm/internal/server/server.go`
+  - `/home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/plz-confirm/internal/server/response_timestamp_test.go`

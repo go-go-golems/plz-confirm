@@ -180,3 +180,34 @@ Validation snapshots:
 - /home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/go-go-os/packages/engine/src/components/widgets/RatingPicker.stories.tsx — Rating visual/state story matrix
 - /home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/go-go-os/packages/engine/src/components/widgets/GridBoard.stories.tsx — Grid visual/state story matrix
 - /home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/go-go-os/packages/confirm-runtime/src/components/ConfirmRequestWindowHost.tsx — Script integration path for rating/grid
+
+## 2026-02-23
+
+Closed stale-queue + missing timestamp regression reported during manual confirm testing.
+
+1. `go-go-os` commit `686006b`:
+   - Confirm runtime now maps request `status/completedAt` and immediately removes non-pending requests from active queue state.
+   - Inventory host now handles `409 request already completed` by refetching request and reconciling local state/window lifecycle.
+   - Proto adapter now emits default timestamps for confirm/image outputs when omitted by UI payload.
+2. `plz-confirm` commit `850b79c`:
+   - Backend `handleSubmitResponse` now auto-populates missing `confirmOutput.timestamp` and `imageOutput.timestamp` before completion write.
+   - Added server regression tests for missing timestamp population.
+
+Validation snapshots:
+
+- `npm exec vitest run packages/confirm-runtime/src/proto/confirmProtoAdapter.test.ts` (pass)
+- `go test ./internal/server -count=1` (pass)
+- pre-commit hooks in `plz-confirm`: `golangci-lint run -v` + `go test ./... -count=1` (pass)
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/go-go-os/apps/inventory/src/App.tsx — 409 reconciliation on submit and stale window cleanup
+- /home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/go-go-os/packages/confirm-runtime/src/api/confirmApiClient.ts — typed API error with status/body for 409 handling
+- /home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/go-go-os/packages/confirm-runtime/src/proto/confirmProtoAdapter.ts — response timestamp defaults + request status mapping
+- /home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/go-go-os/packages/confirm-runtime/src/proto/confirmProtoAdapter.test.ts — timestamp/status regression assertions
+- /home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/go-go-os/packages/confirm-runtime/src/state/confirmRuntimeSlice.ts — completed request upsert eviction
+- /home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/go-go-os/packages/confirm-runtime/src/state/selectors.ts — root typing compatibility widening
+- /home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/go-go-os/packages/confirm-runtime/src/types.ts — status/completedAt shape additions
+- /home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/plz-confirm/internal/server/server.go — backend timestamp auto-fill guardrail
+- /home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/plz-confirm/internal/server/response_timestamp_test.go — server regression tests for timestamp fill
+- /home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/plz-confirm/ttmp/2026/02/23/PC-05-INTEGRATE-OS--integrate-go-go-os-macos-windowing-frontend-with-plz-confirm-backend/reference/01-diary.md — Step 16 implementation diary
