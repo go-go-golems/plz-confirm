@@ -179,12 +179,24 @@ export interface ScriptEvent {
   data?: { [key: string]: any } | undefined;
 }
 
+export interface ScriptViewSection {
+  widgetType: string;
+  input?: { [key: string]: any } | undefined;
+}
+
+export interface DisplayInput {
+  content: string;
+  /** "markdown" | "text" | "html" */
+  format?: string | undefined;
+}
+
 export interface ScriptView {
   widgetType: string;
   input?: { [key: string]: any } | undefined;
   stepId?: string | undefined;
   title?: string | undefined;
   description?: string | undefined;
+  sections: ScriptViewSection[];
 }
 
 export interface ScriptDescribe {

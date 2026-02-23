@@ -180,12 +180,23 @@ message ScriptEvent {
   google.protobuf.Struct data = 4;
 }
 
+message ScriptViewSection {
+  string widget_type = 1;
+  google.protobuf.Struct input = 2;
+}
+
+message DisplayInput {
+  string content = 1;
+  optional string format = 2; // "markdown" | "text" | "html"
+}
+
 message ScriptView {
   string widget_type = 1;
   google.protobuf.Struct input = 2;
   optional string step_id = 3;
   optional string title = 4;
   optional string description = 5;
+  repeated ScriptViewSection sections = 6;
 }
 
 message ScriptDescribe {

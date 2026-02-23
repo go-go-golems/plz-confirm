@@ -153,10 +153,12 @@ view: function (state, ctx) {
 }
 ```
 
-The return object must include:
+The return object supports two modes:
 
-- **`widgetType`** — one of `confirm`, `select`, `grid`, `form`, `table`, `upload`, or `image`. See the Widget Type Reference below for what each one expects.
-- **`input`** — the configuration object for that widget type (title, options, schema, etc.).
+- **Single-widget mode (backward compatible):** include `widgetType` and `input`.
+- **Composite mode:** include `sections`, where each section has its own `widgetType` + `input`. In composite mode, exactly one section must be interactive and any additional sections should be `display`.
+
+Single-widget `widgetType` values are `confirm`, `select`, `grid`, `form`, `table`, `upload`, or `image`. See the Widget Type Reference below for details.
 
 You can also include `stepId` (a string that gets echoed back in the event, useful for correlating which step the user responded to), `title`, and `description` (both shown in the UI above the widget).
 
@@ -285,6 +287,19 @@ Renders a clickable 2D board for spatial interactions (games, seating, calendars
 | `row` | number | Zero-based row index |
 | `col` | number | Zero-based column index |
 | `cellIndex` | number | Flat zero-based index in the `cells` array |
+
+### `display` — Read-Only Context Section
+
+Used in composite `sections` mode to show formatted context above or between interactive widgets.
+
+**What you put in `input`:**
+
+| Field | Type | Default | Description |
+|---|---|---|---|
+| `content` | string | (required) | Text/markup to render |
+| `format` | string | `"markdown"` | One of `"markdown"`, `"text"`, `"html"` |
+
+`display` sections are read-only and do not produce `event.data`.
 
 ### `form` — Dynamic Form
 

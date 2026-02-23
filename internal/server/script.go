@@ -189,16 +189,37 @@ func mapToScriptView(m map[string]any) (*v1.ScriptView, error) {
 		return nil, fmt.Errorf("view must be object")
 	}
 	widgetType, _ := m["widgetType"].(string)
-	if strings.TrimSpace(widgetType) == "" {
-		return nil, fmt.Errorf("view.widgetType is required")
-	}
 	inputMap := map[string]any{}
+	hasTopLevelInput := false
 	if raw, ok := m["input"]; ok {
+		hasTopLevelInput = true
 		typed, ok := raw.(map[string]any)
 		if !ok {
 			return nil, fmt.Errorf("view.input must be object")
 		}
 		inputMap = typed
+	}
+
+	sections, parsedSections, err := mapToScriptViewSections(m["sections"])
+	if err != nil {
+		return nil, err
+	}
+	if len(parsedSections) > 0 {
+		interactive, err := selectInteractiveSection(parsedSections)
+		if err != nil {
+			return nil, err
+		}
+		if strings.TrimSpace(widgetType) == "" {
+			widgetType = interactive.widgetType
+		} else if !strings.EqualFold(strings.TrimSpace(widgetType), interactive.widgetType) {
+			return nil, fmt.Errorf("view.widgetType must match the interactive section widgetType")
+		}
+		if !hasTopLevelInput {
+			inputMap = interactive.input
+		}
+	}
+	if strings.TrimSpace(widgetType) == "" {
+		return nil, fmt.Errorf("view.widgetType is required")
 	}
 	if err := validateScriptViewInput(widgetType, inputMap); err != nil {
 		return nil, err
@@ -210,6 +231,7 @@ func mapToScriptView(m map[string]any) (*v1.ScriptView, error) {
 	view := &v1.ScriptView{
 		WidgetType: widgetType,
 		Input:      inputStruct,
+		Sections:   sections,
 	}
 	if stepID, ok := m["stepId"].(string); ok && strings.TrimSpace(stepID) != "" {
 		view.StepId = &stepID
@@ -223,13 +245,106 @@ func mapToScriptView(m map[string]any) (*v1.ScriptView, error) {
 	return view, nil
 }
 
+type parsedScriptViewSection struct {
+	widgetType string
+	input      map[string]any
+}
+
+func mapToScriptViewSections(raw any) ([]*v1.ScriptViewSection, []parsedScriptViewSection, error) {
+	if raw == nil {
+		return nil, nil, nil
+	}
+	items, ok := raw.([]any)
+	if !ok {
+		return nil, nil, fmt.Errorf("view.sections must be an array")
+	}
+	if len(items) == 0 {
+		return nil, nil, fmt.Errorf("view.sections must include at least one section")
+	}
+
+	sections := make([]*v1.ScriptViewSection, 0, len(items))
+	parsed := make([]parsedScriptViewSection, 0, len(items))
+	for i, item := range items {
+		sectionMap, ok := item.(map[string]any)
+		if !ok {
+			return nil, nil, fmt.Errorf("view.sections[%d] must be an object", i)
+		}
+		widgetType, _ := sectionMap["widgetType"].(string)
+		if strings.TrimSpace(widgetType) == "" {
+			return nil, nil, fmt.Errorf("view.sections[%d].widgetType is required", i)
+		}
+
+		inputMap := map[string]any{}
+		if rawInput, ok := sectionMap["input"]; ok {
+			typed, ok := rawInput.(map[string]any)
+			if !ok {
+				return nil, nil, fmt.Errorf("view.sections[%d].input must be object", i)
+			}
+			inputMap = typed
+		}
+		if err := validateScriptViewInput(widgetType, inputMap); err != nil {
+			return nil, nil, err
+		}
+		inputStruct, err := mapToStruct(inputMap)
+		if err != nil {
+			return nil, nil, err
+		}
+		sections = append(sections, &v1.ScriptViewSection{
+			WidgetType: widgetType,
+			Input:      inputStruct,
+		})
+		parsed = append(parsed, parsedScriptViewSection{
+			widgetType: strings.ToLower(strings.TrimSpace(widgetType)),
+			input:      inputMap,
+		})
+	}
+	return sections, parsed, nil
+}
+
+func selectInteractiveSection(sections []parsedScriptViewSection) (*parsedScriptViewSection, error) {
+	interactiveCount := 0
+	var interactive *parsedScriptViewSection
+	for i := range sections {
+		if sections[i].widgetType == "display" {
+			continue
+		}
+		interactiveCount++
+		interactive = &sections[i]
+	}
+	if interactiveCount != 1 {
+		return nil, fmt.Errorf("view.sections must include exactly one interactive section")
+	}
+	return interactive, nil
+}
+
 func validateScriptViewInput(widgetType string, input map[string]any) error {
 	switch strings.ToLower(strings.TrimSpace(widgetType)) {
 	case "grid":
 		return validateGridInput(input)
+	case "display":
+		return validateDisplayInput(input)
 	default:
 		return nil
 	}
+}
+
+func validateDisplayInput(input map[string]any) error {
+	content, _ := input["content"].(string)
+	if strings.TrimSpace(content) == "" {
+		return fmt.Errorf("view.input.content is required for display widget")
+	}
+	if rawFormat, ok := input["format"]; ok {
+		format, ok := rawFormat.(string)
+		if !ok {
+			return fmt.Errorf("view.input.format must be string for display widget")
+		}
+		switch strings.ToLower(strings.TrimSpace(format)) {
+		case "", "markdown", "text", "html":
+		default:
+			return fmt.Errorf("view.input.format must be markdown, text, or html for display widget")
+		}
+	}
+	return nil
 }
 
 func validateGridInput(input map[string]any) error {
@@ -347,6 +462,7 @@ func statusForScriptError(err error) int {
 		return http.StatusRequestTimeout
 	case strings.Contains(msg, "must export"),
 		strings.Contains(msg, "is required"),
+		strings.Contains(msg, "must include"),
 		strings.Contains(msg, "must be object"),
 		strings.Contains(msg, "invalid protojson"),
 		strings.Contains(msg, "script source"):

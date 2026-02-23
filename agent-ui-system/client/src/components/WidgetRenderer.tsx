@@ -9,6 +9,7 @@ import { FormDialog } from "./widgets/FormDialog";
 import { UploadDialog } from "./widgets/UploadDialog";
 import { ImageDialog } from "./widgets/ImageDialog";
 import { GridDialog } from "./widgets/GridDialog";
+import { DisplayWidget } from "./widgets/DisplayWidget";
 import { Loader2 } from "lucide-react";
 import { WidgetType } from "@/proto/generated/plz_confirm/v1/request";
 
@@ -129,38 +130,84 @@ export const WidgetRenderer: React.FC = () => {
       );
     }
 
-    const widgetType = String(active.scriptView.widgetType || "")
-      .trim()
-      .toLowerCase();
-    const input = (active.scriptView.input ?? {}) as any;
     const scriptCommonProps = {
       requestId: active.id,
       onSubmit: handleScriptSubmit,
       loading: loading,
     };
 
-    switch (widgetType) {
-      case "confirm":
-        return <ConfirmDialog {...scriptCommonProps} input={input} />;
-      case "select":
-        return <SelectDialog {...scriptCommonProps} input={input} />;
-      case "table":
-        return <TableDialog {...scriptCommonProps} input={input} />;
-      case "form":
-        return <FormDialog {...scriptCommonProps} input={input} />;
-      case "upload":
-        return <UploadDialog {...scriptCommonProps} input={input} />;
-      case "image":
-        return <ImageDialog {...scriptCommonProps} input={input} />;
-      case "grid":
-        return <GridDialog {...scriptCommonProps} input={input} />;
-      default:
-        return (
-          <div className="p-8 border border-destructive/50 bg-destructive/10 text-destructive">
-            ERROR: UNSUPPORTED_SCRIPT_WIDGET [{widgetType || "unknown"}]
-          </div>
-        );
+    const renderInteractiveScriptWidget = (widgetType: string, input: any) => {
+      switch (widgetType) {
+        case "confirm":
+          return <ConfirmDialog {...scriptCommonProps} input={input} />;
+        case "select":
+          return <SelectDialog {...scriptCommonProps} input={input} />;
+        case "table":
+          return <TableDialog {...scriptCommonProps} input={input} />;
+        case "form":
+          return <FormDialog {...scriptCommonProps} input={input} />;
+        case "upload":
+          return <UploadDialog {...scriptCommonProps} input={input} />;
+        case "image":
+          return <ImageDialog {...scriptCommonProps} input={input} />;
+        case "grid":
+          return <GridDialog {...scriptCommonProps} input={input} />;
+        default:
+          return (
+            <div className="p-8 border border-destructive/50 bg-destructive/10 text-destructive">
+              ERROR: UNSUPPORTED_SCRIPT_WIDGET [{widgetType || "unknown"}]
+            </div>
+          );
+      }
+    };
+
+    const sections = Array.isArray(active.scriptView.sections)
+      ? active.scriptView.sections.map(section => ({
+          widgetType: String(section.widgetType || "")
+            .trim()
+            .toLowerCase(),
+          input: (section.input ?? {}) as any,
+        }))
+      : [];
+
+    if (sections.length === 0) {
+      const widgetType = String(active.scriptView.widgetType || "")
+        .trim()
+        .toLowerCase();
+      const input = (active.scriptView.input ?? {}) as any;
+      return renderInteractiveScriptWidget(widgetType, input);
     }
+
+    const interactiveSections = sections.filter(
+      section => section.widgetType !== "display"
+    );
+    if (interactiveSections.length !== 1) {
+      return (
+        <div className="p-8 border border-destructive/50 bg-destructive/10 text-destructive">
+          ERROR: INVALID_SCRIPT_SECTIONS [exactly one interactive section is required]
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-3">
+        {sections.map((section, idx) => {
+          if (section.widgetType === "display") {
+            return (
+              <DisplayWidget
+                key={`display-${idx}`}
+                input={section.input}
+              />
+            );
+          }
+          return (
+            <React.Fragment key={`interactive-${idx}`}>
+              {renderInteractiveScriptWidget(section.widgetType, section.input)}
+            </React.Fragment>
+          );
+        })}
+      </div>
+    );
   };
 
   const renderWidget = () => {

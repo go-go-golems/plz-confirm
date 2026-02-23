@@ -32,6 +32,10 @@ vi.mock("@/components/widgets/ImageDialog", () => ({
 vi.mock("@/components/widgets/GridDialog", () => ({
   GridDialog: ({ input }: any) => `MOCK_GRID:${input?.title ?? ""}`,
 }));
+vi.mock("@/components/widgets/DisplayWidget", () => ({
+  DisplayWidget: ({ input }: any) =>
+    `MOCK_DISPLAY:${input?.content ?? ""}:${input?.format ?? ""}`,
+}));
 
 const buildScriptRequest = (
   overrides: Partial<UIRequest> = {}
@@ -117,5 +121,52 @@ describe("WidgetRenderer script branch", () => {
       })
     );
     expect(html).toContain("MOCK_GRID:Your move");
+  });
+
+  it("renders composite sections with display and one interactive widget", () => {
+    const html = renderWithStore(
+      buildScriptRequest({
+        id: "req-render-sections",
+        scriptView: {
+          widgetType: "confirm",
+          input: { title: "Fallback interactive" },
+          stepId: "with-sections",
+          sections: [
+            {
+              widgetType: "display",
+              input: { content: "## Context", format: "markdown" },
+            },
+            {
+              widgetType: "confirm",
+              input: { title: "Approve composite?" },
+            },
+          ],
+        },
+      })
+    );
+    expect(html).toContain("MOCK_DISPLAY:## Context:markdown");
+    expect(html).toContain("MOCK_CONFIRM:Approve composite?");
+  });
+
+  it("renders explicit error when composite sections are invalid", () => {
+    const html = renderWithStore(
+      buildScriptRequest({
+        id: "req-render-invalid-sections",
+        scriptView: {
+          widgetType: "confirm",
+          input: { title: "Fallback" },
+          stepId: "bad-sections",
+          sections: [
+            {
+              widgetType: "display",
+              input: { content: "Only display", format: "text" },
+            },
+          ],
+        },
+      })
+    );
+    expect(html).toContain(
+      "ERROR: INVALID_SCRIPT_SECTIONS [exactly one interactive section is required]"
+    );
   });
 });

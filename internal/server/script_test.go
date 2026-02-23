@@ -363,6 +363,124 @@ module.exports = {
 	}
 }
 
+func TestScriptLifecycleWithCompositeSections(t *testing.T) {
+	t.Parallel()
+
+	s := New(store.New())
+	h := s.Handler()
+
+	sectionsScript := `
+module.exports = {
+  describe: function () { return { name: "sections-demo", version: "1.0.0" }; },
+  init: function () { return { step: "review" }; },
+  view: function () {
+    return {
+      stepId: "review-step",
+      sections: [
+        {
+          widgetType: "display",
+          input: { content: "## Review Context", format: "markdown" }
+        },
+        {
+          widgetType: "confirm",
+          input: { title: "Approve changes?" }
+        }
+      ]
+    };
+  },
+  update: function (state, event) {
+    return { done: true, result: { approved: !!(event.data && event.data.approved) } };
+  }
+};
+`
+
+	createReq := &v1.UIRequest{
+		Type:      v1.WidgetType_script,
+		SessionId: "global",
+		Input: &v1.UIRequest_ScriptInput{
+			ScriptInput: &v1.ScriptInput{
+				Title:  "Sections demo",
+				Script: sectionsScript,
+			},
+		},
+	}
+
+	created := postUIRequest(t, h, "/api/requests", createReq)
+	view := created.GetScriptView()
+	if view == nil {
+		t.Fatalf("expected script view on create")
+	}
+	if got := view.GetWidgetType(); got != "confirm" {
+		t.Fatalf("expected derived interactive widget type confirm, got %q", got)
+	}
+	if len(view.GetSections()) != 2 {
+		t.Fatalf("expected 2 sections, got %d", len(view.GetSections()))
+	}
+	if got := view.GetSections()[0].GetWidgetType(); got != "display" {
+		t.Fatalf("expected first section to be display, got %q", got)
+	}
+
+	event := &v1.ScriptEvent{
+		Type:   "submit",
+		StepId: toPtr("review-step"),
+		Data:   mustStruct(t, map[string]any{"approved": true}),
+	}
+	completed := postScriptEvent(t, h, created.Id, event)
+	if completed.GetStatus() != v1.RequestStatus_completed {
+		t.Fatalf("expected completed status, got %v", completed.GetStatus())
+	}
+}
+
+func TestScriptCreateRejectsInvalidCompositeSections(t *testing.T) {
+	t.Parallel()
+
+	s := New(store.New())
+	h := s.Handler()
+
+	invalidSectionsScript := `
+module.exports = {
+  describe: function () { return { name: "sections-bad", version: "1.0.0" }; },
+  init: function () { return { step: "bad" }; },
+  view: function () {
+    return {
+      sections: [
+        { widgetType: "confirm", input: { title: "A" } },
+        { widgetType: "select", input: { title: "B", options: ["x", "y"] } }
+      ]
+    };
+  },
+  update: function (state) { return state; }
+};
+`
+
+	createReq := &v1.UIRequest{
+		Type:      v1.WidgetType_script,
+		SessionId: "global",
+		Input: &v1.UIRequest_ScriptInput{
+			ScriptInput: &v1.ScriptInput{
+				Title:  "Invalid sections",
+				Script: invalidSectionsScript,
+			},
+		},
+	}
+
+	body, err := protojson.Marshal(createReq)
+	if err != nil {
+		t.Fatalf("marshal create req: %v", err)
+	}
+	req := httptest.NewRequest(http.MethodPost, "/api/requests", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400 for invalid sections, got %d body=%s", rr.Code, rr.Body.String())
+	}
+	if !bytes.Contains(rr.Body.Bytes(), []byte("exactly one interactive")) {
+		t.Fatalf("expected interactive section validation message, got body=%s", rr.Body.String())
+	}
+}
+
 func postUIRequest(t *testing.T, h http.Handler, path string, reqProto *v1.UIRequest) *v1.UIRequest {
 	t.Helper()
 
