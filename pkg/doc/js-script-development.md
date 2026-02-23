@@ -17,220 +17,257 @@ ShowPerDefault: true
 SectionType: GeneralTopic
 ---
 
-This page is for contributors working on the script engine itself — the runtime, server lifecycle, store, and frontend wiring. For the user-facing API contract and widget reference, see `js-script-api`.
+This guide is for contributors who need to work on the script engine itself — fixing bugs, adding features, or understanding how the pieces fit together. If you're writing scripts (rather than working on the engine that runs them), see `js-script-api` instead.
 
-## Codebase Map
+The script engine is the machinery that takes a user's JavaScript source, executes it in a sandbox, and wires the results into plz-confirm's request lifecycle. It spans four layers: a Go-side JavaScript runtime, server HTTP handlers, an in-memory store, and frontend rendering logic. This guide walks through each one.
 
-### Runtime
+## Finding Your Way Around the Codebase
 
-| File | Role |
-|---|---|
-| `internal/scriptengine/engine.go` | Goja VM wrapper. Loads script, calls `describe/init/view/update`, enforces timeouts. |
-| `internal/scriptengine/engine_test.go` | Contract tests, timeout/cancel tests, sandbox exposure tests. |
+The script engine touches about a dozen files across the repository. Here's where each piece lives and what it does.
 
-### Server Lifecycle
+### The Runtime (`internal/scriptengine/`)
 
-| File | Role |
-|---|---|
-| `internal/server/server.go` | HTTP router. `handleCreateRequest` dispatches script creation. |
-| `internal/server/script.go` | Script-specific handlers: `handleScriptEvent`, error-to-HTTP-status mapping, `eventToMap` conversion. |
-| `internal/server/script_test.go` | Integration tests for create -> event -> complete lifecycle, error mapping, persistence checks. |
-| `internal/server/ws.go` | WebSocket broadcast. Serialized writes (shared mutex). Emits `new_request`, `request_updated`, `request_completed`. |
-| `internal/server/ws_test.go` | Ordering tests for script lifecycle events. |
+This is the core — a thin wrapper around the Goja JavaScript VM that knows how to call the four script contract functions.
 
-### Persistence
+- **`engine.go`** — Creates a fresh Goja VM, loads the user's script, and exposes two methods: `InitAndView` (runs `describe` + `init` + `view` for request creation) and `UpdateAndView` (runs `update` and optionally `view` for event handling). Also handles timeout enforcement and export validation.
+- **`engine_test.go`** — Tests the contract end-to-end: valid scripts, missing exports, timeout behavior, cancellation, and sandbox exposure checks.
 
-| File | Role |
-|---|---|
-| `internal/store/store.go` | In-memory store. `Create` persists script fields. `PatchScript` updates `scriptState`/`scriptView` on non-terminal updates. `CreatedAt` sort for deterministic pending replay. |
+### The Server (`internal/server/`)
 
-### Frontend
+These files handle HTTP routing, event dispatch, and WebSocket broadcasting.
 
-| File | Role |
-|---|---|
-| `agent-ui-system/client/src/services/websocket.ts` | WS client. Handles `request_updated`. `submitScriptEvent()` posts to `/api/requests/{id}/event`. Guards against stale updates for completed requests. |
-| `agent-ui-system/client/src/components/WidgetRenderer.tsx` | Maps `scriptView.widgetType` to existing widget components. Passes `input` and wires `onSubmit` to `submitScriptEvent`. |
-| `agent-ui-system/client/src/store/store.ts` | Zustand store. `patchRequest` reducer for in-place request updates. `createAppStore()` factory for test isolation. |
+- **`server.go`** — The main HTTP router. `handleCreateRequest` detects `type: "script"` and dispatches to the script creation path. This is where script requests diverge from regular widget requests.
+- **`script.go`** — All script-specific logic lives here: `handleScriptEvent` processes incoming events, `eventToMap` converts proto events to plain Go maps for the runtime, and `scriptErrorStatus` maps runtime errors to HTTP status codes.
+- **`script_test.go`** — Integration tests that exercise the full create-event-complete lifecycle, verify error status mapping, and check that patched state persists correctly.
+- **`ws.go`** — WebSocket broadcast logic. Uses a shared write mutex to serialize messages and prevent concurrent write panics. Emits `new_request`, `request_updated`, and `request_completed` events.
+- **`ws_test.go`** — Tests that verify event ordering: a script lifecycle should always produce events in the correct sequence, and initial pending replay should be sorted by creation time.
 
-### Proto Schema
+### The Store (`internal/store/`)
 
-| File | Role |
-|---|---|
-| `proto/plz_confirm/v1/request.proto` | `WidgetType.script`, `UIRequest` oneofs for `scriptInput`/`scriptOutput`, `script_state`/`script_view`/`script_describe` fields. |
-| `proto/plz_confirm/v1/widgets.proto` | `ScriptInput`, `ScriptOutput`, `ScriptEvent`, `ScriptView`, `ScriptDescribe` messages. |
+- **`store.go`** — An in-memory request store. For scripts, the key addition is `PatchScript`, which updates `scriptState` and `scriptView` on a pending request without completing it. The store also sorts pending requests by `CreatedAt` for deterministic replay when a new WebSocket client connects.
 
-Generated outputs:
+### The Frontend (`agent-ui-system/client/src/`)
+
+The browser side handles rendering script widgets and sending events back to the server.
+
+- **`services/websocket.ts`** — The WebSocket client. Handles `request_updated` events (new for scripts — regular widgets only have `new_request` and `request_completed`). Includes a guard against stale updates: if a `request_updated` arrives for a request that's already completed, it's ignored. Also provides `submitScriptEvent()`, which posts to `/api/requests/{id}/event`.
+- **`components/WidgetRenderer.tsx`** — The component that decides what to render. For script requests, it reads `scriptView.widgetType` and `scriptView.input`, then renders the matching widget component (`ConfirmDialog`, `SelectDialog`, etc.). On submit, it calls `submitScriptEvent` instead of the regular response endpoint.
+- **`store/store.ts`** — Zustand store with a `patchRequest` reducer for in-place updates. Also exports `createAppStore()` as a factory function for test isolation (so tests don't share state).
+
+### Proto Schema (`proto/plz_confirm/v1/`)
+
+The protobuf definitions are the single source of truth for the wire format.
+
+- **`request.proto`** — Defines the `script` value in the `WidgetType` enum, adds `scriptInput`/`scriptOutput` to the `UIRequest` oneofs, and adds `script_state`, `script_view`, and `script_describe` fields.
+- **`widgets.proto`** — Defines `ScriptInput`, `ScriptOutput`, `ScriptEvent`, `ScriptView`, and `ScriptDescribe` messages.
+
+Generated code lives in:
 - Go: `proto/generated/go/plz_confirm/v1/*.pb.go`
-- TS: `agent-ui-system/client/src/proto/generated/plz_confirm/v1/*.ts`
+- TypeScript: `agent-ui-system/client/src/proto/generated/plz_confirm/v1/*.ts`
 
-Regenerate with `make codegen`.
+After changing `.proto` files, regenerate with `make codegen`.
 
-## Runtime Internals
+## How the Runtime Works
 
-### Goja VM
+### Fresh VM Per Call
 
-The script engine uses [goja](https://github.com/nicholasgasior/goja) (a pure-Go ES5.1 runtime) directly, without the `go-go-goja` engine wrapper. This keeps the dependency surface small.
+The engine creates a brand-new `goja.Runtime` for every `InitAndView` or `UpdateAndView` call. There's no VM reuse, no cached state between calls — each invocation starts from a clean slate by loading and evaluating the script source fresh.
 
-Each `InitAndView` or `UpdateAndView` call creates a fresh `goja.Runtime`, loads the script source, and calls the relevant exports. There is no VM reuse across calls — this is intentional for isolation.
+This is intentional. It provides strong isolation (a misbehaving `update` can't corrupt the runtime for the next call) at the cost of some overhead. For the script sizes we expect (small state machines, not heavy computation), this tradeoff is well worth it.
 
-### Sandbox Constraints
+We use [Goja](https://github.com/nicholasgasior/goja) directly — a pure-Go ES5.1 runtime — rather than the `go-go-goja` engine wrapper. This keeps the dependency surface small and avoids pulling in module systems we don't need.
 
-The VM exposes no host bridge:
-- `require` is `undefined`
-- `process` is `undefined`
-- No filesystem, network, or OS access
+### The Sandbox
 
-These constraints are validated by `TestSandboxHasNoHostBridge` in `engine_test.go`.
+The VM is intentionally bare. No host bridge is exposed:
+
+- `require` is `undefined` — scripts can't load modules.
+- `process` is `undefined` — no access to environment variables or OS primitives.
+- No filesystem, network, or timer APIs.
+
+The only things available are standard ES5.1 built-ins (Object, Array, JSON, Math, etc.) plus whatever the server injects as context (`__pc_ctx`, `__pc_state`, `__pc_event`).
+
+These constraints are enforced by `TestSandboxHasNoHostBridge` in `engine_test.go`, so if someone accidentally exposes a new global, the test will catch it.
 
 ### Timeout and Cancellation
 
-`runWithTimeout` derives a `context.WithTimeout` and starts a watcher goroutine that calls `vm.Interrupt()` when the context completes. After the script function returns, a stop-channel terminates the watcher.
+Scripts run under a time limit to prevent infinite loops from locking up the server. Here's how it works:
 
-Error classification:
-- `*goja.InterruptedError` → check if context deadline exceeded → `timeout` or `cancelled`
-- Other errors → `runtime fault`
+1. `runWithTimeout` derives a child context with `context.WithTimeout` based on `timeoutMs`.
+2. A watcher goroutine starts and blocks on `<-ctx.Done()`. When the context expires (or is cancelled), it calls `vm.Interrupt()` to halt the JavaScript execution.
+3. After the script function returns (or is interrupted), a stop-channel signal terminates the watcher goroutine.
 
-The server maps these to HTTP status codes via `scriptErrorStatus()` in `script.go`.
+When an interruption happens, the engine checks why:
+
+- If the context deadline was exceeded → classified as **timeout** → maps to HTTP `504`.
+- If the context was cancelled (e.g. client disconnected) → classified as **cancelled** → maps to HTTP `408`.
+- Any other error (script threw an exception, returned wrong shape, etc.) → classified as **runtime fault** → maps to HTTP `422`.
 
 ### Export Validation
 
-The engine enforces:
-1. All four exports (`describe`, `init`, `view`, `update`) must be callable functions.
-2. `describe` must return an object with string `name` and `version`.
-3. `init` and `view` must return objects (not primitives or arrays).
-4. Terminal `update` returns must have `result` as an object.
+Before running the lifecycle, the engine validates that the script exports what it should:
 
-Validation failures surface as `400 Bad Request`.
+1. All four names (`describe`, `init`, `view`, `update`) must exist and be callable functions.
+2. `describe()` must return an object with string-typed `name` and `version` fields.
+3. `init()` and `view()` must return plain objects (not primitives, not arrays).
+4. When `update()` returns `{ done: true }`, the `result` field must be an object.
 
-## Server Request Flow
+Any validation failure surfaces as a `400 Bad Request` with a descriptive error message.
 
-### Creation (`POST /api/requests`)
+## Server Request Flow in Detail
 
-1. Validate `type == "script"` and `scriptInput` present.
-2. Call `engine.InitAndView(ctx, scriptInput)`:
-   - Runs `describe(ctx)` → validates name/version.
-   - Runs `init(ctx)` → produces initial state.
-   - Runs `view(state, ctx)` → produces initial view.
-3. Build `UIRequest` with `scriptState`, `scriptView`, `scriptDescribe`.
-4. `store.Create(req)`.
-5. Broadcast `new_request` over WS.
+### What Happens on Create (`POST /api/requests`)
 
-### Event (`POST /api/requests/{id}/event`)
+1. The server validates that `type == "script"` and `scriptInput` is present with a `script` field.
+2. It calls `engine.InitAndView(ctx, scriptInput)`, which runs three functions in sequence:
+   - `describe(ctx)` — validates the returned name/version.
+   - `init(ctx)` — produces the initial state object.
+   - `view(state, ctx)` — produces the first widget to show.
+3. The server builds a `UIRequest` proto with `scriptState` (from init), `scriptView` (from view), and `scriptDescribe` (from describe).
+4. `store.Create(req)` persists the request.
+5. A `new_request` event is broadcast to all connected WebSocket clients in the session.
 
-1. Load existing request from store. Reject if not pending.
-2. Parse `ScriptEvent` from body → convert to `map[string]any` via `eventToMap`.
-3. Call `engine.UpdateAndView(ctx, scriptInput, state, event)`.
-4. If non-terminal:
-   - `store.PatchScript(id, newState, newView)`.
-   - Broadcast `request_updated`.
-5. If terminal:
-   - Complete request with `scriptOutput.result`.
-   - Broadcast `request_completed`.
+### What Happens on Event (`POST /api/requests/{id}/event`)
 
-### ctx Construction
+1. The server loads the existing request from the store. If it's not in `pending` status, the event is rejected.
+2. The incoming `ScriptEvent` proto is parsed from the request body and converted to a `map[string]any` via `eventToMap()`.
+3. The server calls `engine.UpdateAndView(ctx, scriptInput, currentState, event)`.
+4. If the result is **non-terminal** (no `done: true`):
+   - `store.PatchScript(id, newState, newView)` updates the request in place.
+   - A `request_updated` event is broadcast over WebSocket.
+5. If the result is **terminal** (`done: true`):
+   - The request is completed with `scriptOutput.result`.
+   - A `request_completed` event is broadcast over WebSocket.
 
-`defaultScriptContext()` in `engine.go` builds:
+### How ctx Gets Built
+
+The `defaultScriptContext()` function in `engine.go` constructs the context object that all script functions receive:
 
 ```go
 map[string]any{
-    "props": in.GetProps().AsMap(),   // or empty map
+    "props": in.GetProps().AsMap(),  // from scriptInput.props, or empty map
     "now":   time.Now().UTC().Format(time.RFC3339Nano),
 }
 ```
 
-### Error Mapping
+If you need to add new fields to `ctx` (like a request ID or session info), this is the function to modify.
 
-`scriptErrorStatus()` in `script.go`:
+### How Errors Map to HTTP Status Codes
 
-| Error Pattern | HTTP Status |
+The `scriptErrorStatus()` function in `script.go` uses string matching on the error message to decide which HTTP status to return:
+
+| If the error message contains... | HTTP status |
 |---|---|
-| Contains "timeout" | `504` |
-| Contains "cancel" | `408` |
-| Contains "must export", "required", "must return", "invalid" | `400` |
-| Everything else | `422` |
+| `"timeout"` | `504 Gateway Timeout` |
+| `"cancel"` | `408 Request Timeout` |
+| `"must export"`, `"required"`, `"must return"`, `"invalid"` | `400 Bad Request` |
+| Anything else | `422 Unprocessable Entity` |
 
-## Frontend Wiring
+This is deliberately conservative — known validation patterns get `400`, known infrastructure patterns get `504`/`408`, and everything else (script bugs, unexpected exceptions) gets `422`.
 
-### WebSocket Event Handling
+## How the Frontend Handles Scripts
 
-The WS client in `websocket.ts` handles three event types:
+### WebSocket Events
 
-- `new_request` → enqueue in store.
-- `request_updated` → patch existing request's `scriptState`/`scriptView`. Ignores stale updates for already-completed IDs. If the request ID is unknown, enqueues it.
-- `request_completed` → move request to history.
+The WebSocket client in `websocket.ts` handles three event types for scripts:
+
+- **`new_request`** — adds the request to the pending queue in the Zustand store.
+- **`request_updated`** — patches the existing request's `scriptState` and `scriptView` in place. There are two safety guards here:
+  - If the request ID is already in the completed set, the update is ignored (prevents stale updates from overwriting final state).
+  - If the request ID is unknown (not in pending or completed), the request is enqueued as new (handles the case where the WS client missed the initial `new_request`).
+- **`request_completed`** — moves the request from pending to the history/completed set.
 
 ### Widget Rendering
 
-`WidgetRenderer.tsx` detects script requests by checking `active.scriptView`. It:
+When `WidgetRenderer.tsx` detects that the active request has a `scriptView`, it enters the script rendering path:
 
-1. Reads `scriptView.widgetType` (lowercased, trimmed).
+1. Reads `scriptView.widgetType`, lowercased and trimmed.
 2. Reads `scriptView.input` as the widget props.
-3. Renders the matching widget component (`ConfirmDialog`, `SelectDialog`, etc.).
-4. On submit, calls `submitScriptEvent(requestId, { type: "submit", stepId, data: output })`.
+3. Renders the matching widget component (`ConfirmDialog`, `SelectDialog`, `TableDialog`, `FormDialog`, `UploadDialog`, or `ImageDialog`).
+4. When the user submits, it calls `submitScriptEvent(requestId, { type: "submit", stepId, data: output })` instead of the regular `/response` endpoint.
+
+This means script widgets look and behave exactly like regular widgets from the user's perspective — the only difference is what happens when they submit.
 
 ## Local Development
 
+The standard two-terminal setup works for script development:
+
 ```bash
-# Terminal 1: backend
+# Terminal 1: Go backend on port 3001
 go run ./cmd/plz-confirm serve --addr :3001
 
-# Terminal 2: frontend dev server (proxies /api and /ws to :3001)
+# Terminal 2: Vite dev server on port 3000 (proxies /api and /ws to :3001)
 pnpm -C agent-ui-system dev --host --port 3000
 ```
 
-Open `http://localhost:3000?sessionId=global` in a browser.
+Open `http://localhost:3000?sessionId=global` in your browser, then create script requests against port 3000. The Vite proxy forwards API calls and WebSocket connections to the Go backend.
 
-Test backend:
+### Running Tests
+
+Backend (the most important ones for script work):
 
 ```bash
+# Script-specific packages
 go test ./internal/scriptengine ./internal/server ./internal/store -count=1
+
+# Full repo
+go test ./... -count=1
 ```
 
-Test frontend:
+Frontend:
 
 ```bash
+# Type checking
 pnpm -C agent-ui-system run check
+
+# Unit tests (includes script reducer and renderer tests)
 pnpm -C agent-ui-system exec vitest run
 ```
 
-Regenerate proto:
+### Regenerating Proto Code
+
+After changing `.proto` files:
 
 ```bash
 make codegen
 ```
 
+This runs `protoc` for Go and the TS proto plugin for the frontend. Always run this before committing proto changes.
+
 ## Troubleshooting
 
-| Problem | Likely Cause | Where to Look |
+When something goes wrong in the script engine, the symptoms usually point to a specific layer. Here's a guide to narrowing down where to look.
+
+| What you're seeing | Most likely cause | Where to investigate |
 |---|---|---|
-| `400` on create: "must export" | Script missing `describe`, `init`, `view`, or `update` | `engine.go` export validation |
-| `400` on create: "invalid return shape" | `init` or `view` returned non-object | `engine.go` shape checks |
-| `422` on event | Script threw during `update` or subsequent `view` | Check script logic; add `event.data` guards |
-| `504` on create or event | Script exceeded `timeoutMs` | Simplify callbacks or raise timeout |
-| Browser: "unsupported widget" | `widgetType` not in renderer switch | `WidgetRenderer.tsx` switch statement |
-| Request stuck pending | `update` never returns `{ done: true }` | Verify terminal condition logic |
-| WS events arrive out of order | Concurrent writes or client reconnect | `ws.go` write mutex; `websocket.ts` stale-update guard |
-| `request_updated` overwrites completed state | Stale update arrived after completion | `websocket.ts` ignores updates for completed IDs |
+| `400` on create with "must export" | Script is missing `describe`, `init`, `view`, or `update` | Check the script source. Look at export validation in `engine.go`. |
+| `400` on create with "invalid return shape" | `init` or `view` returned a non-object (string, number, array) | Check what your script functions return. Look at shape validation in `engine.go`. |
+| `422` on event submission | Script threw an unhandled exception during `update` or the subsequent `view` call | Check script logic — most commonly, `event.data` is undefined and the script accesses a property on it. |
+| `504` on create or event | A script function took longer than `timeoutMs` | Simplify the callback logic or increase the timeout. Check `runWithTimeout` in `engine.go`. |
+| Browser shows "unsupported widget" | `view()` returned a `widgetType` that's not in the renderer's switch statement | Check `WidgetRenderer.tsx` — supported types are `confirm`, `select`, `table`, `form`, `upload`, `image`. |
+| Request is stuck in pending forever | `update` keeps returning non-terminal states and never returns `{ done: true }` | Walk through the script's update logic and verify the terminal condition. |
+| WebSocket events arrive in wrong order | Concurrent writes to the same WS connection, or client reconnected mid-flow | Check `ws.go` write mutex. Check `websocket.ts` stale-update guard. |
+| A `request_updated` event overwrites completed state in the UI | A stale update arrived after the request was already completed | The `websocket.ts` client should be ignoring these — check the completion guard logic. |
 
-## Adding New Capabilities
+## How to Add New Capabilities
 
-### Adding a new `ctx` field
+### Adding a new field to `ctx`
 
-1. Update `defaultScriptContext()` in `engine.go`.
-2. Update the `ctx` table in `js-script-api.md`.
-3. Add a test in `engine_test.go` that verifies the field is accessible from script functions.
+1. Add the field to `defaultScriptContext()` in `engine.go`.
+2. Add a test in `engine_test.go` that runs a script accessing the new field and verifies it gets the right value.
+3. Document the new field in the `ctx` table in `js-script-api.md`.
 
-### Supporting a new `widgetType`
+### Supporting a new widget type
 
-1. Add the widget component under `agent-ui-system/client/src/components/widgets/`.
-2. Add a `case` in `WidgetRenderer.tsx`.
-3. Document the `input` and `event.data` shapes in `js-script-api.md`.
+1. Create the widget component under `agent-ui-system/client/src/components/widgets/`.
+2. Add a `case` branch in the `switch (widgetType)` block in `WidgetRenderer.tsx`.
+3. Document the `input` fields and `event.data` shape in the Widget Type Reference section of `js-script-api.md`.
 
-### Changing error classification
+### Changing how errors are classified
 
-Update `scriptErrorStatus()` in `script.go` and the corresponding test in `script_test.go`.
+Update the string-matching logic in `scriptErrorStatus()` in `script.go`, and add or update the corresponding test case in `script_test.go`.
 
 ## See Also
 
-- `js-script-api` — user-facing API contract and widget reference
-- `adding-widgets` — full widget implementation guide (proto through frontend)
+- `js-script-api` — the user-facing API reference, contract, and widget type documentation
+- `adding-widgets` — full guide for implementing new widget types across the entire stack (proto, server, CLI, frontend)
