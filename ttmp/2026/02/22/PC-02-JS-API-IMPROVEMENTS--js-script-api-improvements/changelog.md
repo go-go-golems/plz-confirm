@@ -98,3 +98,13 @@ Step 9: Implemented Proposal 14 seeded randomness helpers (ctx.seed/random/rando
 - /home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/internal/scriptengine/engine.go — Seeded random context helpers
 - /home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/internal/server/script.go — Seed persistence plumbing
 
+
+## 2026-02-22
+
+Step 10: Implemented Proposal 15 rich select options with backward-compatible value output and server validation (commit b66786dda8a49b7d0697cd04787a426a4d6f28e8)
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/agent-ui-system/client/src/components/widgets/SelectDialog.tsx — Rich option UI
+- /home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/internal/server/script.go — Rich option validation
+

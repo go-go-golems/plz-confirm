@@ -46,9 +46,13 @@ RelatedFiles:
         Rating dialog implementation
         Rating defaults.value support
     - Path: agent-ui-system/client/src/components/widgets/SelectDialog.test.tsx
-      Note: Defaults test coverage
+      Note: |-
+        Defaults test coverage
+        Rich option rendering test
     - Path: agent-ui-system/client/src/components/widgets/SelectDialog.tsx
-      Note: Default selection initialization for select widget
+      Note: |-
+        Default selection initialization for select widget
+        Rich object option normalization/rendering and value-preserving submission
     - Path: agent-ui-system/client/src/components/widgets/TableDialog.test.tsx
       Note: Defaults test coverage
     - Path: agent-ui-system/client/src/components/widgets/TableDialog.tsx
@@ -74,6 +78,7 @@ RelatedFiles:
         Rating input validation in script view mapper
         Toast mapping and validation
         Seed persistence and seed-aware script update path
+        Select option shape validation for rich object options
     - Path: internal/server/script_test.go
       Note: |-
         Grid script lifecycle + invalid input validation tests
@@ -83,6 +88,7 @@ RelatedFiles:
         Rating lifecycle and invalid-style tests
         Toast mapping and invalid style tests
         Lifecycle seed persistence test
+        Rich select lifecycle and invalid option tests
     - Path: internal/server/server.go
       Note: Seed allocation and seed-aware script input injection at create time
     - Path: pkg/doc/js-script-api.md
@@ -109,6 +115,7 @@ LastUpdated: 2026-02-22T20:37:13.424677713-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 
 
@@ -780,3 +787,68 @@ The implementation keeps deterministic behavior tied to request seed while prese
 
 ### Technical details
 - Seed key: `__pc_seed` in script state/props.
+
+## Step 10: Proposal 15 - Rich Select Options
+
+This step extended script `select` widget input to support rich object options (`value`, `label`, `description`, `badge`, `icon`, `disabled`) in addition to legacy string options.
+
+Output compatibility is preserved: event payloads still return selected `value` strings.
+
+### Prompt Context
+
+**User prompt (verbatim):** (see Step 1)
+
+**Assistant interpretation:** Implement proposal 15 renderer + validation with backward-compatible output shapes.
+
+**Inferred user intent:** Improve expressiveness of select choices without breaking existing scripts.
+
+**Commit (code):** b66786dda8a49b7d0697cd04787a426a4d6f28e8 - "feat(script): support rich object options in select views"
+
+### What I did
+- Refactored `SelectDialog` to normalize mixed option arrays (strings and objects).
+- Added rich rendering for label/description/badge/icon and disabled state.
+- Kept selection state/value semantics as string IDs (`option.value`).
+- Updated select defaults handling to work with rich options.
+- Added server-side validation for script `select` options:
+- allow string options,
+- enforce required `value` for object options,
+- validate optional field types.
+- Added tests:
+- frontend rich-option rendering test (`SelectDialog.test.tsx`),
+- backend rich-select lifecycle and invalid-object validation (`script_test.go`).
+- Updated docs to describe rich option shape and output behavior.
+
+### Why
+- Flat strings are insufficient for many operational pickers; rich metadata significantly improves usability while keeping event payloads simple.
+
+### What worked
+- Legacy string options continue to render and submit unchanged.
+- Rich object options render with metadata and disabled affordances.
+- Backend rejects malformed object option shapes with clear 400s.
+
+### What didn't work
+- No blockers in this step.
+
+### What I learned
+- Normalizing mixed option inputs early in component render path simplifies both filtering and selection logic.
+
+### What was tricky to build
+- The main tricky point was preserving compatibility across all existing select paths (search, defaults, submit payload). I solved it by introducing a normalized internal option model and keeping `selected` state as plain string values throughout.
+
+### What warrants a second pair of eyes
+- Badge/icon rendering is intentionally simple text-level treatment; design system may want more formal chip/icon components.
+
+### What should be done in the future
+- Consider allowing custom sort weights or grouping for large rich-option lists.
+
+### Code review instructions
+- Review `agent-ui-system/client/src/components/widgets/SelectDialog.tsx` normalization and rendering.
+- Review `internal/server/script.go` (`validateSelectInput`).
+- Review `internal/server/script_test.go` rich select tests.
+- Validate with:
+- `go test ./internal/server -count=1`
+- `pnpm -C agent-ui-system run check`
+- `pnpm -C agent-ui-system exec vitest run client/src/components/widgets/SelectDialog.test.tsx client/src/components/WidgetRenderer.test.ts`
+
+### Technical details
+- Rich option submit payload uses `value` field only.
