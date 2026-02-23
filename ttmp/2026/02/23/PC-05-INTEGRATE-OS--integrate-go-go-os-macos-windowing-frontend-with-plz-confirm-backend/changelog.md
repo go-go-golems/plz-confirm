@@ -36,3 +36,12 @@ Applied package-first plan update and executed first two implementation tranches
 - /home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/go-go-os/packages/engine/src/components/widgets/SelectableDataTable.tsx — New reusable selectable table widget
 - /home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/go-go-os/packages/engine/src/components/widgets/SelectableList.tsx — New reusable selectable list widget
 
+
+## 2026-02-23
+
+Uploaded refreshed reMarkable bundle after package-first implementation commits: PC-05-INTEGRATE-OS Integration Blueprint v2.pdf (same remote folder, versioned filename).
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/plz-confirm/ttmp/2026/02/23/PC-05-INTEGRATE-OS--integrate-go-go-os-macos-windowing-frontend-with-plz-confirm-backend/reference/01-diary.md — Step 9 captures v2 publication details
+

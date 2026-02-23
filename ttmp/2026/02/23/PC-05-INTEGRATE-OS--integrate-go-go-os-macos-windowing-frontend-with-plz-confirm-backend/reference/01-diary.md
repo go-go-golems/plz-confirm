@@ -713,3 +713,68 @@ I included a runtime skeleton that can connect websocket events to state updates
   - `48c2724` (engine core widgets)
   - `6e38a7d` (confirm-runtime package + wiring)
 - Task board updated to mark A* and B* sections complete.
+
+## Step 9: Publish updated v2 bundle to reMarkable after implementation commits
+
+After the package-first and implementation-tranche updates were committed, I published a refreshed bundle to reMarkable so the device copy matches the latest ticket state. I used a versioned bundle name (`v2`) to avoid overwriting the earlier upload.
+
+This step ensures the intern-facing artifact is synchronized with the most recent plan, tasks, and diary entries.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 6)
+
+**Assistant interpretation:** Keep delivery artifacts current while implementing task-by-task.
+
+**Inferred user intent:** Ensure latest documentation is available outside local git state.
+
+**Commit (code):** N/A (publication step)
+
+### What I did
+
+- Ran dry-run and upload:
+  - `remarquee upload bundle --dry-run <design-doc> <diary> --name "PC-05-INTEGRATE-OS Integration Blueprint v2" --remote-dir "/ai/2026/02/23/PC-05-INTEGRATE-OS" --toc-depth 2`
+  - `remarquee upload bundle <design-doc> <diary> --name "PC-05-INTEGRATE-OS Integration Blueprint v2" --remote-dir "/ai/2026/02/23/PC-05-INTEGRATE-OS" --toc-depth 2`
+- Verified cloud listing:
+  - `remarquee cloud ls /ai/2026/02/23/PC-05-INTEGRATE-OS --long --non-interactive`
+
+### Why
+
+- Previous upload reflected the earlier design state; this refresh captures the package-first pivot and implementation progress.
+
+### What worked
+
+- Upload succeeded:
+  - `OK: uploaded PC-05-INTEGRATE-OS Integration Blueprint v2.pdf -> /ai/2026/02/23/PC-05-INTEGRATE-OS`
+- Listing now shows both versions:
+  - `[f] PC-05-INTEGRATE-OS Integration Blueprint`
+  - `[f] PC-05-INTEGRATE-OS Integration Blueprint v2`
+
+### What didn't work
+
+- No failures in this step.
+
+### What I learned
+
+- Versioned upload names are useful for preserving historical review snapshots during active implementation.
+
+### What was tricky to build
+
+- Ensuring remote naming remained consistent while clearly differentiating revisions.
+
+### What warrants a second pair of eyes
+
+- Confirm whether policy prefers versioned duplicates or forced overwrite for ticket uploads.
+
+### What should be done in the future
+
+- Keep version suffixing until implementation stabilizes; switch to single canonical filename once final.
+
+### Code review instructions
+
+- Verify upload existence:
+  - `remarquee cloud ls /ai/2026/02/23/PC-05-INTEGRATE-OS --long --non-interactive`
+
+### Technical details
+
+- Bundle inputs were unchanged paths; only bundle name changed to `... v2`.
