@@ -14,8 +14,36 @@ interface Props {
   loading?: boolean;
 }
 
+const resolveInitialSelection = (input: SelectInput): string[] => {
+  const anyInput = input as any;
+  const defaults = anyInput?.defaults;
+  if (!defaults || typeof defaults !== "object") return [];
+
+  const optionsSet = new Set((input.options || []).map(option => String(option)));
+  const pick = (value: unknown) => {
+    const s = String(value ?? "");
+    return optionsSet.has(s) ? s : "";
+  };
+
+  const multiValues = defaults.selectedMulti?.values;
+  if (Array.isArray(multiValues)) {
+    const values = multiValues
+      .map(pick)
+      .filter(Boolean)
+      .filter((value, idx, arr) => arr.indexOf(value) === idx);
+    return input.multi ? values : values.slice(0, 1);
+  }
+  if (typeof defaults.selectedSingle === "string") {
+    const selected = pick(defaults.selectedSingle);
+    return selected ? [selected] : [];
+  }
+  return [];
+};
+
 export const SelectDialog: React.FC<Props> = ({ input, onSubmit, loading }) => {
-  const [selected, setSelected] = useState<string[]>([]);
+  const [selected, setSelected] = useState<string[]>(() =>
+    resolveInitialSelection(input)
+  );
   const [search, setSearch] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [comment, setComment] = useState('');

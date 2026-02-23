@@ -37,9 +37,17 @@ export const RatingDialog: React.FC<Props> = ({ input, onSubmit, loading }) => {
   const [comment, setComment] = React.useState("");
   const scale = normalizeScale(input.scale);
   const style = normalizeStyle(input.style);
+  const defaultFromDefaults = Number((input as any)?.defaults?.value);
   const defaultValue = Math.max(
     1,
-    Math.min(scale, Number(input.defaultValue ?? Math.ceil(scale / 2)))
+    Math.min(
+      scale,
+      Number(
+        Number.isFinite(defaultFromDefaults)
+          ? defaultFromDefaults
+          : input.defaultValue ?? Math.ceil(scale / 2)
+      )
+    )
   );
   const [value, setValue] = React.useState(defaultValue);
 

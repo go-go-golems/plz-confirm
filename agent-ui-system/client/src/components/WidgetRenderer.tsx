@@ -165,24 +165,28 @@ export const WidgetRenderer: React.FC = () => {
       );
     };
 
-    const renderInteractiveScriptWidget = (widgetType: string, input: any) => {
+    const renderInteractiveScriptWidget = (
+      widgetType: string,
+      input: any,
+      renderKey: string
+    ) => {
       switch (widgetType) {
         case "confirm":
-          return <ConfirmDialog {...scriptCommonProps} input={input} />;
+          return <ConfirmDialog key={renderKey} {...scriptCommonProps} input={input} />;
         case "select":
-          return <SelectDialog {...scriptCommonProps} input={input} />;
+          return <SelectDialog key={renderKey} {...scriptCommonProps} input={input} />;
         case "table":
-          return <TableDialog {...scriptCommonProps} input={input} />;
+          return <TableDialog key={renderKey} {...scriptCommonProps} input={input} />;
         case "form":
-          return <FormDialog {...scriptCommonProps} input={input} />;
+          return <FormDialog key={renderKey} {...scriptCommonProps} input={input} />;
         case "upload":
-          return <UploadDialog {...scriptCommonProps} input={input} />;
+          return <UploadDialog key={renderKey} {...scriptCommonProps} input={input} />;
         case "image":
-          return <ImageDialog {...scriptCommonProps} input={input} />;
+          return <ImageDialog key={renderKey} {...scriptCommonProps} input={input} />;
         case "grid":
-          return <GridDialog {...scriptCommonProps} input={input} />;
+          return <GridDialog key={renderKey} {...scriptCommonProps} input={input} />;
         case "rating":
-          return <RatingDialog {...scriptCommonProps} input={input} />;
+          return <RatingDialog key={renderKey} {...scriptCommonProps} input={input} />;
         default:
           return (
             <div className="p-8 border border-destructive/50 bg-destructive/10 text-destructive">
@@ -206,7 +210,10 @@ export const WidgetRenderer: React.FC = () => {
         .trim()
         .toLowerCase();
       const input = (active.scriptView.input ?? {}) as any;
-      return wrapWithBackControl(renderInteractiveScriptWidget(widgetType, input));
+      const renderKey = active.scriptView.stepId || `${widgetType}-single`;
+      return wrapWithBackControl(
+        renderInteractiveScriptWidget(widgetType, input, renderKey)
+      );
     }
 
     const interactiveSections = sections.filter(
@@ -228,7 +235,11 @@ export const WidgetRenderer: React.FC = () => {
           }
           return (
             <React.Fragment key={`interactive-${idx}`}>
-              {renderInteractiveScriptWidget(section.widgetType, section.input)}
+              {renderInteractiveScriptWidget(
+                section.widgetType,
+                section.input,
+                `${active.scriptView?.stepId || "section-step"}-${idx}`
+              )}
             </React.Fragment>
           );
         })}

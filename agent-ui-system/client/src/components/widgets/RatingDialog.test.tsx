@@ -21,4 +21,21 @@ describe("RatingDialog", () => {
     expect(html).toContain("Rate docs");
     expect((html.match(/<button/g) || []).length).toBeGreaterThanOrEqual(5);
   });
+
+  it("supports defaults.value initialization", () => {
+    const onSubmit = vi.fn().mockResolvedValue(undefined);
+    const html = renderToStaticMarkup(
+      React.createElement(RatingDialog, {
+        requestId: "req-rating-2",
+        onSubmit,
+        input: {
+          title: "Rate defaults",
+          scale: 5,
+          style: "slider",
+          defaults: { value: 4 },
+        } as any,
+      })
+    );
+    expect(html).toContain(">4</div>");
+  });
 });

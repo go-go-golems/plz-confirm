@@ -190,6 +190,8 @@ When `WidgetRenderer.tsx` detects that the active request has a `scriptView`, it
 
 This means script widgets look and behave exactly like regular widgets from the user's perspective — the only difference is what happens when they submit.
 
+Defaults support: script widgets can read `input.defaults` (select/form/table/rating). The renderer keys script widgets by `stepId` so defaults apply on step transitions while preserving in-step user edits during rerenders.
+
 ## Local Development
 
 The standard two-terminal setup works for script development:

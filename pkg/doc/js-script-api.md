@@ -340,6 +340,44 @@ Renders a dedicated rating control (numbers, stars, emoji, or slider).
 | `value` | number | Selected rating value |
 | `comment` | string? | Optional free-text comment |
 
+### Prefilled Defaults Across Widgets
+
+Script widgets can include `input.defaults` to prefill values on first render.
+
+Examples:
+
+```javascript
+// select
+input: {
+  title: "Deployment target",
+  options: ["staging", "prod"],
+  defaults: { selectedSingle: "staging" }
+}
+
+// form
+input: {
+  title: "Review config",
+  schema: { properties: { host: { type: "string" }, port: { type: "number" } } },
+  defaults: { host: "api.local", port: 8080 }
+}
+
+// table
+input: {
+  title: "Pick record",
+  data: [{ id: 1 }, { id: 2 }],
+  defaults: { selectedSingle: 2 }
+}
+
+// rating
+input: {
+  title: "Rate docs",
+  style: "slider",
+  defaults: { value: 4 }
+}
+```
+
+Defaults are applied on step load, while in-step user edits are preserved during rerenders.
+
 ### `form` — Dynamic Form
 
 Renders a form from a JSON Schema definition. Great for collecting structured data with validation.
