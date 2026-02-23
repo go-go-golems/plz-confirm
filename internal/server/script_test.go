@@ -2,8 +2,10 @@ package server
 
 import (
 	"bytes"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"sync"
 	"testing"
 
 	"github.com/go-go-golems/plz-confirm/internal/store"
@@ -1038,6 +1040,89 @@ module.exports = {
 	updatedReject := postScriptEvent(t, h, created2.Id, evReject)
 	if got := updatedReject.GetScriptView().GetWidgetType(); got != "form" {
 		t.Fatalf("expected reason/form branch, got %q", got)
+	}
+}
+
+func TestScriptEventUpdatesSerializedPerRequest(t *testing.T) {
+	t.Parallel()
+
+	s := New(store.New())
+	h := s.Handler()
+
+	counterScript := `
+module.exports = {
+  describe: function () { return { name: "counter", version: "1.0.0" }; },
+  init: function () { return { count: 0 }; },
+  view: function () { return { widgetType: "confirm", stepId: "count", input: { title: "Count" } }; },
+  update: function (state) {
+    var start = Date.now();
+    while ((Date.now() - start) < 75) {}
+    var count = state.count || 0;
+    state.count = count + 1;
+    if (state.count >= 2) {
+      return { done: true, result: { count: state.count } };
+    }
+    return state;
+  }
+};
+`
+
+	createReq := &v1.UIRequest{
+		Type:      v1.WidgetType_script,
+		SessionId: "global",
+		Input: &v1.UIRequest_ScriptInput{
+			ScriptInput: &v1.ScriptInput{
+				Title:  "Counter",
+				Script: counterScript,
+			},
+		},
+	}
+	created := postUIRequest(t, h, "/api/requests", createReq)
+
+	eventBody, err := protojson.Marshal(&v1.ScriptEvent{
+		Type: "submit",
+		Data: mustStruct(t, map[string]any{"approved": false}),
+	})
+	if err != nil {
+		t.Fatalf("marshal ScriptEvent: %v", err)
+	}
+
+	start := make(chan struct{})
+	errs := make(chan error, 2)
+	var wg sync.WaitGroup
+	send := func() {
+		defer wg.Done()
+		<-start
+
+		req := httptest.NewRequest(http.MethodPost, "/api/requests/"+created.Id+"/event", bytes.NewReader(eventBody))
+		req.Header.Set("Content-Type", "application/json")
+		rr := httptest.NewRecorder()
+		h.ServeHTTP(rr, req)
+		if rr.Code < 200 || rr.Code >= 300 {
+			errs <- fmt.Errorf("event request failed status=%d body=%s", rr.Code, rr.Body.String())
+			return
+		}
+	}
+
+	wg.Add(2)
+	go send()
+	go send()
+	close(start)
+	wg.Wait()
+	close(errs)
+	for err := range errs {
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	finalReq := getRequest(t, h, created.Id)
+	if finalReq.GetStatus() != v1.RequestStatus_completed {
+		t.Fatalf("expected completed status after two concurrent events, got %v", finalReq.GetStatus())
+	}
+	result := finalReq.GetScriptOutput().GetResult().AsMap()
+	if result["count"] != float64(2) {
+		t.Fatalf("expected final count 2, got result=%v", result)
 	}
 }
 

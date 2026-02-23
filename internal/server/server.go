@@ -22,10 +22,11 @@ import (
 )
 
 type Server struct {
-	store   *store.Store
-	ws      *wsBroadcaster
-	images  *ImageStore
-	scripts *scriptengine.Engine
+	store            *store.Store
+	ws               *wsBroadcaster
+	images           *ImageStore
+	scripts          *scriptengine.Engine
+	scriptEventLocks *keyedLock
 }
 
 type Options struct {
@@ -38,10 +39,11 @@ func New(s *store.Store) *Server {
 		log.Printf("[IMG] failed to initialize image store, uploads disabled: %v", err)
 	}
 	return &Server{
-		store:   s,
-		ws:      newWSBroadcaster(),
-		images:  imgStore,
-		scripts: scriptengine.New(),
+		store:            s,
+		ws:               newWSBroadcaster(),
+		images:           imgStore,
+		scripts:          scriptengine.New(),
+		scriptEventLocks: newKeyedLock(),
 	}
 }
 

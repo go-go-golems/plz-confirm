@@ -85,6 +85,11 @@ func scriptInputWithSeed(in *v1.ScriptInput, seed int64) (*v1.ScriptInput, error
 }
 
 func (s *Server) handleScriptEvent(w http.ResponseWriter, r *http.Request, id string) {
+	// Serialize script event processing per request ID to avoid lost updates
+	// from concurrent read-modify-write cycles.
+	unlock := s.scriptEventLocks.Lock(id)
+	defer unlock()
+
 	existingReq, err := s.store.Get(r.Context(), id)
 	if err != nil {
 		if stderrors.Is(err, store.ErrNotFound) {
