@@ -14,12 +14,68 @@ interface Props {
   loading?: boolean;
 }
 
-const resolveInitialSelection = (input: SelectInput): string[] => {
+interface NormalizedOption {
+  value: string;
+  label: string;
+  description?: string;
+  badge?: string;
+  icon?: string;
+  disabled: boolean;
+  searchKey: string;
+}
+
+const normalizeOptions = (input: SelectInput): NormalizedOption[] => {
+  const rawOptions = ((input as any)?.options ?? []) as any[];
+  const normalized: NormalizedOption[] = [];
+
+  for (let idx = 0; idx < rawOptions.length; idx += 1) {
+    const raw = rawOptions[idx];
+    if (typeof raw === "string") {
+      const text = raw.trim();
+      if (!text) continue;
+      normalized.push({
+        value: text,
+        label: text,
+        disabled: false,
+        searchKey: text.toLowerCase(),
+      });
+      continue;
+    }
+    if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
+      continue;
+    }
+
+    const rawValue = raw.value ?? raw.label ?? String(idx);
+    const value = String(rawValue).trim();
+    if (!value) continue;
+    const label = String(raw.label ?? raw.value ?? value).trim() || value;
+    const description = raw.description ? String(raw.description) : undefined;
+    const badge = raw.badge ? String(raw.badge) : undefined;
+    const icon = raw.icon ? String(raw.icon) : undefined;
+    const disabled = Boolean(raw.disabled);
+
+    normalized.push({
+      value,
+      label,
+      description: description?.trim() || undefined,
+      badge: badge?.trim() || undefined,
+      icon: icon?.trim() || undefined,
+      disabled,
+      searchKey: [label, value, description || "", badge || ""]
+        .join(" ")
+        .toLowerCase(),
+    });
+  }
+
+  return normalized;
+};
+
+const resolveInitialSelection = (input: SelectInput, options: NormalizedOption[]): string[] => {
   const anyInput = input as any;
   const defaults = anyInput?.defaults;
   if (!defaults || typeof defaults !== "object") return [];
 
-  const optionsSet = new Set((input.options || []).map(option => String(option)));
+  const optionsSet = new Set(options.map(option => option.value));
   const pick = (value: unknown) => {
     const s = String(value ?? "");
     return optionsSet.has(s) ? s : "";
@@ -41,8 +97,9 @@ const resolveInitialSelection = (input: SelectInput): string[] => {
 };
 
 export const SelectDialog: React.FC<Props> = ({ input, onSubmit, loading }) => {
+  const options = React.useMemo(() => normalizeOptions(input), [input]);
   const [selected, setSelected] = useState<string[]>(() =>
-    resolveInitialSelection(input)
+    resolveInitialSelection(input, options)
   );
   const [search, setSearch] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -50,19 +107,20 @@ export const SelectDialog: React.FC<Props> = ({ input, onSubmit, loading }) => {
 
   const isMulti = Boolean(input.multi);
 
-  const filteredOptions = input.options.filter(opt => 
-    opt.toLowerCase().includes(search.toLowerCase())
+  const filteredOptions = options.filter(opt =>
+    opt.searchKey.includes(search.toLowerCase())
   );
 
-  const toggleSelection = (option: string) => {
+  const toggleSelection = (option: NormalizedOption) => {
+    if (option.disabled) return;
     if (isMulti) {
       setSelected(prev => 
-        prev.includes(option) 
-          ? prev.filter(i => i !== option)
-          : [...prev, option]
+        prev.includes(option.value)
+          ? prev.filter(i => i !== option.value)
+          : [...prev, option.value]
       );
     } else {
-      setSelected([option]);
+      setSelected([option.value]);
     }
   };
 
@@ -108,14 +166,15 @@ export const SelectDialog: React.FC<Props> = ({ input, onSubmit, loading }) => {
             </div>
           ) : (
             filteredOptions.map((option, idx) => {
-              const isSelected = selected.includes(option);
+              const isSelected = selected.includes(option.value);
               return (
                 <div
-                  key={idx}
+                  key={`${option.value}-${idx}`}
                   onClick={() => toggleSelection(option)}
                   className={cn(
                     "flex items-center p-3 cursor-pointer transition-all duration-200 border border-transparent hover:border-primary/30 hover:bg-primary/5 group",
-                    isSelected && "bg-primary/10 border-primary/50"
+                    isSelected && "bg-primary/10 border-primary/50",
+                    option.disabled && "opacity-50 cursor-not-allowed hover:border-transparent hover:bg-transparent"
                   )}
                 >
                   <div className={cn(
@@ -137,7 +196,20 @@ export const SelectDialog: React.FC<Props> = ({ input, onSubmit, loading }) => {
                     "font-mono text-sm flex-1",
                     isSelected && "text-primary font-bold"
                   )}>
-                    {option}
+                    <span className="flex items-center gap-2">
+                      {option.icon && <span className="text-xs">{option.icon}</span>}
+                      <span>{option.label}</span>
+                      {option.badge && (
+                        <span className="rounded border border-primary/30 bg-primary/10 px-1.5 py-0.5 text-[10px] uppercase text-primary/80">
+                          {option.badge}
+                        </span>
+                      )}
+                    </span>
+                    {option.description && (
+                      <span className="mt-1 block text-xs text-muted-foreground font-mono">
+                        {option.description}
+                      </span>
+                    )}
                   </span>
                   {isSelected && <ChevronRight className="h-4 w-4 text-primary animate-pulse" />}
                 </div>

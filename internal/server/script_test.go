@@ -869,6 +869,107 @@ module.exports = {
 	}
 }
 
+func TestScriptLifecycleWithRichSelectOptions(t *testing.T) {
+	t.Parallel()
+
+	s := New(store.New())
+	h := s.Handler()
+
+	richSelectScript := `
+module.exports = {
+  describe: function () { return { name: "rich-select", version: "1.0.0" }; },
+  init: function () { return { step: "pick" }; },
+  view: function () {
+    return {
+      widgetType: "select",
+      stepId: "pick",
+      input: {
+        title: "Select server",
+        options: [
+          { value: "prod-us", label: "Production US", description: "3 instances", badge: "healthy" },
+          { value: "staging-eu", label: "Staging EU", description: "1 instance", badge: "warning", disabled: true }
+        ]
+      }
+    };
+  },
+  update: function (state, event) {
+    return { done: true, result: { selected: event.data ? event.data.selectedSingle : "" } };
+  }
+};
+`
+
+	createReq := &v1.UIRequest{
+		Type:      v1.WidgetType_script,
+		SessionId: "global",
+		Input: &v1.UIRequest_ScriptInput{
+			ScriptInput: &v1.ScriptInput{Title: "Rich Select", Script: richSelectScript},
+		},
+	}
+	created := postUIRequest(t, h, "/api/requests", createReq)
+	if got := created.GetScriptView().GetWidgetType(); got != "select" {
+		t.Fatalf("expected select widget, got %q", got)
+	}
+
+	ev := &v1.ScriptEvent{
+		Type:   "submit",
+		StepId: toPtr("pick"),
+		Data:   mustStruct(t, map[string]any{"selectedSingle": "prod-us"}),
+	}
+	completed := postScriptEvent(t, h, created.Id, ev)
+	if completed.GetStatus() != v1.RequestStatus_completed {
+		t.Fatalf("expected completed status, got %v", completed.GetStatus())
+	}
+}
+
+func TestScriptCreateRejectsInvalidRichSelectOption(t *testing.T) {
+	t.Parallel()
+
+	s := New(store.New())
+	h := s.Handler()
+
+	invalidScript := `
+module.exports = {
+  describe: function () { return { name: "rich-select-bad", version: "1.0.0" }; },
+  init: function () { return { step: "pick" }; },
+  view: function () {
+    return {
+      widgetType: "select",
+      input: {
+        title: "Select server",
+        options: [
+          { label: "Missing value" }
+        ]
+      }
+    };
+  },
+  update: function (state) { return state; }
+};
+`
+
+	createReq := &v1.UIRequest{
+		Type:      v1.WidgetType_script,
+		SessionId: "global",
+		Input: &v1.UIRequest_ScriptInput{
+			ScriptInput: &v1.ScriptInput{Title: "Rich Select Bad", Script: invalidScript},
+		},
+	}
+	body, err := protojson.Marshal(createReq)
+	if err != nil {
+		t.Fatalf("marshal create req: %v", err)
+	}
+	req := httptest.NewRequest(http.MethodPost, "/api/requests", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400 for invalid rich option, got %d body=%s", rr.Code, rr.Body.String())
+	}
+	if !bytes.Contains(rr.Body.Bytes(), []byte(".value is required")) {
+		t.Fatalf("expected value-required validation message, got body=%s", rr.Body.String())
+	}
+}
+
 func postUIRequest(t *testing.T, h http.Handler, path string, reqProto *v1.UIRequest) *v1.UIRequest {
 	t.Helper()
 

@@ -432,6 +432,8 @@ func validateScriptViewInput(widgetType string, input map[string]any) error {
 		return validateDisplayInput(input)
 	case "rating":
 		return validateRatingInput(input)
+	case "select":
+		return validateSelectInput(input)
 	default:
 		return nil
 	}
@@ -559,6 +561,59 @@ func validateRatingInput(input map[string]any) error {
 		}
 		if n < 1 || n > scale {
 			return fmt.Errorf("view.input.defaultValue must be between 1 and scale for rating widget")
+		}
+	}
+	return nil
+}
+
+func validateSelectInput(input map[string]any) error {
+	optionsV, ok := input["options"]
+	if !ok {
+		return nil
+	}
+	options, ok := optionsV.([]any)
+	if !ok {
+		return fmt.Errorf("view.input.options must be an array for select widget")
+	}
+	for i, option := range options {
+		if s, ok := option.(string); ok {
+			if strings.TrimSpace(s) == "" {
+				return fmt.Errorf("view.input.options[%d] must not be empty", i)
+			}
+			continue
+		}
+		optionMap, ok := option.(map[string]any)
+		if !ok {
+			return fmt.Errorf("view.input.options[%d] must be string or object", i)
+		}
+		value, _ := optionMap["value"].(string)
+		if strings.TrimSpace(value) == "" {
+			return fmt.Errorf("view.input.options[%d].value is required for object options", i)
+		}
+		if label, ok := optionMap["label"]; ok {
+			if _, ok := label.(string); !ok {
+				return fmt.Errorf("view.input.options[%d].label must be string", i)
+			}
+		}
+		if description, ok := optionMap["description"]; ok {
+			if _, ok := description.(string); !ok {
+				return fmt.Errorf("view.input.options[%d].description must be string", i)
+			}
+		}
+		if badge, ok := optionMap["badge"]; ok {
+			if _, ok := badge.(string); !ok {
+				return fmt.Errorf("view.input.options[%d].badge must be string", i)
+			}
+		}
+		if icon, ok := optionMap["icon"]; ok {
+			if _, ok := icon.(string); !ok {
+				return fmt.Errorf("view.input.options[%d].icon must be string", i)
+			}
+		}
+		if disabled, ok := optionMap["disabled"]; ok {
+			if _, ok := disabled.(bool); !ok {
+				return fmt.Errorf("view.input.options[%d].disabled must be boolean", i)
+			}
 		}
 	}
 	return nil

@@ -280,7 +280,7 @@ Shows a dropdown or list of options. Supports single or multi-selection.
 | Field | Type | Default | Description |
 |---|---|---|---|
 | `title` | string | (required) | Prompt displayed above the list |
-| `options` | string[] | (required) | The choices to display |
+| `options` | array | (required) | Choices as strings or rich objects (`{ value, label, description?, badge?, icon?, disabled? }`) |
 | `multi` | boolean | `false` | Allow selecting multiple options |
 | `searchable` | boolean | `false` | Show a search/filter box |
 
@@ -291,6 +291,8 @@ For single-select (`multi: false`):
 
 For multi-select (`multi: true`):
 - `selectedMulti` (`{ values: ["a", "b"] }`) — array of chosen options wrapped in an object.
+
+When using rich object options, `selectedSingle` / `selectedMulti.values` contain the option `value` field.
 
 Both may include an optional `comment`.
 

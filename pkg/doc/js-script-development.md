@@ -196,6 +196,8 @@ This means script widgets look and behave exactly like regular widgets from the 
 
 Defaults support: script widgets can read `input.defaults` (select/form/table/rating). The renderer keys script widgets by `stepId` so defaults apply on step transitions while preserving in-step user edits during rerenders.
 
+Select widgets support both legacy string options and rich object options with `value/label/description/badge/icon/disabled` fields.
+
 ## Local Development
 
 The standard two-terminal setup works for script development:
