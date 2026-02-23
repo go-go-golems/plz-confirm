@@ -23,15 +23,15 @@ type SelectCommand struct {
 var _ cmds.GlazeCommand = &SelectCommand{}
 
 type SelectSettings struct {
-	BaseURL     string `glazed.parameter:"base-url"`
-	SessionID   string `glazed.parameter:"session-id"`
-	TimeoutS    int    `glazed.parameter:"timeout"`
-	WaitTimeout int    `glazed.parameter:"wait-timeout"`
+	BaseURL     string `glazed:"base-url"`
+	SessionID   string `glazed:"session-id"`
+	TimeoutS    int    `glazed:"timeout"`
+	WaitTimeout int    `glazed:"wait-timeout"`
 
-	Title      string   `glazed.parameter:"title"`
-	Options    []string `glazed.parameter:"option"`
-	Multi      bool     `glazed.parameter:"multi"`
-	Searchable bool     `glazed.parameter:"searchable"`
+	Title      string   `glazed:"title"`
+	Options    []string `glazed:"option"`
+	Multi      bool     `glazed:"multi"`
+	Searchable bool     `glazed:"searchable"`
 }
 
 func NewSelectCommand() (*SelectCommand, error) {

@@ -24,24 +24,24 @@ type ImageCommand struct {
 var _ cmds.GlazeCommand = &ImageCommand{}
 
 type ImageSettings struct {
-	BaseURL     string `glazed.parameter:"base-url"`
-	SessionID   string `glazed.parameter:"session-id"`
-	TimeoutS    int    `glazed.parameter:"timeout"`
-	WaitTimeout int    `glazed.parameter:"wait-timeout"`
+	BaseURL     string `glazed:"base-url"`
+	SessionID   string `glazed:"session-id"`
+	TimeoutS    int    `glazed:"timeout"`
+	WaitTimeout int    `glazed:"wait-timeout"`
 
-	Title   string  `glazed.parameter:"title"`
-	Message *string `glazed.parameter:"message"`
+	Title   string  `glazed:"title"`
+	Message *string `glazed:"message"`
 
-	Mode string `glazed.parameter:"mode"` // select|confirm
+	Mode string `glazed:"mode"` // select|confirm
 
-	Images        []string `glazed.parameter:"image"`
-	ImageLabels   []string `glazed.parameter:"image-label"`
-	ImageAlts     []string `glazed.parameter:"image-alt"`
-	ImageCaptions []string `glazed.parameter:"image-caption"`
+	Images        []string `glazed:"image"`
+	ImageLabels   []string `glazed:"image-label"`
+	ImageAlts     []string `glazed:"image-alt"`
+	ImageCaptions []string `glazed:"image-caption"`
 
 	// Used for select mode:
-	Multi   bool     `glazed.parameter:"multi"`
-	Options []string `glazed.parameter:"option"`
+	Multi   bool     `glazed:"multi"`
+	Options []string `glazed:"option"`
 }
 
 func isLikelyBase64(s string) bool {

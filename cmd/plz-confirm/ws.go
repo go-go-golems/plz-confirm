@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -102,7 +103,15 @@ func buildWSURL(baseURL, sessionID string) (string, error) {
 	default:
 		return "", errors.Errorf("unsupported base url scheme: %s", u.Scheme)
 	}
-	u.Path = "/ws"
+	basePath := strings.TrimSuffix(u.Path, "/")
+	switch {
+	case basePath == "":
+		u.Path = "/ws"
+	case strings.HasSuffix(basePath, "/ws"):
+		u.Path = basePath
+	default:
+		u.Path = basePath + "/ws"
+	}
 	q := u.Query()
 	q.Set("sessionId", sessionID)
 	u.RawQuery = q.Encode()

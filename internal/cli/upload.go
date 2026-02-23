@@ -22,16 +22,16 @@ type UploadCommand struct {
 var _ cmds.GlazeCommand = &UploadCommand{}
 
 type UploadSettings struct {
-	BaseURL     string `glazed.parameter:"base-url"`
-	SessionID   string `glazed.parameter:"session-id"`
-	TimeoutS    int    `glazed.parameter:"timeout"`
-	WaitTimeout int    `glazed.parameter:"wait-timeout"`
+	BaseURL     string `glazed:"base-url"`
+	SessionID   string `glazed:"session-id"`
+	TimeoutS    int    `glazed:"timeout"`
+	WaitTimeout int    `glazed:"wait-timeout"`
 
-	Title       string   `glazed.parameter:"title"`
-	Accept      []string `glazed.parameter:"accept"`
-	Multiple    bool     `glazed.parameter:"multiple"`
-	MaxSize     *int64   `glazed.parameter:"max-size"`
-	CallbackURL *string  `glazed.parameter:"callback-url"`
+	Title       string   `glazed:"title"`
+	Accept      []string `glazed:"accept"`
+	Multiple    bool     `glazed:"multiple"`
+	MaxSize     *int64   `glazed:"max-size"`
+	CallbackURL *string  `glazed:"callback-url"`
 }
 
 func NewUploadCommand() (*UploadCommand, error) {
