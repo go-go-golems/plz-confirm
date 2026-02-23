@@ -25,6 +25,8 @@ RelatedFiles:
       Note: Added end-to-end script log response assertions (commit c943016).
     - Path: internal/server/server.go
       Note: Wired create-path scriptLogs response population (commit c943016).
+    - Path: internal/server/generate_build.go
+      Note: Stabilized Dagger frontend build to avoid interactive pnpm prompts by excluding host node_modules and forcing non-interactive install flags (commit 94203ff).
     - Path: internal/store/store.go
       Note: Persisted and patched latest script logs in request store (commit c943016).
     - Path: pkg/doc/js-script-api.md
@@ -39,7 +41,7 @@ RelatedFiles:
       Note: Detailed execution checklist that this diary tracks step-by-step.
 ExternalSources: []
 Summary: Step-by-step implementation diary for PC-03 hard-cut RuntimeFactory migration with require-enabled sandbox and console log capture.
-LastUpdated: 2026-02-23T11:42:00-05:00
+LastUpdated: 2026-02-23T12:50:00-05:00
 WhatFor: Track implementation progress, decisions, failures, and validation for reviewers and handoff.
 WhenToUse: Use during active implementation and review of PC-03.
 ---
@@ -379,3 +381,77 @@ The final bundle now includes the current implementation plan and the detailed d
   - `remarquee upload bundle ... --name "PC-03 RuntimeFactory Implementation (require + logs)" --remote-dir "/ai/2026/02/23/PC-03-USE-GOJA-RUNTIMEFACTORY" --toc-depth 3`
 - Verification command:
   - `remarquee cloud ls /ai/2026/02/23/PC-03-USE-GOJA-RUNTIMEFACTORY --long --non-interactive`
+
+## Step 6: Stabilize Dagger Frontend Build Against Interactive pnpm Prompts
+
+I investigated and fixed a regression where `make build` could hang in the Dagger UI build phase due to an interactive pnpm purge confirmation. This manifested after the RuntimeFactory branch work and blocked normal local builds.
+
+The fix was applied at the Dagger build script level so it is deterministic across environments and does not depend on local host state.
+
+### Prompt Context
+
+**User prompt (verbatim):** "When running the dagger build in plz-confirm (`make build`) I hang on the interactive pnpm"
+
+**Assistant interpretation:** Reproduce the blocking point, remove the interactive behavior in the containerized install path, and validate the full build.
+
+**Inferred user intent:** Ensure `make build` is reliable and fully non-interactive in the Dagger frontend build stage.
+
+**Commit (code):** `94203ff` — "PC-03: make dagger ui-build pnpm install non-interactive"
+
+### What I did
+- Reproduced and confirmed the blocker in the Dagger step (`pnpm install`) using the log snippet showing:
+  - `The modules directory at "/src/node_modules" will be removed ... Proceed? (Y/n)`
+- Updated `internal/server/generate_build.go`:
+  - host mount now excludes `node_modules`:
+    - `client.Host().Directory(frontendDir, dagger.HostDirectoryOpts{Exclude: []string{"node_modules"}})`
+  - sets `CI=true` for the container environment
+  - changed install command to:
+    - `pnpm install --frozen-lockfile --config.confirmModulesPurge=false --reporter=append-only`
+- Ran validation commands after patch:
+  - `make ui-build`
+  - `make build`
+  - `go test ./internal/server -count=1`
+
+### Why
+- The mounted host `node_modules` directory and non-CI install path can trigger pnpm’s interactive purge confirmation, which blocks in non-interactive Dagger execution.
+- Excluding `node_modules` plus explicit non-interactive install flags removes the prompt class entirely and keeps installs reproducible.
+
+### What worked
+- `make ui-build` completed successfully and exported `dist/public`.
+- `make build` completed end-to-end without pausing for interactive input.
+- Dagger logs showed non-interactive install execution and no purge prompt.
+
+### What didn't work
+- Initial validation attempt in sandbox failed with:
+  - `listen tcp 127.0.0.1:0: socket: operation not permitted`
+- Resolution:
+  - reran build validation with elevated permissions (outside sandbox), then both build commands succeeded.
+
+### What I learned
+- Dagger host directory mounts should exclude local `node_modules` by default for Node-based builds to avoid environment-coupled install behavior.
+
+### What was tricky to build
+- The tricky part was distinguishing between the apparent prompt output and true Dagger execution state. Running full `make ui-build` and `make build` post-fix confirmed the session no longer blocks.
+
+### What warrants a second pair of eyes
+- Confirm whether we also want to exclude additional host artifacts (for example `dist`) in the mounted frontend directory for stricter reproducibility.
+
+### What should be done in the future
+- If we add other package managers or frontend build modes, keep the same non-interactive CI defaults and lockfile-enforced installs.
+
+### Code review instructions
+- Review the exact build script changes:
+  - `/home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/internal/server/generate_build.go`
+- Review ticket updates:
+  - `/home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/ttmp/2026/02/23/PC-03-USE-GOJA-RUNTIMEFACTORY--use-go-go-goja-runtimefactory-in-script-engine/tasks.md`
+  - `/home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/ttmp/2026/02/23/PC-03-USE-GOJA-RUNTIMEFACTORY--use-go-go-goja-runtimefactory-in-script-engine/changelog.md`
+  - `/home/manuel/workspaces/2026-02-22/plz-confirm-js/plz-confirm/ttmp/2026/02/23/PC-03-USE-GOJA-RUNTIMEFACTORY--use-go-go-goja-runtimefactory-in-script-engine/reference/01-diary.md`
+
+### Technical details
+- Validation outputs observed:
+  - `make ui-build`: success, frontend build finished and `internal/server/embed/public` exported.
+  - `make build`: success, ran proto generation, TS proto generation, Dagger UI build, and `go build -tags embed ./...`.
+- Refreshed reMarkable upload command:
+  - `remarquee upload bundle ttmp/2026/02/23/PC-03-USE-GOJA-RUNTIMEFACTORY--use-go-go-goja-runtimefactory-in-script-engine --name "PC-03 RuntimeFactory Implementation (require + logs + build stabilization)" --remote-dir "/ai/2026/02/23/PC-03-USE-GOJA-RUNTIMEFACTORY" --toc-depth 3 --non-interactive`
+- Upload result:
+  - `OK: uploaded PC-03 RuntimeFactory Implementation (require + logs + build stabilization).pdf -> /ai/2026/02/23/PC-03-USE-GOJA-RUNTIMEFACTORY`

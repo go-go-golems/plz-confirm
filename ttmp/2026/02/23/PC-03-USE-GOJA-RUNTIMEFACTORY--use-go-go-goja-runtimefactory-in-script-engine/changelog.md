@@ -43,3 +43,13 @@
 - Uploaded final implementation bundle to reMarkable:
   - Name: `PC-03 RuntimeFactory Implementation (require + logs)`
   - Remote path: `/ai/2026/02/23/PC-03-USE-GOJA-RUNTIMEFACTORY`
+- Stabilized Dagger UI build to prevent interactive pnpm hangs (commit `94203ff`):
+  - `internal/server/generate_build.go` now mounts `agent-ui-system` with `exclude: ["node_modules"]`
+  - sets `CI=true` in the build container
+  - uses `pnpm install --frozen-lockfile --config.confirmModulesPurge=false --reporter=append-only`
+- Validation results for stabilization:
+  - `make ui-build` passed (no interactive prompt; frontend dist exported)
+  - `make build` passed end-to-end on `task/use-runtime-factory`
+- Uploaded refreshed ticket bundle including build-stabilization notes:
+  - Name: `PC-03 RuntimeFactory Implementation (require + logs + build stabilization)`
+  - Remote path: `/ai/2026/02/23/PC-03-USE-GOJA-RUNTIMEFACTORY`
