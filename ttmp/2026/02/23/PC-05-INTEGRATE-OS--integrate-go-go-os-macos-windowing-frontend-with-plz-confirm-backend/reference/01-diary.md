@@ -778,3 +778,77 @@ This step ensures the intern-facing artifact is synchronized with the most recen
 ### Technical details
 
 - Bundle inputs were unchanged paths; only bundle name changed to `... v2`.
+
+## Step 10: Add copious Storybook coverage for all new core widgets
+
+To make the new core widgets easy to validate and iterate, I added a large Storybook set covering normal, interactive, and edge-state behaviors for every widget introduced in the engine tranche. This gives immediate visual/manual validation without waiting on full confirm-runtime integration.
+
+I kept this as a dedicated commit so reviewers can inspect stories separately from runtime/store architecture changes.
+
+### Prompt Context
+
+**User prompt (verbatim):** "add  copious storybook stories for the new widgets."
+
+**Assistant interpretation:** Create many practical Storybook variants for each newly added widget and ensure they follow existing Storybook taxonomy conventions.
+
+**Inferred user intent:** Improve confidence and development speed by making widget behavior observable and testable in isolation.
+
+**Commit (code):** `203181b` — "storybook: add extensive stories for new confirm-oriented widgets"
+
+### What I did
+
+- Added six new story files:
+  - `go-go-os/packages/engine/src/components/widgets/SelectableList.stories.tsx`
+  - `go-go-os/packages/engine/src/components/widgets/SelectableDataTable.stories.tsx`
+  - `go-go-os/packages/engine/src/components/widgets/SchemaFormRenderer.stories.tsx`
+  - `go-go-os/packages/engine/src/components/widgets/FilePickerDropzone.stories.tsx`
+  - `go-go-os/packages/engine/src/components/widgets/ImageChoiceGrid.stories.tsx`
+  - `go-go-os/packages/engine/src/components/widgets/RequestActionBar.stories.tsx`
+- Included many variants per widget, including:
+  - defaults + empty states,
+  - searchable/multi/select modes,
+  - controlled + interactive render demos,
+  - loading/error/disabled/busy states,
+  - larger datasets and layout variants.
+- Ran taxonomy validation:
+  - `node go-go-os/scripts/storybook/check-taxonomy.mjs`
+
+### Why
+
+- Story-heavy coverage is the fastest way to validate component API usability and state behavior before downstream integration.
+
+### What worked
+
+- Taxonomy check passed after adding stories:
+  - `Storyboard taxonomy check passed (60 story files).`
+- Story additions were committed cleanly in one isolated commit.
+
+### What didn't work
+
+- No failures in this step.
+
+### What I learned
+
+- The new widget APIs are expressive enough to cover most confirm use-cases directly in stories without app/runtime wiring.
+
+### What was tricky to build
+
+- Ensuring stories stayed realistic while remaining self-contained (especially image examples and file-drop interactions).
+- I used inline SVG data URLs for image stories to avoid external asset/network dependency.
+
+### What warrants a second pair of eyes
+
+- Review interaction semantics in `Interactive*` stories for consistency with expected desktop UX conventions.
+
+### What should be done in the future
+
+- Add story-level docs notes that map each story to expected plz-confirm widget scenarios.
+
+### Code review instructions
+
+- Review the six new `*.stories.tsx` files listed above.
+- Run `node scripts/storybook/check-taxonomy.mjs` from `go-go-os` root.
+
+### Technical details
+
+- Commit hash for this tranche: `203181b`.
