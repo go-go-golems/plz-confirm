@@ -87,6 +87,8 @@ The VM is intentionally bare. No host bridge is exposed:
 
 The only things available are standard ES5.1 built-ins (Object, Array, JSON, Math, etc.) plus whatever the server injects as context (`__pc_ctx`, `__pc_state`, `__pc_event`).
 
+Context helpers now include deterministic random utilities (`ctx.seed`, `ctx.random()`, `ctx.randomInt(min,max)`) and a declarative branch helper (`ctx.branch(state, event, spec)`).
+
 These constraints are enforced by `TestSandboxHasNoHostBridge` in `engine_test.go`, so if someone accidentally exposes a new global, the test will catch it.
 
 ### Timeout and Cancellation

@@ -213,6 +213,71 @@ module.exports = {
 	}
 }
 
+func TestBranchHelperSupportsRoutesAndPredicates(t *testing.T) {
+	t.Parallel()
+
+	script := `
+module.exports = {
+  describe: function () { return { name: "branch-helper", version: "1.0.0" }; },
+  init: function () { return { step: "confirm" }; },
+  view: function (state) {
+    if (state.step === "details") {
+      return { widgetType: "select", input: { title: "Details", options: ["a"] } };
+    }
+    if (state.step === "reason") {
+      return { widgetType: "form", input: { title: "Reason", schema: { properties: {} } } };
+    }
+    if (state.step === "positive") {
+      return { widgetType: "confirm", input: { title: "Positive" } };
+    }
+    return { widgetType: "confirm", input: { title: "Confirm" } };
+  },
+  update: function (state, event, ctx) {
+    if (state.step === "confirm") {
+      return ctx.branch(state, event, { approved: "details", rejected: "reason", default: "reason" });
+    }
+    return ctx.branch(state, event, {
+      rules: [
+        { when: function(ev) { return ev && ev.data && ev.data.score >= 4; }, step: "positive" }
+      ],
+      default: "reason"
+    });
+  }
+};
+`
+
+	e := New()
+
+	out1, err := e.UpdateAndView(
+		context.Background(),
+		&v1.ScriptInput{Script: script},
+		map[string]any{"step": "confirm"},
+		map[string]any{"type": "submit", "data": map[string]any{"approved": true}},
+	)
+	if err != nil {
+		t.Fatalf("UpdateAndView route-table failed: %v", err)
+	}
+	if got := out1.State["step"]; got != "details" {
+		t.Fatalf("expected step=details from route table, got %v", got)
+	}
+	if got := out1.View["widgetType"]; got != "select" {
+		t.Fatalf("expected select view after route table branch, got %v", got)
+	}
+
+	out2, err := e.UpdateAndView(
+		context.Background(),
+		&v1.ScriptInput{Script: script},
+		map[string]any{"step": "details"},
+		map[string]any{"type": "submit", "data": map[string]any{"score": float64(5)}},
+	)
+	if err != nil {
+		t.Fatalf("UpdateAndView predicate rules failed: %v", err)
+	}
+	if got := out2.State["step"]; got != "positive" {
+		t.Fatalf("expected step=positive from predicate rule, got %v", got)
+	}
+}
+
 func TestTimeout(t *testing.T) {
 	t.Parallel()
 

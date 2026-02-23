@@ -77,6 +77,9 @@ func (e *Engine) InitAndView(ctx context.Context, in *v1.ScriptInput) (*InitAndV
 		if err := vm.Set("__pc_ctx", scriptCtx); err != nil {
 			return fmt.Errorf("set ctx failed: %w", err)
 		}
+		if err := attachContextHelpers(vm); err != nil {
+			return err
+		}
 
 		describeVal, err := vm.RunString(`__pc_exports.describe(__pc_ctx)`)
 		if err != nil {
@@ -165,6 +168,9 @@ func (e *Engine) UpdateAndView(
 		if err := vm.Set("__pc_ctx", scriptCtx); err != nil {
 			return fmt.Errorf("set ctx failed: %w", err)
 		}
+		if err := attachContextHelpers(vm); err != nil {
+			return err
+		}
 		if err := vm.Set("__pc_state", state); err != nil {
 			return fmt.Errorf("set state failed: %w", err)
 		}
@@ -221,9 +227,80 @@ func buildExportsProgram(script string) string {
 var __pc_module = { exports: {} };
 var module = __pc_module;
 var exports = __pc_module.exports;
+function __pc_getPath(obj, path) {
+  if (!obj || typeof path !== "string" || path.length === 0) return undefined;
+  var parts = path.split(".");
+  var cur = obj;
+  for (var i = 0; i < parts.length; i++) {
+    if (cur == null || typeof cur !== "object") return undefined;
+    cur = cur[parts[i]];
+  }
+  return cur;
+}
+function __pc_routeKey(event) {
+  if (!event || typeof event !== "object") return "";
+  if (typeof event.actionId === "string" && event.actionId.length > 0) return event.actionId;
+  var data = event.data;
+  if (data && typeof data === "object" && typeof data.approved === "boolean") {
+    return data.approved ? "approved" : "rejected";
+  }
+  if (typeof event.type === "string" && event.type.length > 0) return event.type;
+  return "";
+}
+function __pc_applyStep(state, target) {
+  if (!state || typeof state !== "object") return state;
+  if (typeof target !== "string" || target.length === 0) return state;
+  state.step = target;
+  return state;
+}
+function __pc_branch(state, event, spec) {
+  if (!state || typeof state !== "object") return state;
+  if (!spec || typeof spec !== "object") return state;
+
+  var rules = spec.rules;
+  if (Array.isArray(rules)) {
+    for (var i = 0; i < rules.length; i++) {
+      var rule = rules[i];
+      if (!rule || typeof rule !== "object") continue;
+      var matched = false;
+      if (typeof rule.when === "function") {
+        try { matched = !!rule.when(event, state); } catch (e) { matched = false; }
+      } else if (typeof rule.when === "string") {
+        matched = !!__pc_getPath({ event: event, state: state }, rule.when);
+      } else if (typeof rule.when === "boolean") {
+        matched = rule.when;
+      }
+      if (matched) return __pc_applyStep(state, rule.step || rule.to);
+    }
+  }
+
+  var routes = spec.routes;
+  if (!routes || typeof routes !== "object" || Array.isArray(routes)) routes = spec;
+  var key = __pc_routeKey(event);
+  if (key && Object.prototype.hasOwnProperty.call(routes, key)) {
+    return __pc_applyStep(state, routes[key]);
+  }
+  if (Object.prototype.hasOwnProperty.call(routes, "default")) {
+    return __pc_applyStep(state, routes["default"]);
+  }
+  return state;
+}
 ` + script + `
 var __pc_exports = __pc_module.exports;
 `
+}
+
+func attachContextHelpers(vm *goja.Runtime) error {
+	if _, err := vm.RunString(`
+if (__pc_ctx && typeof __pc_ctx === "object") {
+  __pc_ctx.branch = function(state, event, spec) {
+    return __pc_branch(state, event, spec);
+  };
+}
+`); err != nil {
+		return fmt.Errorf("attach ctx helpers failed: %w", err)
+	}
+	return nil
 }
 
 func evalBool(v goja.Value, err error) (bool, error) {

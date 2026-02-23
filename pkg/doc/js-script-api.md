@@ -206,6 +206,33 @@ return { done: true, result: { approved: true, env: "prod" } };
 
 The `result` must be a plain object. It becomes the final output that the CLI or API consumer reads.
 
+### Declarative Branching Helper (`ctx.branch`)
+
+For step-routing logic, you can use `ctx.branch(state, event, spec)` instead of long `if/else` chains.
+
+Route table example:
+
+```javascript
+return ctx.branch(state, event, {
+  approved: "details",
+  rejected: "reason",
+  default: "fallback"
+});
+```
+
+Predicate rules example:
+
+```javascript
+return ctx.branch(state, event, {
+  rules: [
+    { when: function (ev) { return ev && ev.data && ev.data.score >= 4; }, step: "positive" }
+  ],
+  default: "neutral"
+});
+```
+
+`ctx.branch` mutates `state.step` and returns the same `state` object.
+
 ### The `ctx` Object
 
 All four functions receive a `ctx` object as their last argument. It gives you access to configuration and server context:

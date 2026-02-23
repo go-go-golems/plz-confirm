@@ -970,6 +970,77 @@ module.exports = {
 	}
 }
 
+func TestScriptDeclarativeBranchHelperFlow(t *testing.T) {
+	t.Parallel()
+
+	s := New(store.New())
+	h := s.Handler()
+
+	branchScript := `
+module.exports = {
+  describe: function () { return { name: "branch-flow", version: "1.0.0" }; },
+  init: function () { return { step: "confirm" }; },
+  view: function (state) {
+    if (state.step === "details") {
+      return {
+        widgetType: "select",
+        stepId: "details",
+        input: { title: "Details path", options: ["a", "b"] }
+      };
+    }
+    if (state.step === "reason") {
+      return {
+        widgetType: "form",
+        stepId: "reason",
+        input: { title: "Reason path", schema: { properties: {} } }
+      };
+    }
+    return {
+      widgetType: "confirm",
+      stepId: "confirm",
+      input: { title: "Approve?" }
+    };
+  },
+  update: function (state, event, ctx) {
+    if (state.step === "confirm") {
+      return ctx.branch(state, event, { approved: "details", rejected: "reason", default: "reason" });
+    }
+    return { done: true, result: { step: state.step } };
+  }
+};
+`
+
+	createReq := &v1.UIRequest{
+		Type:      v1.WidgetType_script,
+		SessionId: "global",
+		Input: &v1.UIRequest_ScriptInput{
+			ScriptInput: &v1.ScriptInput{Title: "Branch flow", Script: branchScript},
+		},
+	}
+
+	created := postUIRequest(t, h, "/api/requests", createReq)
+	evApprove := &v1.ScriptEvent{
+		Type:   "submit",
+		StepId: toPtr("confirm"),
+		Data:   mustStruct(t, map[string]any{"approved": true}),
+	}
+	updatedApprove := postScriptEvent(t, h, created.Id, evApprove)
+	if got := updatedApprove.GetScriptView().GetWidgetType(); got != "select" {
+		t.Fatalf("expected details/select branch, got %q", got)
+	}
+
+	created2 := postUIRequest(t, h, "/api/requests", createReq)
+	evReject := &v1.ScriptEvent{
+		Type:   "submit",
+		StepId: toPtr("confirm"),
+		Data:   mustStruct(t, map[string]any{"approved": false}),
+	}
+	updatedReject := postScriptEvent(t, h, created2.Id, evReject)
+	if got := updatedReject.GetScriptView().GetWidgetType(); got != "form" {
+		t.Fatalf("expected reason/form branch, got %q", got)
+	}
+}
+
 func postUIRequest(t *testing.T, h http.Handler, path string, reqProto *v1.UIRequest) *v1.UIRequest {
 	t.Helper()
 
