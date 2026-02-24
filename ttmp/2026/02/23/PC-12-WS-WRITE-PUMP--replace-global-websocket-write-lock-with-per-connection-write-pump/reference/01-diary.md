@@ -106,7 +106,7 @@ I also changed connect-time pending replay to enqueue through the same path, pre
 
 **Inferred user intent:** Improve runtime resilience/scale without changing external event contracts.
 
-**Commit (code):** pending
+**Commit (code):** `231d947` — "server: add per-connection websocket write pump"
 
 ### What I did
 
