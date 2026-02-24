@@ -48,7 +48,7 @@ RelatedFiles:
     - Path: ../../../../../../../plz-confirm/agent-ui-system/client/src/components/widgets/TableDialog.tsx
       Note: Legacy behavior baseline for table multi-select output and row keys
 Summary: Exhaustive inspector-style code review of the plz-confirm integration into go-go-os, covering architecture, API contracts, runtime behavior, widget design, testing depth, operational resilience, and backward compatibility.
-LastUpdated: 2026-02-23T19:56:39-05:00
+LastUpdated: 2026-02-24T21:10:00-05:00
 WhatFor: Provide a critical, high-fidelity quality assessment and remediation roadmap before broadening adoption of the integrated confirm-runtime stack.
 WhenToUse: Use before declaring integration production-ready, when prioritizing stabilization tasks, or when onboarding engineers to maintain and harden the integration.
 ---
@@ -420,6 +420,22 @@ Transient network/server restarts can leave runtime disconnected until app refre
 
 Introduce optional reconnect policy with exponential backoff and max interval cap.
 
+### Decision Update (2026-02-24)
+
+Decision: reconnect policy should be **injected via host adapters**, not hardwired inside runtime defaults.
+
+Rationale:
+
+1. different hosts have different lifecycle and offline semantics (desktop app, embedded web shell, test harness);
+2. reconnection cadence may need alignment with host-level telemetry, error banners, and circuit-breaker policy;
+3. injected policy keeps `@hypercard/confirm-runtime` portable and avoids embedding opinionated retry behavior that may conflict with host UX.
+
+Implementation direction:
+
+- keep runtime WS manager minimal;
+- accept optional reconnect strategy object/function from host adapter layer;
+- if absent, preserve current single-connect behavior (or apply a conservative default documented as overrideable).
+
 ---
 
 ## `P3` Finding 9: WS broadcaster serializes writes globally across all clients
@@ -613,7 +629,7 @@ Stabilization should be considered complete when all are true:
 
 1. Should mode-shape strictness be enforced server-side (reject single variant when request was multi), or only normalized client-side?
 2. For table row identity, do we want deterministic hash fallback or payload-provided `rowKey` as mandatory in future schema?
-3. Should reconnect policy live in runtime package by default, or injected via host adapters?
+3. (Resolved 2026-02-24) Reconnect policy will be injected via host adapters.
 4. Do we want to persist completion outputs in a dedicated history view for operators?
 
 ## Reviewer Conclusion

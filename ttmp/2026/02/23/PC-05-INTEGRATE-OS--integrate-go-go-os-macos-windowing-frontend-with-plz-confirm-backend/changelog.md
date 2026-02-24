@@ -277,3 +277,14 @@ Validation snapshot:
 - /home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/plz-confirm/ttmp/2026/02/23/PC-05-INTEGRATE-OS--integrate-go-go-os-macos-windowing-frontend-with-plz-confirm-backend/tasks.md — Marked C4 manual lifecycle validation done
 - /home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/plz-confirm/ttmp/2026/02/23/PC-05-INTEGRATE-OS--integrate-go-go-os-macos-windowing-frontend-with-plz-confirm-backend/reference/01-diary.md — Step 17 records composite story tranche
 - /home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/plz-confirm/ttmp/2026/02/23/PC-06-UI-CONSISTENCY-HANDOFF--confirm-widget-visual-consistency-handoff/design-doc/01-designer-handoff-confirm-widget-inventory-stories-and-consistency-scenarios.md — Composite stories added to handoff inventory and workflow
+
+## 2026-02-23
+
+Added long-form deep-dive Q&A document answering write pump, duplication/deprecation status, 409 reconciliation host duplication, and confirmProtoAdapter architecture; updated inspector review with reconnect-policy decision (host adapter injection).
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/plz-confirm/ttmp/2026/02/23/PC-05-INTEGRATE-OS--integrate-go-go-os-macos-windowing-frontend-with-plz-confirm-backend/design-doc/04-inspector-review-plz-confirm-integration-quality-audit.md — Decision update for reconnect policy injection via host adapters
+- /home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/plz-confirm/ttmp/2026/02/23/PC-05-INTEGRATE-OS--integrate-go-go-os-macos-windowing-frontend-with-plz-confirm-backend/design-doc/05-deep-dive-q-a-write-pump-duplication-409-and-confirmprotoadapter.md — New multi-question deep-dive response document
+- /home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/plz-confirm/ttmp/2026/02/23/PC-05-INTEGRATE-OS--integrate-go-go-os-macos-windowing-frontend-with-plz-confirm-backend/index.md — Added deep-dive Q&A to key links
+

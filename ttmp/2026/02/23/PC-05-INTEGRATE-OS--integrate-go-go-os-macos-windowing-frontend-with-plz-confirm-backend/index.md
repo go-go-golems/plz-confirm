@@ -23,13 +23,15 @@ RelatedFiles:
       Note: Reusable step-by-step integration playbook template for future external software onboarding
     - Path: ttmp/2026/02/23/PC-05-INTEGRATE-OS--integrate-go-go-os-macos-windowing-frontend-with-plz-confirm-backend/design-doc/04-inspector-review-plz-confirm-integration-quality-audit.md
       Note: Exhaustive inspector-style quality review report with prioritized findings and stabilization plan
+    - Path: ttmp/2026/02/23/PC-05-INTEGRATE-OS--integrate-go-go-os-macos-windowing-frontend-with-plz-confirm-backend/design-doc/05-deep-dive-q-a-write-pump-duplication-409-and-confirmprotoadapter.md
+      Note: Deep intern-focused Q&A covering write pump, duplication inventory, 409 reconciliation, and adapter architecture
     - Path: ttmp/2026/02/23/PC-05-INTEGRATE-OS--integrate-go-go-os-macos-windowing-frontend-with-plz-confirm-backend/reference/01-diary.md
       Note: |-
         Chronological investigation and delivery diary
         Detailed chronological implementation diary
 ExternalSources: []
 Summary: Ticket workspace for designing PC-05 integration of plz-confirm backend workflows into go-go-os macOS desktop windowing frontend in go-inventory-chat.
-LastUpdated: 2026-02-23T19:56:39-05:00
+LastUpdated: 2026-02-24T21:10:00-05:00
 WhatFor: Track architecture decisions, evidence, and delivery artifacts needed to implement and onboard PC-05 integration work.
 WhenToUse: Use as the entry point for this ticket before reading subdocuments or starting implementation tasks.
 ---
@@ -47,6 +49,7 @@ This ticket captures the architecture analysis and implementation blueprint for 
 - Integration postmortem: [design-doc/02-postmortem-plz-confirm-integration-into-go-go-os.md](./design-doc/02-postmortem-plz-confirm-integration-into-go-go-os.md)
 - Reusable integration playbook: [design-doc/03-playbook-integrating-external-software-into-go-go-os.md](./design-doc/03-playbook-integrating-external-software-into-go-go-os.md)
 - Inspector quality audit: [design-doc/04-inspector-review-plz-confirm-integration-quality-audit.md](./design-doc/04-inspector-review-plz-confirm-integration-quality-audit.md)
+- Deep-dive architecture Q&A: [design-doc/05-deep-dive-q-a-write-pump-duplication-409-and-confirmprotoadapter.md](./design-doc/05-deep-dive-q-a-write-pump-duplication-409-and-confirmprotoadapter.md)
 - Detailed diary: [reference/01-diary.md](./reference/01-diary.md)
 - Task tracker: [tasks.md](./tasks.md)
 - Changelog: [changelog.md](./changelog.md)
