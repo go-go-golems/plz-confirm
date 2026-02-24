@@ -2,6 +2,15 @@
 
 ## 2026-02-23
 
+Uploaded the new postmortem bundle to reMarkable as `PC-05 Integration Postmortem v1.pdf` and verified it in `/ai/2026/02/23/PC-05-INTEGRATE-OS` alongside prior blueprint uploads.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/plz-confirm/ttmp/2026/02/23/PC-05-INTEGRATE-OS--integrate-go-go-os-macos-windowing-frontend-with-plz-confirm-backend/design-doc/02-postmortem-plz-confirm-integration-into-go-go-os.md — Source postmortem uploaded to reMarkable
+- /home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/plz-confirm/ttmp/2026/02/23/PC-05-INTEGRATE-OS--integrate-go-go-os-macos-windowing-frontend-with-plz-confirm-backend/reference/01-diary.md — Step 19 upload workflow and verification record
+
+## 2026-02-23
+
 Added a full-length technical postmortem document for the complete plz-confirm -> go-go-os integration, expanding the diary/changelog/commit evidence into an intern-ready retrospective with architecture diagrams, pseudocode, API references, incident root-cause analysis, and a reusable future integration playbook.
 
 ### Related Files

@@ -104,7 +104,7 @@ RelatedFiles:
       Note: Step 14 deterministic E2E CLI test harness
 ExternalSources: []
 Summary: Chronological diary of PC-05 investigation and documentation, including commands, findings, assumptions, and delivery steps.
-LastUpdated: 2026-02-23T19:29:21-05:00
+LastUpdated: 2026-02-23T19:34:34-05:00
 WhatFor: Allow any contributor, especially a new intern, to reconstruct exactly how the PC-05 architecture recommendation was derived.
 WhenToUse: Use when reviewing the blueprint rationale, validating the evidence trail, or resuming unfinished implementation tasks.
 ---
@@ -1658,3 +1658,73 @@ The goal here was not just reporting what happened, but extracting reusable inte
 ### Technical details
 
 - The postmortem currently contains ~4,100 words and is structured to satisfy the requested 10+ page depth with diagrams, pseudocode, snippets, and onboarding-oriented references.
+
+## Step 19: Upload postmortem bundle to reMarkable and verify cloud placement
+
+After delivering the new postmortem doc, I executed the reMarkable publication step and verified the resulting artifact in the same ticket folder used by earlier PC-05 uploads. I used a dry-run first, then the actual upload command, then a cloud listing check to ensure the file is present for handoff.
+
+This keeps the delivery flow consistent with the ticket’s previous blueprint publications and ensures the latest retrospective is immediately available on-device for review.
+
+### Prompt Context
+
+**User prompt (verbatim):** "upload to remarkable."
+
+**Assistant interpretation:** Upload the newly produced PC-05 postmortem deliverable to reMarkable and confirm successful placement.
+
+**Inferred user intent:** Make the documentation immediately consumable on reMarkable without additional manual packaging.
+
+**Commit (code):** Pending in this step (documentation bookkeeping stage).
+
+### What I did
+
+- Verified tool readiness:
+  - `remarquee status`
+- Ran dry-run upload (bundle mode, named PDF):
+  - `remarquee upload bundle --dry-run ... --name "PC-05 Integration Postmortem v1" --remote-dir "/ai/2026/02/23/PC-05-INTEGRATE-OS" --toc-depth 2 --non-interactive`
+- Performed actual upload with same arguments.
+- Verified remote folder contents:
+  - `remarquee cloud ls /ai/2026/02/23/PC-05-INTEGRATE-OS --long --non-interactive`
+
+### Why
+
+- The user explicitly requested immediate reMarkable upload.
+- Dry-run first prevents accidental mis-targeting and confirms command shape before generating/uploading the PDF.
+
+### What worked
+
+- Upload succeeded:
+  - `OK: uploaded PC-05 Integration Postmortem v1.pdf -> /ai/2026/02/23/PC-05-INTEGRATE-OS`
+- Remote listing confirms artifact now exists alongside prior blueprint versions.
+
+### What didn't work
+
+- Initial attempt used `remarquee upload md` with `--name`; that subcommand does not support `--name`.
+- I switched to `remarquee upload bundle`, which supports explicit output naming.
+
+### What I learned
+
+- For named single-document outputs, `upload bundle` is preferable to `upload md` because it supports `--name`.
+
+### What was tricky to build
+
+- Minor CLI nuance only: subcommand flag surface differs between `md` and `bundle`, so naming behavior required the latter.
+
+### What warrants a second pair of eyes
+
+- N/A
+
+### What should be done in the future
+
+- If future uploads should overwrite same-name docs by default, define a team policy on `--force` (currently avoided to preserve annotations).
+
+### Code review instructions
+
+- Validate remote folder contents:
+  - `remarquee cloud ls /ai/2026/02/23/PC-05-INTEGRATE-OS --long --non-interactive`
+- Confirm source doc:
+  - `/home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/plz-confirm/ttmp/2026/02/23/PC-05-INTEGRATE-OS--integrate-go-go-os-macos-windowing-frontend-with-plz-confirm-backend/design-doc/02-postmortem-plz-confirm-integration-into-go-go-os.md`
+
+### Technical details
+
+- Uploaded artifact name: `PC-05 Integration Postmortem v1.pdf`
+- Remote destination: `/ai/2026/02/23/PC-05-INTEGRATE-OS`
