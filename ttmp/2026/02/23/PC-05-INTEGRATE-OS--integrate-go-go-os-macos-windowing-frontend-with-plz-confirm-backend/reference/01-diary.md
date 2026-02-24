@@ -2079,3 +2079,69 @@ This gives you a repeatable way to open the confirm queue and click through ever
   - `SESSION_ID` (default `global`)
   - `TITLE_PREFIX` (default `C4`)
   - `SCRIPT_SEED` (default unix timestamp)
+
+## Step 25: Add ticket script to seed tic-tac-toe backend JS request against go-go-os UI
+
+To make script-integration testing easier, I added a small ticket-owned helper that posts the existing `tictactoe.js` backend script as a `type: script` request to `/confirm/api/requests`.
+
+This removes the need to hand-write the `curl + jq` payload each time and gives operators a repeatable entrypoint for validating script execution and UI rendering together.
+
+### Prompt Context
+
+**User prompt (verbatim):** "save this in a script"
+
+**Assistant interpretation:** Persist the one-off tic-tac-toe API call sequence as a reusable script in the ticket scripts directory.
+
+**Inferred user intent:** Quickly rerun JS script integration tests without reconstructing commands manually.
+
+**Commit (code):** Pending
+
+### What I did
+
+- Added:
+  - `ttmp/2026/02/23/PC-05-INTEGRATE-OS--integrate-go-go-os-macos-windowing-frontend-with-plz-confirm-backend/scripts/seed_tictactoe_script_request.sh`
+- Script capabilities:
+  - configurable `BASE_URL`, `SESSION_ID`, `TITLE`, `SCRIPT_FILE`;
+  - backend reachability probe;
+  - safe JSON payload construction via `jq`;
+  - request-id output and next-step instructions for UI click-through.
+- Validation:
+  - `bash -n .../seed_tictactoe_script_request.sh` (pass)
+
+### Why
+
+- Script requests currently have no dedicated CLI verb in this branch, so API-based seeding is the practical path.
+
+### What worked
+
+- Script construction/parsing is robust and avoids shell-escaping regressions for multi-line JS source.
+
+### What didn't work
+
+- Live execution against backend was not run in this shell context because the integrated server was not active.
+
+### What I learned
+
+- Ticket-scoped mini-seeders are high leverage for repeat script-flow QA with designers/operators.
+
+### What was tricky to build
+
+- Ensuring `tictactoe.js` content survives shell/JSON boundaries cleanly required strict `jq --arg script "$(cat ...)"` handling.
+
+### What warrants a second pair of eyes
+
+- If `tictactoe.js` is moved/renamed, update `SCRIPT_FILE` default in this helper.
+
+### What should be done in the future
+
+- Optionally add a companion script that auto-submits script events for CI-style non-interactive script lifecycle checks.
+
+### Code review instructions
+
+- Review and run:
+  - `ttmp/2026/02/23/PC-05-INTEGRATE-OS--integrate-go-go-os-macos-windowing-frontend-with-plz-confirm-backend/scripts/seed_tictactoe_script_request.sh`
+
+### Technical details
+
+- Default script source:
+  - `ttmp/2026/02/22/PC-01-ADD-JS-API--add-js-api-describe-extension/scripts/tictactoe.js`
