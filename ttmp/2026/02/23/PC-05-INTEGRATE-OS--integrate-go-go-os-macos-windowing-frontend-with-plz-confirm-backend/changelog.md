@@ -2,6 +2,16 @@
 
 ## 2026-02-23
 
+Added a new long-form reusable integration playbook for future external software onboarding into go-go-os, then uploaded it to reMarkable as `PC-05 go-go-os Integration Playbook v1.pdf` and verified remote placement.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/plz-confirm/ttmp/2026/02/23/PC-05-INTEGRATE-OS--integrate-go-go-os-macos-windowing-frontend-with-plz-confirm-backend/design-doc/03-playbook-integrating-external-software-into-go-go-os.md — New reusable integration playbook deliverable
+- /home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/plz-confirm/ttmp/2026/02/23/PC-05-INTEGRATE-OS--integrate-go-go-os-macos-windowing-frontend-with-plz-confirm-backend/index.md — Added playbook to ticket entry-point links
+- /home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/plz-confirm/ttmp/2026/02/23/PC-05-INTEGRATE-OS--integrate-go-go-os-macos-windowing-frontend-with-plz-confirm-backend/reference/01-diary.md — Added Steps 20/21 covering authoring + reMarkable upload
+
+## 2026-02-23
+
 Uploaded the new postmortem bundle to reMarkable as `PC-05 Integration Postmortem v1.pdf` and verified it in `/ai/2026/02/23/PC-05-INTEGRATE-OS` alongside prior blueprint uploads.
 
 ### Related Files

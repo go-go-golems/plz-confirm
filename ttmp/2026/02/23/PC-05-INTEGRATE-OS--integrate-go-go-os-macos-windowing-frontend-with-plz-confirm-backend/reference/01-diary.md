@@ -96,6 +96,8 @@ RelatedFiles:
         Diary tracks how this main blueprint was produced
     - Path: plz-confirm/ttmp/2026/02/23/PC-05-INTEGRATE-OS--integrate-go-go-os-macos-windowing-frontend-with-plz-confirm-backend/design-doc/02-postmortem-plz-confirm-integration-into-go-go-os.md
       Note: Step 18 long-form integration retrospective and intern onboarding playbook
+    - Path: plz-confirm/ttmp/2026/02/23/PC-05-INTEGRATE-OS--integrate-go-go-os-macos-windowing-frontend-with-plz-confirm-backend/design-doc/03-playbook-integrating-external-software-into-go-go-os.md
+      Note: Steps 20/21 reusable integration playbook authoring and reMarkable publication
     - Path: plz-confirm/ttmp/2026/02/23/PC-05-INTEGRATE-OS--integrate-go-go-os-macos-windowing-frontend-with-plz-confirm-backend/index.md
       Note: |-
         Ticket overview updated to point intern to deliverables
@@ -104,7 +106,7 @@ RelatedFiles:
       Note: Step 14 deterministic E2E CLI test harness
 ExternalSources: []
 Summary: Chronological diary of PC-05 investigation and documentation, including commands, findings, assumptions, and delivery steps.
-LastUpdated: 2026-02-23T19:34:34-05:00
+LastUpdated: 2026-02-23T19:39:36-05:00
 WhatFor: Allow any contributor, especially a new intern, to reconstruct exactly how the PC-05 architecture recommendation was derived.
 WhenToUse: Use when reviewing the blueprint rationale, validating the evidence trail, or resuming unfinished implementation tasks.
 ---
@@ -1728,3 +1730,139 @@ This keeps the delivery flow consistent with the ticket’s previous blueprint p
 
 - Uploaded artifact name: `PC-05 Integration Postmortem v1.pdf`
 - Remote destination: `/ai/2026/02/23/PC-05-INTEGRATE-OS`
+
+## Step 20: Author reusable integration playbook for future go-go-os external software onboarding
+
+In this step I converted the high-level request for a reusable "integration playbook" into a full operational design document in the same depth class as the postmortem. I treated the playbook as a process asset, not a lightweight checklist, so it can guide both interns and senior engineers through end-to-end integration lifecycle work.
+
+The playbook was designed to be directly executable: phase gates, templates, pseudocode, diagrams, failure signatures, test matrix, runbook commands, and sign-off criteria. I also embedded references to real symbols/files from the plz-confirm integration so the guide is anchored to concrete examples rather than generic theory.
+
+### Prompt Context
+
+**User prompt (verbatim):** "Ok, write it out, similarly detailed and similar length as postmortem, add to ticket and then upload to remarkable."
+
+**Assistant interpretation:** Create a long-form, postmortem-length integration playbook document in PC-05 that can be reused for future external software integrations into go-go-os.
+
+**Inferred user intent:** Establish a repeatable and deeply documented integration methodology so future projects start with stronger architecture/process guardrails.
+
+**Commit (code):** Pending in this step (documentation authoring stage).
+
+### What I did
+
+- Created a new design-doc in PC-05:
+  - `/home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/plz-confirm/ttmp/2026/02/23/PC-05-INTEGRATE-OS--integrate-go-go-os-macos-windowing-frontend-with-plz-confirm-backend/design-doc/03-playbook-integrating-external-software-into-go-go-os.md`
+- Authored a full-length playbook (~4,100+ words) with:
+  - complete TOC and phase-gate model
+  - architecture intake/recon/extraction/contract/router/runtime/UI/state sections
+  - pseudocode blocks and mermaid diagrams
+  - testing matrix and scripts policy
+  - rollout/rollback and DoD checklists
+  - anti-pattern catalog and failure signature mapping
+  - appendices with command recipes, ADR/task/diary templates, and versioning guidance
+- Added concrete related file references from both `go-go-os` and `plz-confirm` to keep the playbook operationally grounded.
+
+### Why
+
+- The postmortem captures what happened for one integration; the playbook captures how to execute the next integration with fewer mistakes and faster onboarding.
+
+### What worked
+
+- Existing PC-05 artifacts provided enough evidence to derive stable process patterns.
+- The resulting playbook achieved similar depth/length target to the postmortem while remaining actionable.
+
+### What didn't work
+
+- No blockers in this step.
+
+### What I learned
+
+- The highest leverage reusable asset is not code but a phase-gated process with explicit contract/state/error/testing rules.
+
+### What was tricky to build
+
+- Main challenge: avoid generic process prose and keep every section tied to concrete implementation patterns and real repository symbols.
+
+### What warrants a second pair of eyes
+
+- Confirm whether this playbook should become a shared template outside PC-05 (e.g., reusable baseline for new tickets).
+
+### What should be done in the future
+
+- Promote this playbook into a standard integration template and keep it versioned with each future integration postmortem.
+
+### Code review instructions
+
+- Review playbook document:
+  - `/home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/plz-confirm/ttmp/2026/02/23/PC-05-INTEGRATE-OS--integrate-go-go-os-macos-windowing-frontend-with-plz-confirm-backend/design-doc/03-playbook-integrating-external-software-into-go-go-os.md`
+- Confirm ticket index links:
+  - `/home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/plz-confirm/ttmp/2026/02/23/PC-05-INTEGRATE-OS--integrate-go-go-os-macos-windowing-frontend-with-plz-confirm-backend/index.md`
+
+### Technical details
+
+- Playbook scope includes both process and implementation-level material (contracts, code boundaries, command patterns, review gates), not just planning checklists.
+
+## Step 21: Upload integration playbook to reMarkable and verify publication
+
+After authoring the playbook, I published it to the same PC-05 remote folder on reMarkable so it sits alongside the integration blueprint and postmortem. I used a dry-run first, then real upload, then cloud listing verification.
+
+This keeps the ticket deliverables complete in both repository and reMarkable channels.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 20)
+
+**Assistant interpretation:** Complete the publication part of the request by uploading the new playbook document to reMarkable and validating successful placement.
+
+**Inferred user intent:** Ensure immediate consumability of the new playbook on the reMarkable device.
+
+**Commit (code):** Pending in this step (documentation bookkeeping stage).
+
+### What I did
+
+- Dry-run command:
+  - `remarquee upload bundle --dry-run .../03-playbook-integrating-external-software-into-go-go-os.md --name "PC-05 go-go-os Integration Playbook v1" --remote-dir "/ai/2026/02/23/PC-05-INTEGRATE-OS" --toc-depth 2 --non-interactive`
+- Upload command:
+  - `remarquee upload bundle ... --name "PC-05 go-go-os Integration Playbook v1" --remote-dir "/ai/2026/02/23/PC-05-INTEGRATE-OS" --toc-depth 2 --non-interactive`
+- Verification:
+  - `remarquee cloud ls /ai/2026/02/23/PC-05-INTEGRATE-OS --long --non-interactive`
+
+### Why
+
+- User explicitly requested ticket addition plus reMarkable upload.
+- The existing PC-05 remote folder is the canonical destination for this ticket’s long-form docs.
+
+### What worked
+
+- Upload succeeded:
+  - `OK: uploaded PC-05 go-go-os Integration Playbook v1.pdf -> /ai/2026/02/23/PC-05-INTEGRATE-OS`
+- Verification list now includes playbook, postmortem, and both blueprint versions.
+
+### What didn't work
+
+- No blockers in this step.
+
+### What I learned
+
+- `remarquee upload bundle` remains the best option when explicit output naming is required.
+
+### What was tricky to build
+
+- No technical complexity beyond standard upload pipeline.
+
+### What warrants a second pair of eyes
+
+- N/A
+
+### What should be done in the future
+
+- Maintain a consistent naming convention (`<TICKET> <DocType> vN`) for easier remote browsing and version recall.
+
+### Code review instructions
+
+- Verify remote listing:
+  - `remarquee cloud ls /ai/2026/02/23/PC-05-INTEGRATE-OS --long --non-interactive`
+
+### Technical details
+
+- Uploaded artifact: `PC-05 go-go-os Integration Playbook v1.pdf`
+- Remote folder: `/ai/2026/02/23/PC-05-INTEGRATE-OS`
