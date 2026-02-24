@@ -2,6 +2,16 @@
 
 ## 2026-02-23
 
+Added a full-length technical postmortem document for the complete plz-confirm -> go-go-os integration, expanding the diary/changelog/commit evidence into an intern-ready retrospective with architecture diagrams, pseudocode, API references, incident root-cause analysis, and a reusable future integration playbook.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/plz-confirm/ttmp/2026/02/23/PC-05-INTEGRATE-OS--integrate-go-go-os-macos-windowing-frontend-with-plz-confirm-backend/design-doc/02-postmortem-plz-confirm-integration-into-go-go-os.md — New comprehensive postmortem deliverable
+- /home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/plz-confirm/ttmp/2026/02/23/PC-05-INTEGRATE-OS--integrate-go-go-os-macos-windowing-frontend-with-plz-confirm-backend/reference/01-diary.md — Added Step 18 documenting postmortem production process
+- /home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/plz-confirm/ttmp/2026/02/23/PC-05-INTEGRATE-OS--integrate-go-go-os-macos-windowing-frontend-with-plz-confirm-backend/index.md — Added postmortem link for ticket entry-point discoverability
+
+## 2026-02-23
+
 - Initial workspace created.
 - Added design document `design-doc/01-integration-blueprint-plz-confirm-on-go-go-os-macos-windowing.md` with deep analysis of:
   - go-go-os desktop/windowing architecture and HyperCard runtime setup

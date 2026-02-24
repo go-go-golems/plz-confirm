@@ -94,6 +94,8 @@ RelatedFiles:
       Note: |-
         Main design deliverable authored during investigation
         Diary tracks how this main blueprint was produced
+    - Path: plz-confirm/ttmp/2026/02/23/PC-05-INTEGRATE-OS--integrate-go-go-os-macos-windowing-frontend-with-plz-confirm-backend/design-doc/02-postmortem-plz-confirm-integration-into-go-go-os.md
+      Note: Step 18 long-form integration retrospective and intern onboarding playbook
     - Path: plz-confirm/ttmp/2026/02/23/PC-05-INTEGRATE-OS--integrate-go-go-os-macos-windowing-frontend-with-plz-confirm-backend/index.md
       Note: |-
         Ticket overview updated to point intern to deliverables
@@ -102,7 +104,7 @@ RelatedFiles:
       Note: Step 14 deterministic E2E CLI test harness
 ExternalSources: []
 Summary: Chronological diary of PC-05 investigation and documentation, including commands, findings, assumptions, and delivery steps.
-LastUpdated: 2026-02-23T19:20:00-05:00
+LastUpdated: 2026-02-23T19:29:21-05:00
 WhatFor: Allow any contributor, especially a new intern, to reconstruct exactly how the PC-05 architecture recommendation was derived.
 WhenToUse: Use when reviewing the blueprint rationale, validating the evidence trail, or resuming unfinished implementation tasks.
 ---
@@ -1575,3 +1577,84 @@ I then synced both PC-05 and PC-06 ticket docs so handoff to design can happen i
 ### Technical details
 
 - This story suite targets composition and state transitions; it does not alter confirm protocol encoding or backend contracts.
+
+## Step 18: Author comprehensive integration postmortem for intern onboarding and future reuse
+
+This step consolidated the full PC-05 execution trail into a dedicated postmortem document intended to outlive day-to-day chat context. I re-read the diary, changelog, and commit/file timeline, then rewrote the story as a systems-level technical narrative: architecture decisions, concrete implementation sequence, incidents, root causes, fixes, testing, and future integration playbook guidance.
+
+The goal here was not just reporting what happened, but extracting reusable integration patterns so the next external-system integration into go-go-os can start from a mature template instead of rediscovering the same failure modes.
+
+### Prompt Context
+
+**User prompt (verbatim):** "write a very detailed post mortem on all the work we did to integrate plz-conffirm into go-go-os , based on the diaries you wrote and going back over them and extracting and expanding on all the technical work, that way we can have a much easier job next time when we are going to integrate external software into the go-go-os ecosystem. Make it extremely detailed, 10+ pages, with prose paragraphs and pseudocode and code snippets and references to files and symbols and API references, and diagrams and bullet point lists. It should contain all the information necessary for a new intern new to the codebase to get stasrted and understand all the concepts involved."
+
+**Assistant interpretation:** Produce a long-form, intern-ready postmortem document in PC-05 that expands all prior implementation diary details into a deep technical report with references, pseudocode, diagrams, and concrete API/file guidance.
+
+**Inferred user intent:** Preserve institutional knowledge from this integration so future onboarding and external-system integration work is faster, more predictable, and less error-prone.
+
+**Commit (code):** Pending in this step (documentation update stage).
+
+### What I did
+
+- Created a new design-doc entry in PC-05:
+  - `/home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/plz-confirm/ttmp/2026/02/23/PC-05-INTEGRATE-OS--integrate-go-go-os-macos-windowing-frontend-with-plz-confirm-backend/design-doc/02-postmortem-plz-confirm-integration-into-go-go-os.md`
+- Reconstructed the integration timeline from:
+  - `reference/01-diary.md`
+  - `changelog.md`
+  - `git log` + commit file maps in `go-go-os` and `plz-confirm`
+- Included deep sections in the postmortem:
+  - before/after architecture
+  - ADR-style decision log
+  - phase-by-phase implementation chronology
+  - endpoint + WS protocol references
+  - code snippets and pseudocode for key control flows
+  - sequence diagrams for request and script lifecycles
+  - incident postmortems (proto mismatch, CLI decode, WS prefix, stale queue 409, timestamps)
+  - validation strategy and ticket script usage
+  - intern onboarding runbook and future integration checklist
+- Added explicit symbol/file references for critical APIs and runtime boundaries across both repos.
+
+### Why
+
+- The existing blueprint and diary each solved part of the documentation need, but neither alone provided a complete retrospective tuned for lessons learned and repeatable integration process guidance.
+- A dedicated postmortem now captures technical history plus actionable process improvements in one place.
+
+### What worked
+
+- Existing PC-05 diary/changelog quality made reconstruction straightforward; major decisions and regressions were already timestamped and commit-linked.
+- The postmortem reached requested depth and includes diagrams, pseudocode, snippets, and file/symbol/API references in one coherent artifact.
+
+### What didn't work
+
+- No implementation blockers in this step; this was documentation consolidation.
+
+### What I learned
+
+- Keeping a high-fidelity diary during implementation significantly lowers the cost of producing a high-quality postmortem later.
+- For cross-repo integrations, explicit commit-to-file mapping is the fastest way to avoid narrative drift or memory-based inaccuracies.
+
+### What was tricky to build
+
+- The most delicate part was balancing breadth (all tranches and incidents) with navigability for a new intern. I addressed this by introducing a reader order, ADR list, sequence diagrams, and file-first runbook sections.
+
+### What warrants a second pair of eyes
+
+- Confirm whether the postmortem should also be mirrored into PC-06 or kept solely in PC-05 with cross-ticket links.
+- Confirm if additional appendix material is desired for release/versioning strategy once version bumps are resumed.
+
+### What should be done in the future
+
+- Keep this postmortem updated for any additional confirm-runtime changes so it remains the canonical retrospective rather than a one-time snapshot.
+- Consider templating the external integration checklist from this document into a reusable ticket starter template.
+
+### Code review instructions
+
+- Primary artifact to review:
+  - `/home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/plz-confirm/ttmp/2026/02/23/PC-05-INTEGRATE-OS--integrate-go-go-os-macos-windowing-frontend-with-plz-confirm-backend/design-doc/02-postmortem-plz-confirm-integration-into-go-go-os.md`
+- Cross-check source timeline against:
+  - `/home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/plz-confirm/ttmp/2026/02/23/PC-05-INTEGRATE-OS--integrate-go-go-os-macos-windowing-frontend-with-plz-confirm-backend/reference/01-diary.md`
+  - `/home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/plz-confirm/ttmp/2026/02/23/PC-05-INTEGRATE-OS--integrate-go-go-os-macos-windowing-frontend-with-plz-confirm-backend/changelog.md`
+
+### Technical details
+
+- The postmortem currently contains ~4,100 words and is structured to satisfy the requested 10+ page depth with diagrams, pseudocode, snippets, and onboarding-oriented references.
