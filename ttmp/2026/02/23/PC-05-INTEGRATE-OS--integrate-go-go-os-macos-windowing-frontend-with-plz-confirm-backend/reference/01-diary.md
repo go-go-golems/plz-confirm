@@ -98,6 +98,8 @@ RelatedFiles:
       Note: Step 18 long-form integration retrospective and intern onboarding playbook
     - Path: plz-confirm/ttmp/2026/02/23/PC-05-INTEGRATE-OS--integrate-go-go-os-macos-windowing-frontend-with-plz-confirm-backend/design-doc/03-playbook-integrating-external-software-into-go-go-os.md
       Note: Steps 20/21 reusable integration playbook authoring and reMarkable publication
+    - Path: plz-confirm/ttmp/2026/02/23/PC-05-INTEGRATE-OS--integrate-go-go-os-macos-windowing-frontend-with-plz-confirm-backend/design-doc/04-inspector-review-plz-confirm-integration-quality-audit.md
+      Note: Steps 22/23 exhaustive inspector review report and reMarkable publication
     - Path: plz-confirm/ttmp/2026/02/23/PC-05-INTEGRATE-OS--integrate-go-go-os-macos-windowing-frontend-with-plz-confirm-backend/index.md
       Note: |-
         Ticket overview updated to point intern to deliverables
@@ -106,7 +108,7 @@ RelatedFiles:
       Note: Step 14 deterministic E2E CLI test harness
 ExternalSources: []
 Summary: Chronological diary of PC-05 investigation and documentation, including commands, findings, assumptions, and delivery steps.
-LastUpdated: 2026-02-23T19:39:36-05:00
+LastUpdated: 2026-02-23T19:56:39-05:00
 WhatFor: Allow any contributor, especially a new intern, to reconstruct exactly how the PC-05 architecture recommendation was derived.
 WhenToUse: Use when reviewing the blueprint rationale, validating the evidence trail, or resuming unfinished implementation tasks.
 ---
@@ -1866,3 +1868,144 @@ This keeps the ticket deliverables complete in both repository and reMarkable ch
 
 - Uploaded artifact: `PC-05 go-go-os Integration Playbook v1.pdf`
 - Remote folder: `/ai/2026/02/23/PC-05-INTEGRATE-OS`
+
+## Step 22: Conduct exhaustive inspector-style code review across integration commits and produce audit report
+
+This step shifted from implementation to formal quality inspection. I audited the full integration tranche set across both repositories with a critical reviewer posture: contract correctness, lifecycle behavior, architectural boundaries, API compatibility, test depth, runtime resilience, and widget semantics.
+
+To avoid shallow conclusions, I compared current behavior not only to proto contracts but also to legacy frontend behavior in older code paths, then verified what is and is not covered by current tests. The output is a dedicated long-form inspector report document in PC-05 with severity-ranked findings, evidence, and a staged remediation plan.
+
+### Prompt Context
+
+**User prompt (verbatim):** "Ok, let's code review all the stuff we build, critically and exhaustively, like a real life inspector, leaving no stone unturned, caring about the little as with the large, the architecture and the design and the APIs and the integrations. Write a detailed report in the ticket as well, 10+ pages, and upload to remarkable. Don't hesistate to go look at older versions with git (if you want to examine large amounts, use sqlite as storage). Store all scripts you might write in the ticket's scripts/ folder."
+
+**Assistant interpretation:** Perform a deep cross-repo review of all integration work, document findings exhaustively (10+ pages) in the ticket, and publish to reMarkable.
+
+**Inferred user intent:** Obtain a production-grade quality assessment and concrete stabilization roadmap before treating integration work as complete.
+
+**Commit (code):** Pending in this step (report authoring stage).
+
+### What I did
+
+- Reviewed integration commit ranges and changed files across `go-go-os` and `plz-confirm`.
+- Performed deep source review on:
+  - protocol adapter (`confirmProtoAdapter`)
+  - runtime state/ws/api layers
+  - inventory host bridge
+  - backend embedding/mounting and server handlers
+  - new engine widgets and style tokens
+  - integration tests and unit tests
+- Queried older legacy frontend implementations for behavioral comparison (`SelectDialog`, `TableDialog`, `ImageDialog`) to validate compatibility expectations.
+- Executed targeted validation tests:
+  - `go test ./pkg/backend ./internal/server ./cmd/plz-confirm -count=1`
+  - `npm exec vitest run ...confirmProtoAdapter.test.ts ...engine __tests__`
+- Authored detailed inspector report:
+  - `/home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/plz-confirm/ttmp/2026/02/23/PC-05-INTEGRATE-OS--integrate-go-go-os-macos-windowing-frontend-with-plz-confirm-backend/design-doc/04-inspector-review-plz-confirm-integration-quality-audit.md`
+
+### Why
+
+- The integration is functionally working but lacked a formal critical audit pass to assess hidden correctness and compatibility risks.
+
+### What worked
+
+- Existing diary/changelog/commit hygiene made full-trace review practical.
+- Test baseline passed, allowing review to focus on semantic and edge-case defects.
+- Report includes prioritized findings and clear remediation plan rather than only narrative commentary.
+
+### What didn't work
+
+- No execution blockers; this was a deep analysis/reporting step.
+
+### What I learned
+
+- The most meaningful risks are not broad architectural failures, but subtle contract-shape and data-normalization mismatches that only surface under specific modes/inputs.
+
+### What was tricky to build
+
+- Balancing exhaustive depth with actionable prioritization required structuring the report around severity, evidence, and concrete test-backed remediation tasks.
+
+### What warrants a second pair of eyes
+
+- Validate severity ordering for the identified contract-shape findings against expected downstream consumer assumptions.
+
+### What should be done in the future
+
+- Run this inspector checklist after each major integration tranche before announcing handoff-complete status.
+
+### Code review instructions
+
+- Primary report:
+  - `/home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/plz-confirm/ttmp/2026/02/23/PC-05-INTEGRATE-OS--integrate-go-go-os-macos-windowing-frontend-with-plz-confirm-backend/design-doc/04-inspector-review-plz-confirm-integration-quality-audit.md`
+- Key evidence files:
+  - `/home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/go-go-os/packages/confirm-runtime/src/proto/confirmProtoAdapter.ts`
+  - `/home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/go-go-os/packages/confirm-runtime/src/components/ConfirmRequestWindowHost.tsx`
+  - `/home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/plz-confirm/proto/plz_confirm/v1/widgets.proto`
+
+### Technical details
+
+- Report currently contains ~4,000 words and includes architecture scorecard, endpoint semantics audit, lifecycle trace, test-debt heatmap, and stabilization sprint plan.
+
+## Step 23: Publish inspector review report to reMarkable and verify ticket-folder delivery
+
+After producing the inspector review document, I completed the publication workflow to make it available in the same PC-05 reMarkable folder as the blueprint, postmortem, and playbook. I followed the same safe pattern used previously: dry-run, real upload, remote listing verification.
+
+This keeps all long-form deliverables co-located and easy to browse on-device.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 22)
+
+**Assistant interpretation:** Upload the new inspector review report to reMarkable and verify successful placement.
+
+**Inferred user intent:** Ensure the quality-audit deliverable is available immediately for reading/review on reMarkable.
+
+**Commit (code):** Pending in this step (documentation bookkeeping stage).
+
+### What I did
+
+- Dry-run upload:
+  - `remarquee upload bundle --dry-run .../04-inspector-review-plz-confirm-integration-quality-audit.md --name "PC-05 Inspector Review v1" --remote-dir "/ai/2026/02/23/PC-05-INTEGRATE-OS" --toc-depth 2 --non-interactive`
+- Actual upload:
+  - `remarquee upload bundle ... --name "PC-05 Inspector Review v1" --remote-dir "/ai/2026/02/23/PC-05-INTEGRATE-OS" --toc-depth 2 --non-interactive`
+- Verification:
+  - `remarquee cloud ls /ai/2026/02/23/PC-05-INTEGRATE-OS --long --non-interactive`
+
+### Why
+
+- User requested ticket report + reMarkable publication as part of the review workflow.
+
+### What worked
+
+- Upload succeeded:
+  - `OK: uploaded PC-05 Inspector Review v1.pdf -> /ai/2026/02/23/PC-05-INTEGRATE-OS`
+- Remote listing confirmed new artifact presence.
+
+### What didn't work
+
+- No blockers.
+
+### What I learned
+
+- The ticket now has a complete 4-document bundle on reMarkable (blueprint, postmortem, playbook, inspector review), which is a strong handoff package pattern for future initiatives.
+
+### What was tricky to build
+
+- No technical complexity beyond normal upload flow.
+
+### What warrants a second pair of eyes
+
+- N/A
+
+### What should be done in the future
+
+- Consider adding an index PDF bundle that links all ticket documents in one table-of-contents artifact for easier on-device navigation.
+
+### Code review instructions
+
+- Verify cloud folder:
+  - `remarquee cloud ls /ai/2026/02/23/PC-05-INTEGRATE-OS --long --non-interactive`
+
+### Technical details
+
+- Uploaded artifact: `PC-05 Inspector Review v1.pdf`
+- Remote path: `/ai/2026/02/23/PC-05-INTEGRATE-OS`
