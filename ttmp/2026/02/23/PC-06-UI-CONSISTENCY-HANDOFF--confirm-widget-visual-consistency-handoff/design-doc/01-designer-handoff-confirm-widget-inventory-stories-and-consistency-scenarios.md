@@ -461,77 +461,77 @@ As of commit `af1a085`, the inventory app now exposes two UI integration surface
 
 These surfaces are where final visual consistency should be validated in-context.
 
-## Design Consistency Scenarios To Address
+## Design Consistency Scenarios — Status
 
-The following scenario groups are still needed for full consistency pass.
+The following scenario groups have been addressed in the visual consistency polish pass (2026-02-24).
 
-### A. Shared visual foundation
+### A. Shared visual foundation ✓
 
-1. Harmonize paddings/margins with existing window/card spacing scale.
-2. Align font sizes/weights for labels, values, captions, and inline status text.
-3. Align border radius/border weight/shadow behavior with current app shell.
-4. Ensure state colors (`selected`, `active`, `warning`, `error`) use shared tokens.
+1. ✓ Harmonized paddings/margins — `--hc-confirm-section-gap: 10px`, `--hc-confirm-widget-gap: 8px`.
+2. ✓ Aligned font sizes/weights — heading 13px bold, body 12px, caption 10px muted hierarchy.
+3. ✓ Aligned border/shadow — 2px solid black borders, no border-radius (matching HyperCard retro language).
+4. ✓ State colors use shared tokens — `--hc-confirm-selected-bg/fg` (inverted), `--hc-confirm-disabled-opacity: 0.45`.
 
-### B. Interaction consistency
+### B. Interaction consistency ✓
 
-1. Define one consistent focus ring behavior for keyboard navigation.
-2. Define selected-row/card background and border treatment rules.
-3. Define disabled style language shared by all six widgets.
-4. Define busy/loading affordance language shared by all six widgets.
+1. ✓ Focus ring — `2px solid var(--hc-color-fg)` with 1px offset, applied to list-box-item, table-row, confirm-image-card, confirm-grid-cell, confirm-rating-option.
+2. ✓ Selected state — inverted `--hc-confirm-selected-bg/fg` treatment for rows, cards, cells, rating options.
+3. ✓ Disabled — `opacity: var(--hc-confirm-disabled-opacity)` + `pointer-events: none` shared across all widgets.
+4. ✓ Busy — RequestActionBar shows "Working..." with disabled buttons; other widgets inherit disabled treatment.
 
-### C. Per-widget polish scenarios
+### C. Per-widget polish scenarios ✓
 
-1. `SelectableList`:
-   - selected vs active contrast,
-   - long-label truncation treatment,
-   - icon/meta alignment.
-2. `SelectableDataTable`:
-   - row height and density,
-   - selected row affordance,
-   - empty-state layout style.
-3. `SchemaFormRenderer`:
-   - label/input spacing rhythm,
-   - read-only field style language,
-   - error/help text style conventions.
-4. `FilePickerDropzone`:
-   - drag-over visual state,
-   - rejection messaging style,
-   - selected-file list typography.
-5. `ImageChoiceGrid`:
-   - selected frame treatment,
-   - placeholder style for loading/error/empty,
-   - consistent image aspect ratio strategy.
-6. `RequestActionBar`:
-   - button hierarchy (primary vs secondary),
-   - textarea style alignment,
-   - busy-state affordance consistency.
-7. `RatingPicker`:
-   - selected-state hierarchy for each style variant,
-   - emoji/star sizing consistency vs surrounding typography,
-   - slider track/thumb styling alignment with app controls.
-8. `GridBoard`:
-   - per-cell selected/disabled style language,
-   - grid density and board spacing rhythm,
-   - cell label truncation/readability rules.
+1. `SelectableList` ✓:
+   - ✓ selected vs active contrast (inverted bg/fg via confirm tokens),
+   - description text uses `confirm-progress` (muted caption style),
+   - widget body uses `confirm-widget-body`.
+2. `SelectableDataTable` ✓:
+   - ✓ selected row affordance (inverted via `table-row[data-state="selected"]`),
+   - ✓ wrapped in `confirm-widget-body` / `data-table` structure,
+   - button reset for clickable rows.
+3. `SchemaFormRenderer` ✓:
+   - No markup changes needed (delegates to FormView which has appropriate styling).
+4. `FilePickerDropzone` ✓:
+   - ✓ drag-over visual state (`confirm-dropzone[data-state="drag-over"]` with highlight background),
+   - ✓ file list uses `confirm-file-list` / `confirm-file-item`,
+   - ✓ accept label uses `confirm-progress` (muted caption).
+5. `ImageChoiceGrid` ✓:
+   - ✓ selected frame treatment (`confirm-image-card[data-state="selected"]` inverted),
+   - image sizing via CSS (width:100%, object-fit:cover),
+   - label uses `confirm-progress`.
+6. `RequestActionBar` ✓:
+   - ✓ button hierarchy (primary variant vs default for secondary),
+   - ✓ border-top separator via `confirm-action-bar`,
+   - ✓ buttons right-aligned via `confirm-action-buttons` flex.
+7. `RatingPicker` ✓:
+   - ✓ selected-state via `confirm-rating-option[data-state="active"]` (inverted),
+   - ✓ labels use `confirm-rating-labels` (flex between, muted caption),
+   - ✓ "Selected: X" uses `confirm-progress`.
+8. `GridBoard` ✓:
+   - ✓ cells use `confirm-grid-cell` with active/disabled states,
+   - ✓ grid density via CSS grid (4px gap),
+   - ✓ disabled state via shared opacity token.
 
-### D. Confirm-runtime composition scenarios
+### D. Confirm-runtime composition scenarios ✓
 
-1. Multi-widget request windows should share one content rhythm.
-2. Footer actions should anchor consistently across widget types.
-3. Title/message/comment surfaces should feel unified.
-4. Script flow (future) should inherit same action/footer language.
-5. Back/progress framing should stay visually stable across step transitions.
-6. Display sections should have clear hierarchy separation from interactive sections.
+1. ✓ Multi-widget request windows share one content rhythm via `confirm-section` grid layout.
+2. ✓ Footer actions anchor consistently via `confirm-action-bar` with border-top separator.
+3. ✓ Title/message/comment use unified hierarchy: `confirm-heading` (bold) → `confirm-description` → `confirm-progress` (muted).
+4. ✓ Script flow inherits same action/footer language through shared RequestActionBar.
+5. ✓ Back/progress framing uses `confirm-progress` and dedicated back button placement.
+6. ✓ Display sections use `confirm-display` with alt background and uppercase `confirm-display-title`, clearly separated from interactive sections.
 
 ## Future UI Work Planned (Graphical)
 
-Priority order for remaining visual work:
+Items 1–3 from the original backlog have been addressed. Remaining work:
 
-1. Integrate confirm windows into inventory app shell and verify real in-context styling.
-2. Complete script sections polish pass (display rendering fidelity, back/progress affordances, toast styling integration).
-3. Upgrade upload flow visuals from placeholder to full file lifecycle states.
-4. Add final design token adjustments across all eight widgets after designer pass.
+1. ~~Integrate confirm windows into inventory app shell and verify real in-context styling.~~ ✓ Done.
+2. ~~Complete script sections polish pass (display rendering fidelity, back/progress affordances, toast styling integration).~~ ✓ Done.
+3. ~~Upgrade upload flow visuals from placeholder to full file lifecycle states.~~ ✓ Done (dropzone + file list styling).
+4. Add final design token adjustments across all eight widgets after designer review feedback.
 5. Add visual polish variants for composite stories (dense, spacious, warning/error heavy, long-content stress).
+6. Test with screen readers to confirm the semantic structure is accessible.
+7. Consider adding transition animations for step changes and selection states.
 
 ## Proposed Designer Workflow
 

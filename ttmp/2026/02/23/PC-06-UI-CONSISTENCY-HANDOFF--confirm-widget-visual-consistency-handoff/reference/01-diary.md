@@ -337,3 +337,136 @@ The new story suite sits in inventory app Storybook taxonomy but exercises `@hyp
 ### Technical details
 
 - The harness intentionally records both `onSubmitScriptEvent` and `onSubmitResponse` payloads to help reviewers compare UI output shape with backend proto expectations during design QA.
+
+## Step 5: Execute visual consistency polish pass across all confirm widgets
+
+This step implements the actual CSS/component polish that the prior documentation steps prepared for. It introduces a dedicated `confirm-*` data-part vocabulary with token-level CSS custom properties, rewrites all 8 widget components to use these semantic parts, rewrites the composition host, and validates all composite stories visually.
+
+### Prompt Context
+
+**User prompt (verbatim):** Work ticket PC-06-UI-CONSISTENCY-HANDOFF: "Visual polish + consistency pass across confirm widgets and composed script-window flows."
+
+**Assistant interpretation:** Execute the full visual consistency pass: define tokens, rewrite widget markup to use semantic `data-part` attributes, add CSS rules, validate in Storybook.
+
+**Inferred user intent:** Bring all confirm widgets to a consistent visual standard matching HyperCard's retro design language, with clear heading hierarchy, display/interactive section separation, and unified focus/selected/disabled states.
+
+**Commit (code):** Pending (uncommitted).
+
+### What I did
+
+**Token layer** — Added 13 CSS custom properties to `tokens.css`:
+- `--hc-confirm-section-gap`, `--hc-confirm-widget-gap` for spacing
+- `--hc-confirm-focus-ring`, `--hc-confirm-focus-offset` for keyboard affordances
+- `--hc-confirm-selected-bg/fg` for inverted selection treatment
+- `--hc-confirm-disabled-opacity` for consistent disabled dimming
+- `--hc-confirm-dropzone-border/hover-bg` for upload surfaces
+- `--hc-confirm-heading/body/caption-size` for typography hierarchy (13/12/10px)
+- `--hc-confirm-progress-fg` for muted caption text
+
+**CSS rules** — Added ~150 lines of attribute-scoped CSS to `primitives.css`:
+- Focus ring rules for all interactive data-parts (list-box-item, table-row, confirm-image-card, confirm-grid-cell, confirm-rating-option)
+- Shared disabled treatment (opacity + pointer-events:none)
+- Button resets for clickable data-parts
+- `confirm-section` layout (grid with section gap)
+- `confirm-heading` (13px bold), `confirm-description` (12px), `confirm-progress` (10px muted)
+- `confirm-display` (bordered panel with alt background, uppercase title)
+- `confirm-widget-body`, `confirm-action-bar` (border-top separator), `confirm-action-buttons`
+- `confirm-dropzone` with drag-over state
+- `confirm-image-card` with selected state (inverted)
+- `confirm-grid-cell` and `confirm-rating-option` matching btn styling
+- `confirm-rating-labels` (flex between, caption size, muted)
+- `confirm-file-list` and `confirm-file-item`
+
+**Parts registry** — Added 17 new entries to `parts.ts`:
+- confirmSection, confirmHeading, confirmDescription, confirmProgress
+- confirmDisplay, confirmDisplayTitle, confirmDisplayContent
+- confirmWidgetBody, confirmActionBar, confirmActionButtons
+- confirmDropzone, confirmImageCard, confirmGridCell
+- confirmRatingOption, confirmRatingLabels, confirmFileList, confirmFileItem
+
+**Widget rewrites** (all 8 widgets):
+1. `SelectableList` — cardBody→confirmWidgetBody, description uses confirmProgress
+2. `SelectableDataTable` — confirmWidgetBody wrapper, wrapped table in dataTable div
+3. `FilePickerDropzone` — inline border/padding replaced with confirmDropzone; file list uses confirmFileList/confirmFileItem
+4. `ImageChoiceGrid` — inline styles replaced with confirmImageCard; image sizing via CSS
+5. `RatingPicker` — buttons use confirmRatingOption; labels use confirmRatingLabels; "Selected: X" uses confirmProgress
+6. `GridBoard` — cells use confirmGridCell; removed inline opacity for disabled
+7. `RequestActionBar` — cardBody→confirmActionBar; buttonGroup→confirmActionButtons
+8. `SchemaFormRenderer` — No markup changes needed (delegates to FormView which already has appropriate styling)
+
+**Composition host** — Major rewrite of `ConfirmRequestWindowHost.tsx`:
+- ScriptDisplaySection now uses confirm-display/confirm-display-title/confirm-display-content
+- Script header uses confirm-heading, confirm-description, confirm-progress
+- Widget wrappers use confirm-widget-body
+- Removed "Format: markdown" display text from display sections
+
+**Storybook config** — Fixed missing `@hypercard/confirm-runtime` alias in `.storybook/main.ts` viteFinal config.
+
+### Why
+
+- Widgets previously used generic data-part attributes (field-label, card, cardBody) that had mismatched visual semantics for confirm contexts (e.g., field-label is right-aligned/11px/muted — wrong for section headings)
+- A dedicated confirm-* vocabulary decouples confirm widget styling from general engine styling, allowing independent evolution
+- Token-first approach ensures consistency decisions are centralized rather than scattered across widget inline styles
+
+### What worked
+
+- `npm run storybook:check` passed (63 story files) after all changes
+- Visual validation of all 5 required composite flows confirmed correct hierarchy:
+  - Bold 13px headings, 12px descriptions, muted 10px step indicators
+  - "OPERATOR CONTEXT" display panels with distinct background and border
+  - Action bars separated by border-top
+  - Rating/grid/image controls show proper selected/active states
+  - Dropzone has clear dashed border treatment
+- No backend contracts changed
+
+### What didn't work
+
+- Initial Storybook startup had issues: port conflicts and missing `@hypercard/confirm-runtime` alias. Fixed by adding the alias to `.storybook/main.ts` and using tmux to manage the dev server.
+
+### What I learned
+
+- Attribute-scoped CSS (`[data-part="xxx"]`) is a clean approach for component-library theming because it avoids class-name coupling while keeping CSS specificity predictable.
+- The "confirm-*" prefix namespace works well to separate concern areas within the same theme file.
+
+### What was tricky to build
+
+- Identifying which generic data-parts were semantically wrong for confirm contexts required reading every widget and understanding the CSS cascade from tokens.css through primitives.css.
+- The composition host rewrite was delicate because ScriptDisplaySection and the script header were using a mix of inline styles and generic parts that needed careful replacement to avoid breaking the layout flow.
+
+### What warrants a second pair of eyes
+
+- Verify the visual hierarchy feels right in practice — the 13/12/10px type scale is based on the existing HyperCard theme but may need tuning.
+- Check whether the `confirm-display` alt-background treatment works across all theme variants.
+
+### What should be done in the future
+
+- Add stress-variant composite stories (very long markdown, dense tables, many files) to validate the CSS under extreme content.
+- Consider adding transition animations for step changes and selection states.
+- Test with screen readers to confirm the semantic structure is accessible.
+
+### Code review instructions
+
+- Review token additions:
+  - `go-go-os/packages/engine/src/theme/desktop/tokens.css` — new `--hc-confirm-*` properties
+- Review CSS rules:
+  - `go-go-os/packages/engine/src/theme/desktop/primitives.css` — new `[data-part="confirm-*"]` selectors
+- Review parts registry:
+  - `go-go-os/packages/engine/src/parts.ts` — 17 new entries
+- Review widget rewrites (check each for no behavior change, only markup):
+  - `go-go-os/packages/engine/src/components/widgets/SelectableList.tsx`
+  - `go-go-os/packages/engine/src/components/widgets/SelectableDataTable.tsx`
+  - `go-go-os/packages/engine/src/components/widgets/FilePickerDropzone.tsx`
+  - `go-go-os/packages/engine/src/components/widgets/ImageChoiceGrid.tsx`
+  - `go-go-os/packages/engine/src/components/widgets/RatingPicker.tsx`
+  - `go-go-os/packages/engine/src/components/widgets/GridBoard.tsx`
+  - `go-go-os/packages/engine/src/components/widgets/RequestActionBar.tsx`
+- Review composition host:
+  - `go-go-os/packages/confirm-runtime/src/components/ConfirmRequestWindowHost.tsx`
+- Validate taxonomy:
+  - `cd go-go-os && npm run storybook:check`
+
+### Technical details
+
+- All CSS is scoped under `[data-widget="hypercard"]` to avoid leaking into non-themed contexts.
+- No JavaScript behavior was changed — only markup attributes and CSS were modified.
+- Backend protocol contracts are completely untouched.

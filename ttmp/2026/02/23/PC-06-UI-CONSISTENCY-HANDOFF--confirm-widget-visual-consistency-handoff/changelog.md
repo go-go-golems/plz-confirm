@@ -1,5 +1,33 @@
 # Changelog
 
+## 2026-02-24
+
+Executed full visual consistency polish pass across all 8 confirm widgets and the composition host:
+
+- Added 13 CSS custom properties (`--hc-confirm-*`) to `tokens.css` for spacing, typography, focus, selection, and disabled states.
+- Added ~150 lines of attribute-scoped CSS rules to `primitives.css` covering all confirm-specific data-parts.
+- Added 17 new data-part names to `parts.ts` (`confirm-section`, `confirm-heading`, `confirm-display`, etc.).
+- Rewrote 7 widget components to use semantic `confirm-*` data-parts instead of generic engine parts (SelectableList, SelectableDataTable, FilePickerDropzone, ImageChoiceGrid, RatingPicker, GridBoard, RequestActionBar). SchemaFormRenderer delegates to FormView and needed no markup changes.
+- Rewrote `ConfirmRequestWindowHost` composition host with proper heading hierarchy, display section treatment, and widget body layout.
+- Fixed missing `@hypercard/confirm-runtime` alias in `.storybook/main.ts`.
+- Validated all 5 composite flows visually (DisplayAndConfirmSection, BackAndProgressRating, TwoStepConfirmThenRating, DisplayAndTableSection, DisplayAndUploadSection).
+- `npm run storybook:check` passes (63 story files).
+
+### Related Files
+
+- go-go-os/packages/engine/src/theme/desktop/tokens.css — New confirm widget CSS tokens
+- go-go-os/packages/engine/src/theme/desktop/primitives.css — New confirm widget CSS rules
+- go-go-os/packages/engine/src/parts.ts — 17 new data-part entries
+- go-go-os/packages/engine/src/components/widgets/SelectableList.tsx — Widget rewrite
+- go-go-os/packages/engine/src/components/widgets/SelectableDataTable.tsx — Widget rewrite
+- go-go-os/packages/engine/src/components/widgets/FilePickerDropzone.tsx — Widget rewrite
+- go-go-os/packages/engine/src/components/widgets/ImageChoiceGrid.tsx — Widget rewrite
+- go-go-os/packages/engine/src/components/widgets/RatingPicker.tsx — Widget rewrite
+- go-go-os/packages/engine/src/components/widgets/GridBoard.tsx — Widget rewrite
+- go-go-os/packages/engine/src/components/widgets/RequestActionBar.tsx — Widget rewrite
+- go-go-os/packages/confirm-runtime/src/components/ConfirmRequestWindowHost.tsx — Composition host rewrite
+- go-go-os/.storybook/main.ts — Alias fix
+
 ## 2026-02-23
 
 - Created dedicated UI consistency handoff ticket `PC-06-UI-CONSISTENCY-HANDOFF`.
