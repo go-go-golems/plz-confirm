@@ -2,6 +2,7 @@ package server
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http/httptest"
 	"strings"
 	"testing"
@@ -160,4 +161,27 @@ func readWSEvent(t *testing.T, conn *websocket.Conn) (string, *v1.UIRequest) {
 		t.Fatalf("unmarshal websocket request payload: %v payload=%s", err, string(ev.Request))
 	}
 	return ev.Type, req
+}
+
+func TestWSClientEnqueueWithTimeoutReturnsQueueFull(t *testing.T) {
+	client := newWSClient(nil, "global", 1)
+	t.Cleanup(client.stop)
+
+	if err := client.enqueue([]byte(`{"type":"new_request"}`)); err != nil {
+		t.Fatalf("expected first enqueue to succeed, got error: %v", err)
+	}
+	err := client.enqueueWithTimeout([]byte(`{"type":"new_request"}`), 5*time.Millisecond)
+	if !errors.Is(err, errWSClientQueueFull) {
+		t.Fatalf("expected queue full error, got: %v", err)
+	}
+}
+
+func TestWSClientEnqueueAfterStopReturnsClosed(t *testing.T) {
+	client := newWSClient(nil, "global", 1)
+	client.stop()
+
+	err := client.enqueue([]byte(`{"type":"new_request"}`))
+	if !errors.Is(err, errWSClientClosed) {
+		t.Fatalf("expected closed error, got: %v", err)
+	}
 }

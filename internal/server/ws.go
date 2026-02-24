@@ -1,71 +1,184 @@
 package server
 
 import (
+	"encoding/json"
+	"errors"
 	"log"
 	"net/http"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/gorilla/websocket"
 )
 
+const defaultWSClientQueueSize = 64
+
+var (
+	errWSClientClosed    = errors.New("ws client closed")
+	errWSClientQueueFull = errors.New("ws client queue full")
+)
+
+type wsClient struct {
+	conn      *websocket.Conn
+	sessionID string
+	send      chan []byte
+	done      chan struct{}
+	closeOnce sync.Once
+	closed    atomic.Bool
+}
+
+func newWSClient(conn *websocket.Conn, sessionID string, queueSize int) *wsClient {
+	if queueSize <= 0 {
+		queueSize = defaultWSClientQueueSize
+	}
+	return &wsClient{
+		conn:      conn,
+		sessionID: sessionID,
+		send:      make(chan []byte, queueSize),
+		done:      make(chan struct{}),
+	}
+}
+
+func (c *wsClient) start(onWriteError func(error)) {
+	go c.writePump(onWriteError)
+}
+
+func (c *wsClient) writePump(onWriteError func(error)) {
+	for {
+		select {
+		case <-c.done:
+			return
+		case msg := <-c.send:
+			if c.conn == nil {
+				continue
+			}
+			_ = c.conn.SetWriteDeadline(time.Now().Add(5 * time.Second))
+			if err := c.conn.WriteMessage(websocket.TextMessage, msg); err != nil {
+				onWriteError(err)
+				return
+			}
+		}
+	}
+}
+
+func (c *wsClient) enqueue(msg []byte) error {
+	return c.enqueueWithTimeout(msg, 0)
+}
+
+func (c *wsClient) enqueueWithTimeout(msg []byte, timeout time.Duration) error {
+	if c.closed.Load() {
+		return errWSClientClosed
+	}
+	if timeout <= 0 {
+		select {
+		case c.send <- msg:
+			return nil
+		case <-c.done:
+			return errWSClientClosed
+		default:
+			return errWSClientQueueFull
+		}
+	}
+	timer := time.NewTimer(timeout)
+	defer timer.Stop()
+	select {
+	case c.send <- msg:
+		return nil
+	case <-c.done:
+		return errWSClientClosed
+	case <-timer.C:
+		return errWSClientQueueFull
+	}
+}
+
+func (c *wsClient) stop() {
+	c.closeOnce.Do(func() {
+		c.closed.Store(true)
+		close(c.done)
+		if c.conn != nil {
+			_ = c.conn.Close()
+		}
+	})
+}
+
 type wsBroadcaster struct {
 	mu               sync.Mutex
-	writeMu          sync.Mutex
-	clientsBySession map[string]map[*websocket.Conn]struct{}
-	sessionByConn    map[*websocket.Conn]string
+	clientsBySession map[string]map[*wsClient]struct{}
+	clientByConn     map[*websocket.Conn]*wsClient
+	writeQueueSize   int
 }
 
 func newWSBroadcaster() *wsBroadcaster {
 	return &wsBroadcaster{
-		clientsBySession: make(map[string]map[*websocket.Conn]struct{}),
-		sessionByConn:    make(map[*websocket.Conn]string),
+		clientsBySession: make(map[string]map[*wsClient]struct{}),
+		clientByConn:     make(map[*websocket.Conn]*wsClient),
+		writeQueueSize:   defaultWSClientQueueSize,
 	}
 }
 
-func (b *wsBroadcaster) add(sessionID string, conn *websocket.Conn) {
-	b.mu.Lock()
-	defer b.mu.Unlock()
+func (b *wsBroadcaster) add(sessionID string, conn *websocket.Conn) *wsClient {
 	if sessionID == "" {
 		sessionID = "global"
 	}
+	client := newWSClient(conn, sessionID, b.writeQueueSize)
+
+	b.mu.Lock()
 	if _, ok := b.clientsBySession[sessionID]; !ok {
-		b.clientsBySession[sessionID] = make(map[*websocket.Conn]struct{})
+		b.clientsBySession[sessionID] = make(map[*wsClient]struct{})
 	}
-	b.clientsBySession[sessionID][conn] = struct{}{}
-	b.sessionByConn[conn] = sessionID
+	b.clientsBySession[sessionID][client] = struct{}{}
+	b.clientByConn[conn] = client
+	b.mu.Unlock()
+
+	client.start(func(err error) {
+		log.Printf("[WS] write failed, dropping client: %v", err)
+		b.remove(conn)
+	})
+	return client
 }
 
 func (b *wsBroadcaster) remove(conn *websocket.Conn) {
+	var client *wsClient
 	b.mu.Lock()
-	defer b.mu.Unlock()
-	sessionID, ok := b.sessionByConn[conn]
-	if ok {
-		if m, ok := b.clientsBySession[sessionID]; ok {
-			delete(m, conn)
+	if mapped, ok := b.clientByConn[conn]; ok {
+		client = mapped
+		if m, exists := b.clientsBySession[mapped.sessionID]; exists {
+			delete(m, mapped)
 			if len(m) == 0 {
-				delete(b.clientsBySession, sessionID)
+				delete(b.clientsBySession, mapped.sessionID)
 			}
 		}
-		delete(b.sessionByConn, conn)
-		return
-	}
-	for sid, m := range b.clientsBySession {
-		delete(m, conn)
-		if len(m) == 0 {
-			delete(b.clientsBySession, sid)
+		delete(b.clientByConn, conn)
+	} else {
+		for sid, m := range b.clientsBySession {
+			for c := range m {
+				if c.conn == conn {
+					client = c
+					delete(m, c)
+					if len(m) == 0 {
+						delete(b.clientsBySession, sid)
+					}
+					break
+				}
+			}
 		}
+	}
+	b.mu.Unlock()
+
+	if client != nil {
+		client.stop()
 	}
 }
 
-func (b *wsBroadcaster) snapshot(sessionID string) []*websocket.Conn {
+func (b *wsBroadcaster) snapshot(sessionID string) []*wsClient {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	if sessionID == "" {
 		sessionID = "global"
 	}
 	m := b.clientsBySession[sessionID]
-	out := make([]*websocket.Conn, 0, len(m))
+	out := make([]*wsClient, 0, len(m))
 	for c := range m {
 		out = append(out, c)
 	}
@@ -73,39 +186,22 @@ func (b *wsBroadcaster) snapshot(sessionID string) []*websocket.Conn {
 }
 
 func (b *wsBroadcaster) BroadcastJSON(sessionID string, msg any) {
-	conns := b.snapshot(sessionID)
-	for _, c := range conns {
-		_ = c.SetWriteDeadline(time.Now().Add(5 * time.Second))
-		if err := b.writeJSON(c, msg); err != nil {
-			log.Printf("[WS] write failed, dropping client: %v", err)
-			_ = c.Close()
-			b.remove(c)
-		}
+	raw, err := json.Marshal(msg)
+	if err != nil {
+		log.Printf("[WS] marshal failed, skipping broadcast: %v", err)
+		return
 	}
+	b.BroadcastRawJSON(sessionID, raw)
 }
 
 func (b *wsBroadcaster) BroadcastRawJSON(sessionID string, msg []byte) {
-	conns := b.snapshot(sessionID)
-	for _, c := range conns {
-		_ = c.SetWriteDeadline(time.Now().Add(5 * time.Second))
-		if err := b.writeText(c, msg); err != nil {
-			log.Printf("[WS] write failed, dropping client: %v", err)
-			_ = c.Close()
-			b.remove(c)
+	clients := b.snapshot(sessionID)
+	for _, c := range clients {
+		if err := c.enqueue(msg); err != nil {
+			log.Printf("[WS] enqueue failed, dropping client: %v", err)
+			b.remove(c.conn)
 		}
 	}
-}
-
-func (b *wsBroadcaster) writeJSON(conn *websocket.Conn, msg any) error {
-	b.writeMu.Lock()
-	defer b.writeMu.Unlock()
-	return conn.WriteJSON(msg)
-}
-
-func (b *wsBroadcaster) writeText(conn *websocket.Conn, msg []byte) error {
-	b.writeMu.Lock()
-	defer b.writeMu.Unlock()
-	return conn.WriteMessage(websocket.TextMessage, msg)
 }
 
 var wsUpgrader = websocket.Upgrader{
@@ -128,24 +224,21 @@ func (s *Server) handleWS(w http.ResponseWriter, r *http.Request) {
 		log.Printf("[WS] upgrade error: %v", err)
 		return
 	}
-	s.ws.add(sessionID, conn)
+	client := s.ws.add(sessionID, conn)
 	// #nosec G706 -- sessionId is quoted to neutralize control characters.
 	log.Printf("[WS] client connected (sessionId=%q)", sessionID)
 
 	// On connect, send all currently pending requests.
 	pending := s.store.PendingForSession(r.Context(), sessionID)
 	for _, req := range pending {
-		_ = conn.SetWriteDeadline(time.Now().Add(5 * time.Second))
 		msg, err := marshalWSEvent("new_request", req)
 		if err != nil {
 			log.Printf("[WS] initial marshal failed: %v", err)
-			_ = conn.Close()
 			s.ws.remove(conn)
 			return
 		}
-		if err := s.ws.writeText(conn, msg); err != nil {
-			log.Printf("[WS] initial send failed: %v", err)
-			_ = conn.Close()
+		if err := client.enqueueWithTimeout(msg, 5*time.Second); err != nil {
+			log.Printf("[WS] initial enqueue failed: %v", err)
 			s.ws.remove(conn)
 			return
 		}
