@@ -1,7 +1,7 @@
 ---
 Title: Add JS API describe extension
 Ticket: PC-01-ADD-JS-API
-Status: active
+Status: complete
 Topics:
     - backend
     - cli
@@ -27,10 +27,11 @@ RelatedFiles:
 ExternalSources:
     - local:plz-confirm-js.md
 Summary: ""
-LastUpdated: 2026-02-22T15:39:51.039408596-05:00
+LastUpdated: 2026-02-24T10:02:31.686823294-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 
 

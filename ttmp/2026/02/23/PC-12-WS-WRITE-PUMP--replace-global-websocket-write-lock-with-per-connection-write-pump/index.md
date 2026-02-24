@@ -1,7 +1,7 @@
 ---
 Title: Replace global websocket write lock with per-connection write pump
 Ticket: PC-12-WS-WRITE-PUMP
-Status: active
+Status: complete
 Topics:
     - architecture
     - backend
@@ -13,10 +13,11 @@ Owners: []
 RelatedFiles: []
 ExternalSources: []
 Summary: ""
-LastUpdated: 2026-02-23T21:03:46.296201317-05:00
+LastUpdated: 2026-02-24T10:01:14.359206989-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 # Replace global websocket write lock with per-connection write pump
 

@@ -1,7 +1,7 @@
 ---
 Title: Add host-injected websocket reconnect policy
 Ticket: PC-14-WS-RECONNECT-POLICY
-Status: active
+Status: complete
 Topics:
     - architecture
     - frontend
@@ -13,10 +13,11 @@ Owners: []
 RelatedFiles: []
 ExternalSources: []
 Summary: ""
-LastUpdated: 2026-02-23T21:03:46.207827034-05:00
+LastUpdated: 2026-02-24T10:01:14.157716964-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 # Add host-injected websocket reconnect policy
 
