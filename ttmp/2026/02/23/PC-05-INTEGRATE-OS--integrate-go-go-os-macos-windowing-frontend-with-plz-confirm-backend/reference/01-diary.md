@@ -2009,3 +2009,73 @@ This keeps all long-form deliverables co-located and easy to browse on-device.
 
 - Uploaded artifact: `PC-05 Inspector Review v1.pdf`
 - Remote path: `/ai/2026/02/23/PC-05-INTEGRATE-OS`
+
+## Step 24: Add one-command click-through suite for all widgets + JS script integration
+
+To make manual verification faster, I added a ticket-owned script that seeds one request per core widget (`confirm`, `select`, `form`, `table`, `upload`, `image`) and one backend-executed JS `script` request with two steps (`confirm` -> `rating`, including `back` + display section metadata).
+
+This gives you a repeatable way to open the confirm queue and click through every flow end-to-end without manually crafting each `curl` payload.
+
+### Prompt Context
+
+**User prompt (verbatim):** "yes, please i want to basically click through all the widgets and exercise the JS backend integration"
+
+**Assistant interpretation:** Provide a single runnable harness that populates the queue with all relevant request types, including a real JS script lifecycle.
+
+**Inferred user intent:** Reduce manual setup friction and make full-surface UI regression testing straightforward for operators/designers.
+
+**Commit (code):** Pending
+
+### What I did
+
+- Added script:
+  - `ttmp/2026/02/23/PC-05-INTEGRATE-OS--integrate-go-go-os-macos-windowing-frontend-with-plz-confirm-backend/scripts/seed_clickthrough_all_widgets_with_js_script.sh`
+- Script behavior:
+  - validates backend connectivity via POST probe;
+  - creates requests for confirm/select/form/table/upload/image;
+  - creates a multi-step JS script request (`module.exports` with `describe/init/view/update`);
+  - prints request IDs/titles in a compact table for easy queue tracing.
+- Included optional WS watcher command in script output for realtime event inspection.
+
+### Why
+
+- Existing scripts covered targeted smokes, but not one complete click-through seed for all widgets + script runtime behavior.
+
+### What worked
+
+- Script syntax validated with `bash -n`.
+- JSON payload construction is `jq`-based, avoiding fragile string-escaping for the embedded JS source.
+
+### What didn't work
+
+- No live execution validation in this step because backend process was not running in this shell context.
+
+### What I learned
+
+- A dedicated queue-seeding harness is the fastest path for UX/design review loops, especially when script-view behavior must be tested repeatedly.
+
+### What was tricky to build
+
+- Embedding multi-line JS source safely inside JSON payload required `jq --arg script` handling to avoid shell-escape regressions.
+
+### What warrants a second pair of eyes
+
+- If script-section rendering conventions change, update the seeded JS script shape so it remains aligned with current host expectations.
+
+### What should be done in the future
+
+- Add an optional "auto-complete" mode for CI (submit canned responses after creation) while keeping current default manual-click mode.
+
+### Code review instructions
+
+- Read and run:
+  - `ttmp/2026/02/23/PC-05-INTEGRATE-OS--integrate-go-go-os-macos-windowing-frontend-with-plz-confirm-backend/scripts/seed_clickthrough_all_widgets_with_js_script.sh`
+- Validate expected queue entries appear in inventory confirm queue.
+
+### Technical details
+
+- Script env knobs:
+  - `BASE_URL` (default `http://127.0.0.1:8091/confirm`)
+  - `SESSION_ID` (default `global`)
+  - `TITLE_PREFIX` (default `C4`)
+  - `SCRIPT_SEED` (default unix timestamp)

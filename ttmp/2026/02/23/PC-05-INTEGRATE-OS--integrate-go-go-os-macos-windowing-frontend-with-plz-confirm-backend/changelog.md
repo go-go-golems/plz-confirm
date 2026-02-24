@@ -288,3 +288,11 @@ Added long-form deep-dive Q&A document answering write pump, duplication/depreca
 - /home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/plz-confirm/ttmp/2026/02/23/PC-05-INTEGRATE-OS--integrate-go-go-os-macos-windowing-frontend-with-plz-confirm-backend/design-doc/05-deep-dive-q-a-write-pump-duplication-409-and-confirmprotoadapter.md — New multi-question deep-dive response document
 - /home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/plz-confirm/ttmp/2026/02/23/PC-05-INTEGRATE-OS--integrate-go-go-os-macos-windowing-frontend-with-plz-confirm-backend/index.md — Added deep-dive Q&A to key links
 
+
+## 2026-02-24
+
+Added a dedicated click-through seeding harness that creates all core widget requests plus a multi-step JS `script` request, so manual UI verification can exercise both normal widget rendering and backend-driven script view/update transitions in one run.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/plz-confirm/ttmp/2026/02/23/PC-05-INTEGRATE-OS--integrate-go-go-os-macos-windowing-frontend-with-plz-confirm-backend/scripts/seed_clickthrough_all_widgets_with_js_script.sh — New one-command queue seeder for confirm/select/form/table/upload/image/script click-through testing
