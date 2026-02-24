@@ -65,7 +65,7 @@ RelatedFiles:
         Ticket validation script
 ExternalSources: []
 Summary: Detailed implementation log for PC-10 P2 hardening across engine form widgets and confirm runtime mapping behavior.
-LastUpdated: 2026-02-24T20:47:00-05:00
+LastUpdated: 2026-02-24T22:06:00-05:00
 WhatFor: Provide a complete execution narrative for interns and reviewers, including code changes, tests, and validation commands.
 WhenToUse: Use for code review, onboarding, and reproducing P2 hardening validation.
 ---
@@ -261,3 +261,67 @@ After successful validation, I updated ticket bookkeeping: tasks, changelog, sta
   1. `npx vitest run` focused P2 suites
   2. `npm run test -w packages/engine`
   3. `go test ./...`
+
+## Step 4: Follow-up Script Section Classification Fix
+
+After post-closure review feedback, I implemented a targeted fix for script section classification in `ConfirmRequestWindowHost`. The bug surfaced when a script section had `kind: 'display'` but omitted `widgetType`, which is allowed by `ConfirmScriptView` typing.
+
+The host previously counted interactivity using only `section.widgetType`, so display-only rows could be miscounted as interactive and trigger the "exactly one interactive section" error for valid payloads. I fixed classification to use the same fallback used during rendering (`widgetType ?? kind`) and added regression coverage.
+
+### Prompt Context
+
+**User prompt (verbatim):** "ok, fix it. commit and update diary"
+
+**Assistant interpretation:** Implement the script section bug fix immediately, commit it, and record the work in ticket diary docs.
+
+**Inferred user intent:** Resolve a high-severity runtime rendering bug from review quickly with traceable code and documentation updates.
+
+**Commit (code):** `5692374` — "fix(confirm-runtime): classify script sections with kind fallback"
+
+### What I did
+- Updated `ConfirmRequestWindowHost.tsx`:
+  - introduced `resolveScriptSectionType` and `isInteractiveScriptSection` helpers;
+  - switched interactive-section counting to `widgetType ?? kind` fallback classification;
+  - aligned render-time section typing to the same helper for consistency.
+- Extended `ConfirmRequestWindowHost.test.ts` with regression tests for:
+  - `kind='display'` and missing `widgetType` -> non-interactive;
+  - `kind='interactive'` and missing `widgetType` -> interactive.
+- Ran:
+  - `npx vitest run packages/confirm-runtime/src/components/ConfirmRequestWindowHost.test.ts`
+
+### Why
+- Script sections are valid when `kind` is present and `widgetType` is omitted; counting logic must match this contract to avoid false invalid-section errors.
+
+### What worked
+- The targeted patch fixed classification without changing script rendering architecture.
+- Host regression suite passed (`6/6` tests).
+
+### What didn't work
+- Initial commit attempt failed due worktree lock permissions:
+  - Command: `git -C go-go-os add ... && git -C go-go-os commit -m "fix(confirm-runtime): classify script sections with kind fallback"`
+  - Error: `fatal: Unable to create '/home/manuel/code/wesen/corporate-headquarters/go-go-os/.git/worktrees/go-go-os1/index.lock': Permission denied`
+- Re-ran the same commit command with escalated permissions and it succeeded.
+
+### What I learned
+- Script section validity checks should share helper logic with render-path section typing to avoid drift between validation and rendering.
+
+### What was tricky to build
+- The root issue was inconsistency across two nearby code paths: section counting and section rendering. I fixed this by introducing a single helper for section type resolution and applying it in both places.
+
+### What warrants a second pair of eyes
+- Confirm whether any adapter-originated section payload can still carry ambiguous combinations (`kind` and `widgetType` disagreeing) and whether we should log/guard those explicitly.
+
+### What should be done in the future
+- Add a small adapter-level test that round-trips sections with `kind='display'` and missing `widgetType` through to host rendering scenarios.
+
+### Code review instructions
+- Start with:
+  - `go-go-os/packages/confirm-runtime/src/components/ConfirmRequestWindowHost.tsx`
+  - `go-go-os/packages/confirm-runtime/src/components/ConfirmRequestWindowHost.test.ts`
+- Validate with:
+  - `npx vitest run packages/confirm-runtime/src/components/ConfirmRequestWindowHost.test.ts`
+
+### Technical details
+- New helpers:
+  - `resolveScriptSectionType(section)` -> `normalizeWidgetType(section.widgetType ?? section.kind)`
+  - `isInteractiveScriptSection(section)` -> section type is not `display`

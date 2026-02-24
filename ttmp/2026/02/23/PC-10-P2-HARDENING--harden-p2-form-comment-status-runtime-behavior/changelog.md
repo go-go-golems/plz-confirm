@@ -33,3 +33,13 @@ Added and executed PC-10 validation script: focused P2 regressions, full engine 
 
 PC-10 closed: all P2 hardening tasks, tests, and validation completed.
 
+
+## 2026-02-24
+
+Follow-up runtime fix for script section classification (commit 5692374): script sections now classify interactivity using `widgetType ?? kind` fallback so `kind=display` sections without `widgetType` are not miscounted.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/go-go-os/packages/confirm-runtime/src/components/ConfirmRequestWindowHost.tsx — Unified section type resolution for counting + rendering
+- /home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/go-go-os/packages/confirm-runtime/src/components/ConfirmRequestWindowHost.test.ts — Regression coverage for kind-only display/interactive section classification
+- /home/manuel/workspaces/2026-02-23/plz-confirm-hypercard/plz-confirm/ttmp/2026/02/23/PC-10-P2-HARDENING--harden-p2-form-comment-status-runtime-behavior/reference/01-diary.md — Step 4 implementation narrative and validation record
