@@ -27,16 +27,16 @@ type TableCommand struct {
 var _ cmds.GlazeCommand = &TableCommand{}
 
 type TableSettings struct {
-	BaseURL     string `glazed.parameter:"base-url"`
-	SessionID   string `glazed.parameter:"session-id"`
-	TimeoutS    int    `glazed.parameter:"timeout"`
-	WaitTimeout int    `glazed.parameter:"wait-timeout"`
+	BaseURL     string `glazed:"base-url"`
+	SessionID   string `glazed:"session-id"`
+	TimeoutS    int    `glazed:"timeout"`
+	WaitTimeout int    `glazed:"wait-timeout"`
 
-	Title       string   `glazed.parameter:"title"`
-	Data        string   `glazed.parameter:"data"`
-	Columns     []string `glazed.parameter:"columns"`
-	MultiSelect bool     `glazed.parameter:"multi-select"`
-	Searchable  bool     `glazed.parameter:"searchable"`
+	Title       string   `glazed:"title"`
+	Data        string   `glazed:"data"`
+	Columns     []string `glazed:"columns"`
+	MultiSelect bool     `glazed:"multi-select"`
+	Searchable  bool     `glazed:"searchable"`
 }
 
 func NewTableCommand() (*TableCommand, error) {

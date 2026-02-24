@@ -27,13 +27,13 @@ type FormCommand struct {
 var _ cmds.GlazeCommand = &FormCommand{}
 
 type FormSettings struct {
-	BaseURL     string `glazed.parameter:"base-url"`
-	SessionID   string `glazed.parameter:"session-id"`
-	TimeoutS    int    `glazed.parameter:"timeout"`
-	WaitTimeout int    `glazed.parameter:"wait-timeout"`
+	BaseURL     string `glazed:"base-url"`
+	SessionID   string `glazed:"session-id"`
+	TimeoutS    int    `glazed:"timeout"`
+	WaitTimeout int    `glazed:"wait-timeout"`
 
-	Title  string `glazed.parameter:"title"`
-	Schema string `glazed.parameter:"schema"`
+	Title  string `glazed:"title"`
+	Schema string `glazed:"schema"`
 }
 
 func NewFormCommand() (*FormCommand, error) {

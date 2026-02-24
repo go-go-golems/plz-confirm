@@ -22,15 +22,15 @@ type ConfirmCommand struct {
 var _ cmds.GlazeCommand = &ConfirmCommand{}
 
 type ConfirmSettings struct {
-	BaseURL     string `glazed.parameter:"base-url"`
-	SessionID   string `glazed.parameter:"session-id"`
-	TimeoutS    int    `glazed.parameter:"timeout"`
-	WaitTimeout int    `glazed.parameter:"wait-timeout"`
+	BaseURL     string `glazed:"base-url"`
+	SessionID   string `glazed:"session-id"`
+	TimeoutS    int    `glazed:"timeout"`
+	WaitTimeout int    `glazed:"wait-timeout"`
 
-	Title       string  `glazed.parameter:"title"`
-	Message     *string `glazed.parameter:"message"`
-	ApproveText *string `glazed.parameter:"approve-text"`
-	RejectText  *string `glazed.parameter:"reject-text"`
+	Title       string  `glazed:"title"`
+	Message     *string `glazed:"message"`
+	ApproveText *string `glazed:"approve-text"`
+	RejectText  *string `glazed:"reject-text"`
 }
 
 func NewConfirmCommand() (*ConfirmCommand, error) {
