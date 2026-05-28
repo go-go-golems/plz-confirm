@@ -102,3 +102,11 @@ PLZ_CONFIRM_BINARY=$(shell which plz-confirm)
 install: ui-build
 	go build -tags embed -o ./dist/plz-confirm ./cmd/plz-confirm && \
 		cp ./dist/plz-confirm $(PLZ_CONFIRM_BINARY)
+
+.PHONY: logcopter-generate
+logcopter-generate:
+	GOWORK=off go tool logcopter-gen -include-main -var zlog -area-prefix go-go-golems.plz-confirm -strip-prefix github.com/go-go-golems/plz-confirm ./cmd/... ./pkg/...
+
+.PHONY: logcopter-check
+logcopter-check:
+	GOWORK=off go tool logcopter-gen -include-main -var zlog -area-prefix go-go-golems.plz-confirm -strip-prefix github.com/go-go-golems/plz-confirm -check ./cmd/... ./pkg/...
