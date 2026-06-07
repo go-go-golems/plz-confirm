@@ -98,6 +98,33 @@ bump-glazed:
 	go get github.com/go-go-golems/go-go-goja@latest
 	go mod tidy
 
+.PHONY: bump-go-go-golems
+bump-go-go-golems:
+	@deps="$$(awk '/^require[[:space:]]+github\.com\/go-go-golems\// { print $$2 } /^[[:space:]]*github\.com\/go-go-golems\// { print $$1 }' go.mod | sort -u)"; \
+	if [ -z "$$deps" ]; then \
+		echo "No github.com/go-go-golems dependencies in go.mod"; \
+	else \
+		echo "Bumping go-go-golems dependencies:"; \
+		echo "$$deps"; \
+		for dep in $$deps; do GOWORK=off go get "$${dep}@latest"; done; \
+	fi
+	GOWORK=off go mod tidy
+
+GLAZED_LINT_BIN ?= /tmp/glazed-lint
+GLAZED_LINT_PKG ?= github.com/go-go-golems/glazed/cmd/tools/glazed-lint
+GLAZED_LINT_TOOL_VERSION ?= v1.3.5
+GLAZED_LINT_FLAGS ?= -glazedclilint.allow-paths=cmd/plz-confirm/
+GLAZED_LINT_DIRS ?= ./cmd/... ./pkg/...
+
+.PHONY: glazed-lint-build glazed-lint
+glazed-lint-build:
+	@echo "Building glazed-lint from Glazed module..."
+	@echo "Installing $(GLAZED_LINT_PKG)@$(GLAZED_LINT_TOOL_VERSION)"; \
+	GOBIN=$(dir $(GLAZED_LINT_BIN)) GOWORK=off go install $(GLAZED_LINT_PKG)@$(GLAZED_LINT_TOOL_VERSION)
+
+glazed-lint: glazed-lint-build
+	GOWORK=off go vet -vettool=$(GLAZED_LINT_BIN) $(GLAZED_LINT_FLAGS) $(GLAZED_LINT_DIRS)
+
 PLZ_CONFIRM_BINARY=$(shell which plz-confirm)
 install: ui-build
 	go build -tags embed -o ./dist/plz-confirm ./cmd/plz-confirm && \

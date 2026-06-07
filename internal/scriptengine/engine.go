@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/dop251/goja"
-	ggjengine "github.com/go-go-golems/go-go-goja/engine"
+	ggjengine "github.com/go-go-golems/go-go-goja/pkg/engine"
 	"github.com/go-go-golems/plz-confirm/proto/generated/go/plz_confirm/v1"
 )
 
@@ -30,12 +30,12 @@ var (
 )
 
 type Engine struct {
-	runtimeFactory *ggjengine.Factory
+	runtimeFactory *ggjengine.RuntimeFactory
 	factoryErr     error
 }
 
 func New() *Engine {
-	factory, err := ggjengine.NewBuilder().Build()
+	factory, err := ggjengine.NewRuntimeFactoryBuilder(ggjengine.WithImplicitDefaultRegistryModules(false)).Build()
 	return &Engine{
 		runtimeFactory: factory,
 		factoryErr:     err,
@@ -164,8 +164,14 @@ func (e *Engine) newRuntime(ctx context.Context, collector *runLogCollector) (*g
 	if e.runtimeFactory == nil {
 		return nil, fmt.Errorf("%w: runtime factory is nil", ErrScriptSetup)
 	}
-	rt, err := e.runtimeFactory.NewRuntime(ctx)
+	rt, err := e.runtimeFactory.NewRuntime(
+		ggjengine.WithStartupContext(ctx),
+		ggjengine.WithLifetimeContext(ctx),
+	)
 	if err != nil {
+		if errors.Is(err, context.Canceled) {
+			return nil, fmt.Errorf("%w: new runtime: %v", ErrScriptCancelled, err)
+		}
 		return nil, fmt.Errorf("%w: new runtime: %v", ErrScriptSetup, err)
 	}
 	if err := installConsoleCapture(rt.VM, collector); err != nil {
