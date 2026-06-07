@@ -169,8 +169,8 @@ func (e *Engine) newRuntime(ctx context.Context, collector *runLogCollector) (*g
 		ggjengine.WithLifetimeContext(ctx),
 	)
 	if err != nil {
-		if errors.Is(err, context.Canceled) {
-			return nil, fmt.Errorf("%w: new runtime: %v", ErrScriptCancelled, err)
+		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+			return nil, fmt.Errorf("%w: new runtime: %w", ErrScriptCancelled, err)
 		}
 		return nil, fmt.Errorf("%w: new runtime: %v", ErrScriptSetup, err)
 	}
