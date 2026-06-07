@@ -328,6 +328,35 @@ module.exports = {
 	}
 }
 
+func TestContextDeadlineExceededBeforeRuntimeStartup(t *testing.T) {
+	t.Parallel()
+
+	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(-time.Second))
+	defer cancel()
+
+	e := New()
+	_, err := e.InitAndView(ctx, &v1.ScriptInput{
+		Script: `
+module.exports = {
+  describe: function() { return { name: "deadline", version: "1" }; },
+  init: function() { return {}; },
+  view: function(s) { return { widgetType: "confirm", input: { title: "x" } }; },
+  update: function(s, e) { return s; }
+};
+`,
+		TimeoutMs: toPtr(int64(1000)),
+	})
+	if err == nil {
+		t.Fatalf("expected deadline error")
+	}
+	if !errors.Is(err, ErrScriptCancelled) {
+		t.Fatalf("expected ErrScriptCancelled, got: %v", err)
+	}
+	if !errors.Is(err, context.DeadlineExceeded) {
+		t.Fatalf("expected context deadline cause, got: %v", err)
+	}
+}
+
 func TestSandboxAllowsRequireAndConsole(t *testing.T) {
 	t.Parallel()
 
